@@ -26,6 +26,31 @@ It is a **standalone product**, not a dependency of other apps. Apps like Pronun
 | Pay for transcription services | Whisper on your own machine |
 | Install separate AI helpers per app | One brain, many skills |
 
+## 1.1 Early launch use cases
+
+The first public version should not feel like a vague "local AI platform." It should feel like a handful of immediately understandable jobs.
+
+| Use case | What the user gets | Why it matters at launch |
+|---|---|---|
+| **Tax copilot** | Ask questions about returns, receipts, IRS docs, and software output locally | Concrete, high-trust, easy-to-understand value |
+| **TurboTax chooser** | Short interview that recommends the likely right TurboTax tier with explanation and caveats | Solves a recurring pre-filing confusion point without pretending to prepare taxes |
+| **Translate + transcribe** | Local translation and transcript generation for files and snippets | Daily-use utility that proves the product is useful even without any app integration |
+| **Camera digest** | "What actually happened today?" summaries instead of noisy motion alerts | Distinctive consumer story and strong privacy angle |
+| **PronunCo companion** | Local lesson extraction, translation, drill generation, and score explanation | Gives iHomeNerd an immediate serious integration story |
+| **Office/local knowledge brain** | Search internal documents and answer questions privately on local hardware | Natural bridge from iHomeNerd to iOfficeNerd |
+
+### 1.2 Product truth
+
+iHomeNerd should be presented as **one local AI brain, many skills, many apps**.
+
+That message matters for trust. People are much more willing to install a local component if it is:
+- useful on its own
+- inspectable
+- clearly theirs
+- not just a mystery helper process for one app
+
+PronunCo should be the **first polished integration demo**, not the only reason iHomeNerd exists.
+
 ## 2. Product family
 
 | Product | Domain | Deployment | Target |
@@ -116,7 +141,15 @@ The Nerd's capability router sits on top. Ollama handles the hard part (VRAM, qu
 
 ### 4.1 Documents (RAG)
 
-**The killer standalone feature.** Ask questions about your taxes, bills, and medical records without uploading them anywhere.
+**The killer standalone feature.** Ask questions about your taxes, bills, medical records, software exports, and household paperwork without uploading them anywhere.
+
+**Near-term high-value flows:**
+- **Tax copilot:** ingest prior returns, W-2s, 1099s, donation receipts, medical receipts, and official IRS docs; answer questions with source citations
+- **TurboTax chooser / checker:** ask plain-English intake questions, explain likely TurboTax tier selection, and review TurboTax output for assumptions or missing questions
+- **Bills and household search:** "How much did I spend on dental in 2025?" or "Did I already pay this invoice?"
+- **Office knowledge:** search local procedures, policy docs, contracts, and notes privately
+
+**Important product rule:** this is a **copilot/explainer/reviewer**, not a tax filing engine or legal authority. It should explain, compare, and flag uncertainty, not pretend to certify the best filing position by itself.
 
 **Ingestion pipeline:**
 1. User points the Nerd at folders (`~/Documents/taxes/`, `~/Documents/medical/`, etc.)
@@ -342,13 +375,14 @@ The capability registry handles this automatically. An OrangePi advertises `dete
 
 ## 9. Revenue model
 
-| Layer | Pricing | Trust signal |
-|---|---|---|
-| **iHomeNerd core** (open source) | Free | Inspect the code, runs on your hardware |
-| **iHomeNerd Pro** (premium skills) | $5-10/month | Advanced camera modes, construction monitoring, multi-cam, priority model updates |
-| **App integrations** | Each app prices independently | PronunCo Pro, TelPro-Bro Pro charge for their own premium features |
+| Layer | Pricing | What it includes | Trust signal |
+|---|---|---|---|
+| **iHomeNerd core** (open source) | Free | Local chat, local translation, local transcription, basic document Q&A, localhost-only dashboard/API | Inspect the code, runs on your hardware |
+| **iHomeNerd Pro** | ~$5-10/month | Premium skills, easier packaging/update flow, advanced camera modes, richer document workflows, multi-cam digests, priority tested model bundles | Useful on its own before any upsell |
+| **iOfficeNerd / office tier** | Higher per seat / per box / support contract | Team onboarding, multi-user, LAN mesh helpers, office policy bundles, admin controls, support | Clear business boundary and support promise |
+| **App integrations** | Each app prices independently | PronunCo Pro, TelPro-Bro Pro, other apps charge for their own premium pedagogy or workflow value | No double-dipping on core local infrastructure |
 
-The Nerd is free infrastructure. Premium skills on the Nerd are paid. Apps that integrate pay for their own premium features. No double-dipping.
+The key trust rule is: **basic local utility should remain genuinely useful for free.** Paid layers should add packaging, premium skills, office features, and support rather than turning the whole product into bait for a later upsell.
 
 ## 10. Relationship to existing sub-projects
 
@@ -366,7 +400,8 @@ The Nerd is free infrastructure. Premium skills on the Nerd are paid. Apps that 
 - Web dashboard: Translate + Transcribe + Chat panels
 - CLI: `ihomenerd translate/transcribe/chat/status`
 - Localhost only
-- **Ship this.** It's useful on its own.
+- One concrete document copilot demo, ideally **tax copilot / software-output explainer**
+- **Ship this.** It must feel useful on its own before PronunCo integration.
 
 ### Phase 2: Document RAG
 - Folder ingestion pipeline (PyMuPDF + embedding + ChromaDB)
@@ -377,7 +412,7 @@ The Nerd is free infrastructure. Premium skills on the Nerd are paid. Apps that 
 
 ### Phase 3: App integration
 - Plugin model for app-specific capabilities
-- PronunCo integration (lesson-extract, drill-generate, score-explain, translate)
+- PronunCo integration (lesson-extract, drill-generate, score-explain, translate) as the **first polished external integration**
 - TelPro-Bro integration (analyze-delivery, score-explain, store-recording)
 - `/capabilities` reports app skills when plugins loaded
 - LAN mode with pairing
