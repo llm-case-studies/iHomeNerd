@@ -228,9 +228,10 @@ Apps discover the Nerd via `/health` and check `/capabilities` for available ski
 {
   "product": "iHomeNerd",
   "version": "0.1.0",
+  "api_version": 1,
   "hostname": "msi-raider-linux",
   "capabilities": {
-    "translate_text": { "available": true, "model": "translategemma-4b", "tier": "light" },
+    "translate_text": { "available": true, "model": "translategemma-4b", "tier": "light", "core": true },
     "transcribe_audio": { "available": true, "model": "whisper-medium", "tier": "medium" },
     "query_documents": { "available": true, "collections": ["taxes", "bills", "medical"] },
     "detect_objects": { "available": true, "model": "yolov8-nano", "tier": "detection" },
@@ -431,7 +432,70 @@ The key trust rule is: **basic local utility should remain genuinely useful for 
 - iOfficeNerd branding/onboarding variant
 - Pro billing integration
 
-## 12. Non-goals for V1
+## 12. Home journal (cross-domain knowledge accumulation)
+
+Every domain — taxes, network, cameras, household — shares one SQLite journal. When iHomeNerd answers a question or solves a problem, it saves the problem, reasoning, solution, outcome, and an embedding vector.
+
+### Why
+
+Local inference is expensive (5-30s per call on consumer hardware). Re-deriving the same answer to "how much did I spend on dental in 2025?" every time is wasteful. The journal makes solved problems free.
+
+### Three-tier lookup
+
+| Similarity | Action | Cost |
+|---|---|---|
+| **> 0.90** | Serve past solution directly | Zero inference |
+| **0.65 – 0.90** | Feed top-N past entries to LLM as context — "here are similar past issues, do any apply?" | Cheap (review, not derive) |
+| **< 0.65** | Full LLM pass — novel problem | Full inference cost |
+
+### Schema
+
+```sql
+CREATE TABLE journal (
+    id INTEGER PRIMARY KEY,
+    timestamp TEXT NOT NULL,
+    domain TEXT NOT NULL,        -- 'taxes', 'medical', 'network', 'camera', 'household'
+    collection TEXT,             -- 'taxes-2025', 'dental', 'printer-office'
+    problem TEXT NOT NULL,       -- what was asked
+    reasoning TEXT,              -- what the LLM figured out
+    solution TEXT,               -- what worked
+    outcome TEXT,                -- 'resolved', 'partial', 'failed', 'informational'
+    sources TEXT,                -- JSON array of doc paths that were used
+    embedding BLOB               -- vector for similarity search
+);
+```
+
+### Pattern detection
+
+The journal enables pattern detection across repeated issues that a single LLM call cannot see:
+
+- "Camera keeps going offline at night" → third occurrence → "This has happened 3 times, always around 2 AM. Restarting the PoE switch fixes it temporarily. Consider replacing the switch."
+- "DNS resolution fails after updates" → second occurrence → "Same issue as March — systemd-resolved config gets reset by apt upgrade."
+
+### The real moat
+
+iHomeNerd's journal is the product's real moat. Not the models (everyone has Gemma), not the API (trivial to replicate), but **the accumulated knowledge about THIS specific home or office.** That data gets more valuable every month and is irreplaceable.
+
+## 13. Source packs (cloud-curated, locally consumed)
+
+Public reference documents (IRS forms, state tax forms, Medicare guides, FAFSA instructions) are available as curated source packs — YAML files listing URLs, descriptions, and categories.
+
+Cloud AI curates the packs (which documents matter, what they're for). iHomeNerd downloads and ingests them locally. Your questions and answers never leave home.
+
+```yaml
+# Example: irs-2025 source pack
+name: IRS 2025 Tax Season
+schedule: weekly
+urls:
+  - https://www.irs.gov/pub/irs-pdf/f1040.pdf
+  - https://www.irs.gov/pub/irs-pdf/i1040.pdf
+  - https://www.irs.gov/pub/irs-pdf/f1099int.pdf
+destination: ~/Documents/taxes/irs-reference/
+```
+
+Community can contribute packs via pull requests to a public repo. Packs contain only public URLs and metadata — no private data, no privacy concern.
+
+## 15. Non-goals for V1
 
 - Replacing Ollama's model management (use Ollama)
 - Running models inside the browser (the Nerd IS the escape from browser inference)
@@ -439,7 +503,7 @@ The key trust rule is: **basic local utility should remain genuinely useful for 
 - Mobile app (web dashboard works on mobile browsers)
 - Smart home device control (not competing with Home Assistant — complementing it)
 
-## 13. Tech stack
+## 16. Tech stack
 
 | Component | Technology |
 |---|---|
@@ -453,6 +517,7 @@ The key trust rule is: **basic local utility should remain genuinely useful for 
 | CLI | Python (Click or Typer) |
 | Packaging | pip install, Docker, OrangePi image |
 
-## 14. Change log
+## 17. Change log
 
 - **2026-04-10** — initial product spec. Consolidates Studio Companion design discussions, iHomeNerd-Core vision reboot (Dec 2025), Organi-Share infrastructure work, PronunCo provider abstraction spec, and BTP-core local companion spec into a unified product.
+- **2026-04-10** — added home journal (Section 12), source packs (Section 13), `api_version` and `core` fields in capability response. Repo re-org: removed legacy sub-projects, scaffolded Phase 1 backend.
