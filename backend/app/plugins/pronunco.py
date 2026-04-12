@@ -39,12 +39,12 @@ class LessonExtractRequest(BaseModel):
 
 class LessonItem(BaseModel):
     hanzi: str  # primary target text (Chinese) or target-lang text (other languages)
-    pinyin: str  # reading cue / transliteration / pronunciation aid
-    meaning_en: str  # gloss in supportLang
-    meaning_ru: str  # note/gloss in materialLang when useful
-    notes: str  # teaching note for the learner
-    type: str  # word, phrase, tone_rule, phonetic
-    confidence: str  # high, medium, low
+    pinyin: str = ""  # reading cue / transliteration / pronunciation aid
+    meaning_en: str = ""  # gloss in supportLang
+    meaning_ru: str = ""  # note/gloss in materialLang when useful
+    notes: str = ""  # teaching note for the learner
+    type: str = "phrase"  # word, phrase, tone_rule, phonetic
+    confidence: str = "medium"  # high, medium, low
 
 
 class LessonExtractResponse(BaseModel):
@@ -169,6 +169,16 @@ async def lesson_extract(request: LessonExtractRequest):
     except json.JSONDecodeError as e:
         logger.warning("Model returned invalid JSON: %s", e)
         raise HTTPException(status_code=502, detail=f"Model returned invalid JSON: {e}")
+
+    # Coerce null fields to empty strings / defaults before validation
+    for item in data.get("items", []):
+        for field in ("hanzi", "pinyin", "meaning_en", "meaning_ru", "notes"):
+            if item.get(field) is None:
+                item[field] = ""
+        if item.get("type") is None:
+            item["type"] = "phrase"
+        if item.get("confidence") is None:
+            item["confidence"] = "medium"
 
     # Validate against schema
     try:
