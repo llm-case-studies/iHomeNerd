@@ -6,6 +6,7 @@ FastAPI application with /health, /capabilities, and domain endpoints.
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -19,6 +20,14 @@ app = FastAPI(
     title="iHomeNerd",
     version="0.1.0",
     description="Local AI brain for your home or office",
+)
+
+# CORS — allow PronunCo browser requests from localhost and LAN origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|.*\.local)(:\d+)?",
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Mount domain routers
@@ -65,8 +74,15 @@ async def health():
 
 @app.get("/capabilities")
 async def capabilities():
-    """Full capability registry with model info."""
-    return await capabilities_response()
+    """Capability registry.
+
+    Returns a flat boolean map matching PronunCo's LocalCompanionCapabilities
+    interface, plus full detail under _detail for debugging.
+    """
+    full = await capabilities_response()
+    # Flat boolean map: { "extract_lesson_items": true, ... }
+    flat = {name: info["available"] for name, info in full["capabilities"].items()}
+    return {**flat, "_detail": full}
 
 
 @app.get("/sessions")
