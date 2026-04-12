@@ -5,7 +5,7 @@ Transcription (Whisper) deferred to Phase 2.
 
 from fastapi import APIRouter
 
-from ..ollama import generate, chat as ollama_chat, MODELS
+from ..ollama import generate, chat as ollama_chat
 
 router = APIRouter(prefix="/v1", tags=["language"])
 
@@ -21,7 +21,7 @@ async def translate(request: dict) -> dict:
     target = request["target"]
 
     prompt = f"Translate the following from {source} to {target}. Return ONLY the translation, nothing else.\n\n{text}"
-    result = await generate(prompt, model=MODELS["light"])
+    result = await generate(prompt, tier="light")
     return {"translation": result.strip(), "source": source, "target": target}
 
 
@@ -32,7 +32,7 @@ async def chat_endpoint(request: dict) -> dict:
     Body: { "messages": [{"role": "user", "content": "..."}] }
     """
     messages = request["messages"]
-    result = await ollama_chat(messages)
+    result = await ollama_chat(messages, tier="medium")
     return {"response": result}
 
 
@@ -46,5 +46,5 @@ async def summarize(request: dict) -> dict:
     max_length = request.get("max_length", 200)
 
     prompt = f"Summarize the following text in at most {max_length} words. Be concise and factual.\n\n{text}"
-    result = await generate(prompt)
+    result = await generate(prompt, tier="medium")
     return {"summary": result.strip()}

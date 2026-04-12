@@ -1,11 +1,7 @@
 """Capability registry — what this Nerd can do.
 
-Two response formats:
-- /capabilities (full): detailed model info, tiers, core flag — for system integrators
-- /capabilities (PronunCo-compatible): simple name→boolean — for browser apps
-
-The full format is the canonical one. PronunCo reads the boolean availability
-from the same structure (capability.available).
+Probes Ollama for available models and maps them to capabilities
+using tier-based resolution.
 """
 
 from __future__ import annotations
@@ -20,70 +16,42 @@ from . import ollama
 class Capability:
     name: str
     available: bool
-    tier: str  # light, medium, heavy, embedding, detection, transcription
+    tier: str
     model: str | None = None
-    core: bool = True  # True = portable across companions, False = iHomeNerd extension
+    core: bool = True
     extra: dict = field(default_factory=dict)
 
 
 async def discover() -> list[Capability]:
-    """Probe Ollama and build the capability list based on loaded models."""
-    health = await ollama.check_health()
-    models = set(health.get("models", []))
+    """Probe Ollama and build the capability list based on available models."""
+    await ollama.check_health()
 
-    has_light = any(m for m in models if "4b" in m or "gemma" in m.lower())
-    has_medium = any(m for m in models if "12b" in m or "8b" in m)
-    has_embedding = any(m for m in models if "embed" in m or "nomic" in m)
+    def _cap(name: str, tier: str, core: bool = True) -> Capability:
+        model = ollama.resolve(tier)
+        return Capability(name=name, available=model is not None, tier=tier, model=model, core=core)
 
-    # Core capabilities
-    caps = [
-        Capability(name="translate_text", available=has_light, tier="light",
-                   model=next((m for m in models if "4b" in m), None), core=True),
-        Capability(name="chat", available=has_light or has_medium, tier="medium" if has_medium else "light",
-                   model=next((m for m in models if "12b" in m), next((m for m in models if "4b" in m), None)),
-                   core=True),
-        Capability(name="summarize_document", available=has_medium or has_light,
-                   tier="medium" if has_medium else "light",
-                   model=next((m for m in models if "12b" in m), next((m for m in models if "4b" in m), None)),
-                   core=True),
-    ]
-
-    # PronunCo plugin capabilities
-    caps.extend([
-        Capability(name="extract_lesson_items", available=has_medium or has_light,
-                   tier="medium" if has_medium else "light",
-                   model=next((m for m in models if "12b" in m), next((m for m in models if "4b" in m), None)),
-                   core=True),
-        Capability(name="chat_persona", available=has_medium or has_light,
-                   tier="medium" if has_medium else "light",
-                   model=next((m for m in models if "12b" in m), next((m for m in models if "4b" in m), None)),
-                   core=True),
-        Capability(name="dialogue_session", available=has_medium or has_light,
-                   tier="medium" if has_medium else "light",
-                   model=next((m for m in models if "12b" in m), next((m for m in models if "4b" in m), None)),
-                   core=True),
-        Capability(name="dialogue_turn", available=has_medium or has_light,
-                   tier="medium" if has_medium else "light",
-                   model=next((m for m in models if "12b" in m), next((m for m in models if "4b" in m), None)),
-                   core=True),
-        # Not yet available
+    return [
+        # Core capabilities
+        _cap("translate_text", "light"),
+        _cap("chat", "medium"),
+        _cap("summarize_document", "medium"),
+        # PronunCo plugin
+        _cap("extract_lesson_items", "medium"),
+        _cap("chat_persona", "medium"),
+        _cap("dialogue_session", "medium"),
+        _cap("dialogue_turn", "medium"),
+        # Not yet implemented (stubs)
         Capability(name="generate_drill", available=False, tier="light", core=True),
         Capability(name="explain_score", available=False, tier="medium", core=True),
         Capability(name="transcribe_audio", available=False, tier="transcription", core=True),
         Capability(name="synthesize_speech", available=False, tier="medium", core=True),
         Capability(name="analyze_image_material", available=False, tier="heavy", core=True),
         Capability(name="score_pronunciation", available=False, tier="heavy", core=True),
-    ])
-
-    return caps
+    ]
 
 
 async def capabilities_response() -> dict:
-    """Build the /capabilities JSON response.
-
-    Returns both the detailed format and a flat boolean map
-    that PronunCo's browser can read directly.
-    """
+    """Build the /capabilities JSON response."""
     caps = await discover()
     ollama_health = await ollama.check_health()
 
@@ -93,7 +61,6 @@ async def capabilities_response() -> dict:
         "api_version": 1,
         "hostname": socket.gethostname(),
         "ollama": ollama_health["ok"],
-        # Detailed capability info (for system integrators)
         "capabilities": {
             c.name: {
                 "available": c.available,
@@ -105,9 +72,3 @@ async def capabilities_response() -> dict:
             for c in caps
         },
     }
-
-
-async def pronunco_capabilities() -> dict:
-    """Flat boolean map matching PronunCo's expected /capabilities shape."""
-    caps = await discover()
-    return {c.name: c.available for c in caps}

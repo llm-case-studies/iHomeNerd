@@ -14,7 +14,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from ..ollama import generate, chat as ollama_chat, MODELS
+from ..ollama import generate, chat as ollama_chat
 from .. import sessions
 
 logger = logging.getLogger(__name__)
@@ -148,7 +148,7 @@ async def lesson_extract(request: LessonExtractRequest):
     try:
         raw = await generate(
             prompt=user_prompt,
-            model=MODELS["medium"],
+            tier="medium",
             system=LESSON_EXTRACT_SYSTEM,
         )
     except Exception as e:
@@ -272,7 +272,7 @@ async def dialogue_turn(request: DialogueTurnRequest):
     session.add_turn("user", request.userText)
 
     try:
-        raw = await ollama_chat(session.messages_for_llm(), model=MODELS["medium"])
+        raw = await ollama_chat(session.messages_for_llm(), tier="medium")
     except Exception as e:
         logger.error("Dialogue generation failed: %s", e)
         raise HTTPException(status_code=503, detail="Dialogue model is not available.")
