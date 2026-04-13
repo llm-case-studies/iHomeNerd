@@ -117,25 +117,61 @@ Different tasks need different models. The Nerd auto-selects.
 | Tier | Model | VRAM | Tasks |
 |---|---|---|---|
 | **Tiny** | Embedding model (nomic-embed-text) | ~200 MB | Document indexing, semantic search |
-| **Light** | Gemma 4 4B / TranslateGemma 4B | ~3 GB | Translation, drill gen, simple extraction, simple Q&A |
-| **Medium** | Gemma 4 12B | ~8 GB | Score explanation, chat persona, document RAG generation, lesson extraction |
-| **Heavy** | Gemma 4 27B / E4B multimodal | ~16 GB | Delivery rubric, grounded-vs-performed, complex multi-doc synthesis, camera captioning |
+| **Light** | Gemma 4 E2B / Gemma 4 E4B / TranslateGemma 4B | ~3-8 GB | Translation, light chat, lesson extraction, local roleplay, audio-capable Gemma experiments |
+| **Medium** | Gemma 3 12B / Llama 3 8B class | ~5-10 GB | Better score explanation, chat persona, document RAG generation, smarter lesson extraction |
+| **Heavy** | Gemma 4 26B / 31B or similar large multimodal | ~16 GB+ | Complex multi-doc synthesis, camera captioning, office-grade reasoning |
 | **Detection** | YOLOv8-Nano | ~200 MB | Object detection on camera frames |
 | **Transcription** | Whisper (medium/large) | ~2-5 GB | Audio/video transcription |
 
-On an 8GB GPU (RTX 4070): light + medium loaded, heavy swapped on demand.
-On a 24GB+ GPU or Apple Silicon with 32GB+ unified: all tiers resident.
-On an OrangePi 5 Plus (NPU): detection + light only.
+On an 8GB GPU (RTX 4070): `gemma4:e2b` is the safe interactive baseline, `gemma4:e4b` should be tested next, and 12B-class models are possible but slower.
+On a 24GB+ GPU or Apple Silicon with 32GB+ unified: medium and heavy tiers become realistic defaults.
+On an OrangePi 5 Plus (NPU): detection, routing, and light helper roles only.
 
 ### 3.4 Model backend
 
 iHomeNerd does NOT reimplement model serving. It uses:
 
-- **Ollama** (recommended default) — model management, quantization, multi-model, mature
-- **vLLM** (alternative for power users) — better throughput, more control
-- **llama.cpp server** (lightweight alternative) — minimal footprint
+- **Ollama** (recommended default) — best starting point for text/image local serving, model management, quantization, and simple deployment
+- **Transformers runtime** (targeted capability backend) — best current path for Gemma 4 audio experiments and other direct multimodal model access
+- **llama.cpp server** (lightweight / parallel-serving alternative) — minimal footprint, OpenAI-style serving, worth testing for throughput and concurrency
+- **vLLM** (alternative for power users or servers) — better throughput, more control, less consumer-friendly
 
-The Nerd's capability router sits on top. Ollama handles the hard part (VRAM, quantization, model loading). The Nerd handles the useful part (which model for which task, structured I/O, app integration).
+The Nerd's capability router should sit above all runtimes and choose by capability, not by vendor name.
+Examples:
+
+- `extract_lesson_items` can start on Ollama
+- `dialogue_session` can use Ollama first, then smarter backends later
+- `transcribe_audio` should route to Whisper / faster-whisper rather than waiting for end-to-end audio LLMs
+- Gemma 4 audio experiments should go through Transformers first, not be blocked on Ollama parity
+
+### 3.5 Voice and call stack
+
+For app-style roleplay and call experiences, audio should be treated as a pipeline:
+
+`ASR -> dialogue brain -> TTS`
+
+Do not block useful PronunCo or TelPro-Bro interactions on a single end-to-end native-audio model.
+
+Near-term stack:
+
+- **ASR:** Whisper / faster-whisper
+- **Dialogue brain:** Gemma-family local model or cloud fallback
+- **TTS baseline:** browser TTS
+- **Better local TTS:** Kokoro
+- **Stronger English roleplay voice:** Chatterbox
+
+Gemma 4 audio-capable variants are still worth exploring, but they should be treated as an experiment track rather than the only path to voice interaction.
+
+### 3.6 Deployment modes
+
+iHomeNerd should support multiple trust and deployment paths:
+
+- **Developer install:** GitHub / pip / Docker
+- **Everyday local companion:** app/service on an existing machine
+- **Live Companion Image:** bootable trial image with optional persistence and preloaded starter bundle
+- **Dedicated node / appliance:** approved hardware with persistent install and managed updates
+
+The live image path matters because many users are more willing to try a clean bootable environment than to install long-running services on their day-to-day machine.
 
 ## 4. Capability domains in detail
 
@@ -366,20 +402,21 @@ Multiple Nerds on the network? Each advertises its capabilities. The app (or a c
 
 | Hardware | Cost | VRAM/Memory | Capabilities | Use case |
 |---|---|---|---|---|
-| **OrangePi 5 Plus** | ~$100 | NPU + 16GB RAM | Detection + light model | Budget camera monitoring |
+| **OrangePi 5 Plus** | ~$100 | NPU + 16GB RAM | Detection, routing, light helper roles | Budget camera monitoring, edge gateway |
 | **Old laptop/mini-PC** | ~$0-200 | CPU only | Light tasks, slow but works | Translate, transcribe, simple RAG |
-| **MSI Raider / gaming PC** | existing | RTX 4070 8GB | Full capabilities, medium models | Power home user (Alex's current setup) |
-| **Mac Studio / Mac Mini** | $600-4000 | M-series 32-192GB unified | Everything including 27B+ models, 24/7 streams | Pro home lab, construction monitoring |
+| **MSI Raider / gaming PC** | existing | RTX 4070 8GB | Strong light tier, usable medium tier, local voice experiments | Power home user (Alex's current setup) |
+| **Mac Studio / Mac Mini** | $600-4000 | M-series 32-192GB unified | Strong all-around local node, larger models, quiet office fit | Pro home lab, office, construction monitoring |
 | **Used workstation + A6000** | ~$1200 | 48GB VRAM | All models resident, multi-user | Small office, dedicated AI server |
 
-The capability registry handles this automatically. An OrangePi advertises `detect_objects: true, query_documents: false`. A Mac Studio advertises everything.
+The capability registry handles this automatically. An OrangePi should not pretend to be a full local AI workstation. A Mac Studio or workstation can advertise far more.
 
 ## 9. Revenue model
 
 | Layer | Pricing | What it includes | Trust signal |
 |---|---|---|---|
 | **iHomeNerd core** (open source) | Free | Local chat, local translation, local transcription, basic document Q&A, localhost-only dashboard/API | Inspect the code, runs on your hardware |
-| **iHomeNerd Pro** | ~$5-10/month | Premium skills, easier packaging/update flow, advanced camera modes, richer document workflows, multi-cam digests, priority tested model bundles | Useful on its own before any upsell |
+| **Local Starter bundle** | Free | Local companion presets, starter model recommendations, browser TTS baseline, optional live image trial path | Serious local trial without cloud lock-in |
+| **iHomeNerd Pro** | ~$5-10/month | Premium skills, easier packaging/update flow, advanced camera modes, richer document workflows, local/cloud hybrid routing, tested voice bundles | Useful on its own before any upsell |
 | **iOfficeNerd / office tier** | Higher per seat / per box / support contract | Team onboarding, multi-user, LAN mesh helpers, office policy bundles, admin controls, support | Clear business boundary and support promise |
 | **App integrations** | Each app prices independently | PronunCo Pro, TelPro-Bro Pro, other apps charge for their own premium pedagogy or workflow value | No double-dipping on core local infrastructure |
 
@@ -404,28 +441,37 @@ The key trust rule is: **basic local utility should remain genuinely useful for 
 - One concrete document copilot demo, ideally **tax copilot / software-output explainer**
 - **Ship this.** It must feel useful on its own before PronunCo integration.
 
-### Phase 2: Document RAG
+### Phase 2: Runtime matrix + local voice
+- Benchmark `gemma4:e2b`, `gemma4:e4b`, and 12B-class text models on real PronunCo payloads
+- Add runtime abstraction so capabilities can route across Ollama, Transformers, and later `llama.cpp`
+- Keep Whisper/faster-whisper as the first ASR path
+- Add browser TTS baseline plus Kokoro and Chatterbox experiments
+
+### Phase 3: Document RAG
 - Folder ingestion pipeline (PyMuPDF + embedding + ChromaDB)
 - `/v1/docs/*` endpoints
 - Dashboard: Documents panel with ask/search/browse
 - Collection config (YAML)
 - Folder watching (inotify/fswatch)
 
-### Phase 3: App integration
+### Phase 4: App integration
 - Plugin model for app-specific capabilities
 - PronunCo integration (lesson-extract, drill-generate, score-explain, translate) as the **first polished external integration**
+- PronunCo dialogue path with bounded sessions and local/browser voice options
 - TelPro-Bro integration (analyze-delivery, score-explain, store-recording)
 - `/capabilities` reports app skills when plugins loaded
 - LAN mode with pairing
 
-### Phase 4: Vision
+### Phase 5: Vision
 - RTSP stream connection
 - YOLO detection + Gemma 4 multimodal captioning
 - Daily digest (vacation mode)
 - Dashboard: Cameras panel
 - Email notifications
 
-### Phase 5: Pro and Office
+### Phase 6: Packaging, Pro, and Office
+- Live Companion Image with optional persistent storage
+- Approved hardware list and starter model bundles
 - Construction monitoring mode
 - Multi-camera tracking
 - Multi-user support
@@ -515,9 +561,10 @@ Community can contribute packs via pull requests to a public repo. Packs contain
 | Object detection | YOLOv8 (ultralytics) |
 | Web dashboard | Lightweight — Svelte or plain HTML + htmx |
 | CLI | Python (Click or Typer) |
-| Packaging | pip install, Docker, OrangePi image |
+| Packaging | pip install, Docker, signed installers, Live Companion Image, approved appliance configs |
 
 ## 17. Change log
 
 - **2026-04-10** — initial product spec. Consolidates Studio Companion design discussions, iHomeNerd-Core vision reboot (Dec 2025), Organi-Share infrastructure work, PronunCo provider abstraction spec, and BTP-core local companion spec into a unified product.
+- **2026-04-12** — clarified runtime strategy (`Ollama` + `Transformers` + `llama.cpp`), local voice path (`browser TTS`, `Kokoro`, `Chatterbox`), Gemma 4 tiering for PronunCo, and the Live Companion Image deployment concept.
 - **2026-04-10** — added home journal (Section 12), source packs (Section 13), `api_version` and `core` fields in capability response. Repo re-org: removed legacy sub-projects, scaffolded Phase 1 backend.

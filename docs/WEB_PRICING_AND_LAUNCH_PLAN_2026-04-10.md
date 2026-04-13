@@ -34,6 +34,7 @@ Recommended main navigation:
 - Features
 - Integrations
 - Hardware
+- Live Image
 - Pricing
 - Download
 - Trust / Privacy
@@ -85,6 +86,7 @@ Recommended homepage sections:
   - quick start
   - Docker
   - GitHub
+  - Live Companion Image
   - hardware notes
 - **Trust / Privacy**
   - localhost by default
@@ -128,6 +130,7 @@ Do not lead with:
 | Layer | Price | Purpose |
 |---|---|---|
 | **Open core / Free** | Free | Build trust; prove daily usefulness |
+| **Local Starter** | Free | Serious local trial with starter bundles and live-image path |
 | **Pro** | ~$5-10/month | Better packaging, richer skills, premium convenience |
 | **Office** | custom / support-backed | Multi-user, team, LAN mesh, business support |
 | **App-specific premium** | separate | PronunCo or other apps price their own premium value |
@@ -143,6 +146,14 @@ Free should remain genuinely useful:
 
 If the free layer feels fake, trust collapses.
 
+### 4.2A What belongs in Local Starter
+
+- recommended local companion presets
+- starter model bundles for approved hardware
+- browser TTS baseline
+- optional local Kokoro path
+- Live Companion Image for clean trial installs
+
 ### 4.3 What belongs in Pro
 
 - polished installers / update flows
@@ -151,6 +162,8 @@ If the free layer feels fake, trust collapses.
 - advanced camera modes
 - better digests and notifications
 - premium support for integrations
+- stronger local voice bundles such as Chatterbox where the hardware supports it
+- local/cloud hybrid routing where it materially improves quality
 
 ### 4.4 What belongs in Office
 
@@ -171,6 +184,16 @@ Recommended wording for the web:
 - `Works on its own.`
 - `Can also power apps like PronunCo.`
 - `Keep cloud services for gold-standard tasks; move privacy-sensitive or offline-friendly tasks local.`
+
+### 5.2 PronunCo voice progression
+
+The public story should be simple:
+
+1. browser TTS and fixed/reference audio first
+2. local companion with better local voices next
+3. cloud/hybrid voice where it genuinely improves the experience
+
+Do not force the first roleplay demos to wait for perfect local end-to-end audio.
 
 ### 5.1 PronunCo capabilities that fit first
 
@@ -222,6 +245,8 @@ A major adoption risk is that users may see a local companion as suspicious. The
 3. Make PronunCo the first polished integration page and demo.
 4. Decide whether `iofficenerd.com` is initially a redirect or a business landing variant.
 5. Keep the first public promise small and believable.
+6. Offer a clean `try before you install permanently` path via a Live Companion Image.
+7. Keep GitHub/Docker as developer paths, not the only trust story.
 
 ## 9. Open questions
 
@@ -229,3 +254,5 @@ A major adoption risk is that users may see a local companion as suspicious. The
 - How much of camera/vision belongs in the first public site versus later?
 - Should the first installer bundle only chat/translate/transcribe, with docs and cameras as optional modules?
 - Should office support be framed as `iOfficeNerd` from day one or introduced later after home adoption?
+- Which hardware targets should get first-class starter bundles: MSI-class gaming laptops, Mac mini/Studio, or a dedicated office node?
+- Should Kokoro run in-browser for lighter demos before pushing users toward local companion voice bundles?
