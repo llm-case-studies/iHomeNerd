@@ -9,7 +9,7 @@ from __future__ import annotations
 import socket
 from dataclasses import dataclass, field
 
-from . import ollama, tts
+from . import ollama, tts, asr
 
 
 @dataclass
@@ -43,7 +43,12 @@ async def discover() -> list[Capability]:
         # Not yet implemented (stubs)
         Capability(name="generate_drill", available=False, tier="light", core=True),
         Capability(name="explain_score", available=False, tier="medium", core=True),
-        Capability(name="transcribe_audio", available=False, tier="transcription", core=True),
+        Capability(
+            name="transcribe_audio",
+            available=asr.is_available(),
+            tier="transcription",
+            model="whisper-small-int8" if asr.is_available() else None,
+        ),
         Capability(
             name="synthesize_speech",
             available=tts.is_available(),

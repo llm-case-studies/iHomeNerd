@@ -11,11 +11,11 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from pydantic import BaseModel, Field
 
 from ..ollama import generate, chat as ollama_chat
-from .. import sessions, tts
+from .. import sessions, tts, asr
 
 logger = logging.getLogger(__name__)
 
@@ -350,9 +350,31 @@ async def dialogue_turn(request: DialogueTurnRequest):
 
 
 @router.post("/transcribe-audio")
-async def transcribe_audio(request: dict):
-    """Transcribe learner audio for dialogue or assessment. NOT IMPLEMENTED in V1."""
-    raise HTTPException(status_code=501, detail="Audio transcription is not available yet.")
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    language: str | None = Form(None),
+    task: str = Form("transcribe"),
+):
+    """Transcribe learner audio for dialogue or assessment.
+
+    Accepts audio as multipart file upload (WAV, MP3, OGG, WebM, etc).
+    Optionally specify language (BCP-47) and task (transcribe/translate).
+    """
+    engine = asr.get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="ASR engine is not available.")
+
+    audio_bytes = await file.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Empty audio file.")
+
+    try:
+        result = engine.transcribe(audio=audio_bytes, language=language, task=task)
+    except Exception as e:
+        logger.error("Transcription failed: %s", e)
+        raise HTTPException(status_code=502, detail=f"Transcription failed: {e}")
+
+    return result
 
 
 class SynthesizeSpeechRequest(BaseModel):
