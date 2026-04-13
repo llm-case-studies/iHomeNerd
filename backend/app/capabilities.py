@@ -9,7 +9,7 @@ from __future__ import annotations
 import socket
 from dataclasses import dataclass, field
 
-from . import ollama
+from . import ollama, tts
 
 
 @dataclass
@@ -44,7 +44,13 @@ async def discover() -> list[Capability]:
         Capability(name="generate_drill", available=False, tier="light", core=True),
         Capability(name="explain_score", available=False, tier="medium", core=True),
         Capability(name="transcribe_audio", available=False, tier="transcription", core=True),
-        Capability(name="synthesize_speech", available=False, tier="medium", core=True),
+        Capability(
+            name="synthesize_speech",
+            available=tts.is_available(),
+            tier="tts",
+            model="kokoro-82m-onnx" if tts.is_available() else None,
+            extra={"voices": len(tts.get_engine().voices) if tts.get_engine() else 0},
+        ),
         Capability(name="analyze_image_material", available=False, tier="heavy", core=True),
         Capability(name="score_pronunciation", available=False, tier="heavy", core=True),
     ]

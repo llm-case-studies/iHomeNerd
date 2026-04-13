@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from ..ollama import generate, chat as ollama_chat
-from .. import sessions
+from .. import sessions, tts
 
 logger = logging.getLogger(__name__)
 
@@ -355,10 +355,60 @@ async def transcribe_audio(request: dict):
     raise HTTPException(status_code=501, detail="Audio transcription is not available yet.")
 
 
+class SynthesizeSpeechRequest(BaseModel):
+    text: str
+    targetLang: str = "en-US"
+    voice: str | None = None  # Kokoro voice name (e.g. "af_heart", "zf_xiaobei")
+    speed: float = 1.0
+
+
 @router.post("/synthesize-speech")
-async def synthesize_speech(request: dict):
-    """Generate speech for agent turns or reference lines. NOT IMPLEMENTED in V1."""
-    raise HTTPException(status_code=501, detail="Speech synthesis is not available yet.")
+async def synthesize_speech(request: SynthesizeSpeechRequest):
+    """Generate speech audio from text using Kokoro TTS.
+
+    Returns WAV audio as a binary response.
+    """
+    engine = tts.get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="TTS engine is not available. Kokoro model files not found.")
+
+    lang_code = tts.resolve_lang(request.targetLang)
+    voice = tts.resolve_voice(lang_code, request.voice)
+
+    if voice not in engine.voices:
+        raise HTTPException(status_code=400, detail=f"Unknown voice '{voice}'. Available: {engine.voices}")
+
+    try:
+        wav_bytes, sample_rate = engine.synthesize(
+            text=request.text,
+            voice=voice,
+            lang=lang_code,
+            speed=request.speed,
+        )
+    except Exception as e:
+        logger.error("TTS synthesis failed: %s", e)
+        raise HTTPException(status_code=502, detail=f"Speech synthesis failed: {e}")
+
+    from fastapi.responses import Response
+
+    return Response(
+        content=wav_bytes,
+        media_type="audio/wav",
+        headers={
+            "X-Voice": voice,
+            "X-Lang": lang_code,
+            "X-Sample-Rate": str(sample_rate),
+        },
+    )
+
+
+@router.get("/voices")
+async def list_voices():
+    """List available TTS voices."""
+    engine = tts.get_engine()
+    if engine is None:
+        return {"available": False, "voices": []}
+    return {"available": True, "voices": engine.voices}
 
 
 @router.post("/score-explain")

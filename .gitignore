@@ -18,6 +18,12 @@ env/
 *.db
 data/
 
+# Model binaries (download separately)
+backend/models/
+*.onnx
+*.bin
+*.pth
+
 # Logs
 logs/
 *.log
