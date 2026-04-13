@@ -73,6 +73,20 @@ class DialogueTurnRequest(BaseModel):
     userAudioBase64: str | None = None  # future: audio input
 
 
+class DialogueTurnResponse(BaseModel):
+    agentText: str  # what the agent says in targetLang
+    agentGloss: str = ""  # supportLang gloss of agentText
+    acceptableIntents: list[str] = []  # what the learner might say next
+    repairOptions: list[str] = []  # corrections / hints if learner struggled
+    pronunciationTargets: list[str] = []  # key words/phrases to drill
+    difficulty: str = "intermediate"
+    turnId: int = 0
+    turnsUsed: int = 0
+    turnBudget: int = 20
+    canEnd: bool = False
+    sessionId: str = ""
+
+
 # ---------------------------------------------------------------------------
 # V1: Lesson extraction
 # ---------------------------------------------------------------------------
@@ -248,9 +262,15 @@ async def dialogue_session(request: DialogueSessionRequest):
         f"- Stay in character and in the scenario.\n"
         f"- Keep responses appropriate for {request.difficulty} level.\n"
         f"- Use {request.targetLang} for dialogue, with {request.supportLang} hints when needed.\n"
-        f"- Limit the exchange to about {request.turnBudget} turns.\n"
-        f"- Return JSON with fields: agentText, acceptableIntents, repairOptions, "
-        f"pronunciationTargets, difficulty, canEnd, turnId"
+        f"- Return ONLY valid JSON, no markdown fences, no commentary.\n\n"
+        f"Return JSON in this exact shape:\n"
+        f'{{\n'
+        f'  "agentText": "<your line in {request.targetLang}>",\n'
+        f'  "agentGloss": "<{request.supportLang} translation of your line>",\n'
+        f'  "acceptableIntents": ["<what learner might say next>"],\n'
+        f'  "repairOptions": ["<correction if learner made a mistake>"],\n'
+        f'  "pronunciationTargets": ["<key words to drill>"]\n'
+        f'}}'
     )
     session.add_turn("system", system_msg)
 
@@ -263,7 +283,22 @@ async def dialogue_session(request: DialogueSessionRequest):
     }
 
 
-@router.post("/dialogue-turn")
+def _parse_dialogue_json(raw: str) -> dict:
+    """Parse dialogue model output, stripping markdown fences if present."""
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[: cleaned.rfind("```")]
+    cleaned = cleaned.strip()
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        # Model didn't return valid JSON — wrap raw text as agentText
+        return {"agentText": raw}
+
+
+@router.post("/dialogue-turn", response_model=DialogueTurnResponse)
 async def dialogue_turn(request: DialogueTurnRequest):
     """Advance one turn in a dialogue scenario.
 
@@ -289,16 +324,24 @@ async def dialogue_turn(request: DialogueTurnRequest):
 
     session.add_turn("agent", raw)
 
+    # Parse structured fields from model output
+    data = _parse_dialogue_json(raw)
+
     can_end = user_turns + 1 >= turn_budget
 
-    return {
-        "agentText": raw,
-        "turnId": len(session.turns),
-        "turnsUsed": user_turns + 1,
-        "turnBudget": turn_budget,
-        "canEnd": can_end,
-        "sessionId": session.id,
-    }
+    return DialogueTurnResponse(
+        agentText=data.get("agentText", raw),
+        agentGloss=data.get("agentGloss", ""),
+        acceptableIntents=data.get("acceptableIntents") or [],
+        repairOptions=data.get("repairOptions") or [],
+        pronunciationTargets=data.get("pronunciationTargets") or [],
+        difficulty=data.get("difficulty", session.config.get("difficulty", "intermediate")),
+        turnId=len(session.turns),
+        turnsUsed=user_turns + 1,
+        turnBudget=turn_budget,
+        canEnd=can_end,
+        sessionId=session.id,
+    )
 
 
 # ---------------------------------------------------------------------------
