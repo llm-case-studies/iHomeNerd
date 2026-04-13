@@ -67,7 +67,7 @@ async def health():
         "ollama": ollama_health["ok"],
         "providers": ["gemma_local"] if ollama_health["ok"] else [],
         "models": models_map,
-        "binding": settings.host,
+        "binding": "0.0.0.0" if settings.lan_mode else settings.host,
         "port": settings.port,
     }
 
