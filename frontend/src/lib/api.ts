@@ -189,12 +189,12 @@ export const api = {
    * POST /v1/synthesize-speech
    * Text-to-speech.
    */
-  async synthesizeSpeech(text: string) {
+  async synthesizeSpeech(text: string, targetLang: string = 'en-US') {
     try {
       const res = await fetch(`${BASE_URL}/v1/synthesize-speech`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, targetLang: 'en-US', speed: 1.0 })
+        body: JSON.stringify({ text, targetLang, speed: 1.0 })
       });
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.blob();
