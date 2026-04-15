@@ -5,6 +5,7 @@ Serves the Command Center SPA from backend/app/static/ (built by Vite).
 Auto-generates TLS certs on first boot for LAN mic/camera access.
 """
 
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -23,6 +24,16 @@ app = FastAPI(
     version="0.1.0",
     description="Local AI brain for your home or office",
 )
+
+
+@app.on_event("startup")
+async def _startup():
+    """Populate Ollama model cache so first request doesn't 500."""
+    health = await ollama.check_health()
+    if health["ok"]:
+        logging.getLogger(__name__).info("Ollama ready: %s", health["models"])
+    else:
+        logging.getLogger(__name__).warning("Ollama not reachable at startup: %s", health.get("error"))
 
 # CORS — allow browser requests from localhost and LAN origins
 app.add_middleware(
