@@ -1,14 +1,16 @@
 """iHomeNerd — local AI brain.
 
 FastAPI application with /health, /capabilities, and domain endpoints.
+Serves the Command Center SPA from backend/app/static/ (built by Vite).
+Auto-generates TLS certs on first boot for LAN mic/camera access.
 """
 
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 from .capabilities import capabilities_response
 from .config import settings
@@ -22,7 +24,7 @@ app = FastAPI(
     description="Local AI brain for your home or office",
 )
 
-# CORS — allow PronunCo browser requests from localhost and LAN origins
+# CORS — allow browser requests from localhost and LAN origins
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|.*\.local)(:\d+)?",
@@ -36,10 +38,26 @@ app.include_router(language_router)
 # Mount plugins
 app.include_router(pronunco_router)
 
-# Templates and static files for the dashboard
+# --- Dashboard SPA (built by: cd frontend && npm run build) ---
 _here = Path(__file__).parent
-templates = Jinja2Templates(directory=str(_here / "templates"))
-app.mount("/static", StaticFiles(directory=str(_here / "static")), name="static")
+_static = _here / "static"
+_index = _static / "index.html"
+
+if _index.exists():
+    # Serve built assets (JS/CSS/images) at /assets/
+    _assets = _static / "assets"
+    if _assets.exists():
+        app.mount("/assets", StaticFiles(directory=str(_assets)), name="assets")
+
+    @app.get("/app/{rest:path}")
+    @app.get("/")
+    async def spa_root(rest: str = ""):
+        """Serve the SPA — all non-API routes get index.html."""
+        return FileResponse(str(_index))
+else:
+    @app.get("/")
+    async def no_ui():
+        return {"message": "iHomeNerd API is running. Build the frontend: cd frontend && npm run build"}
 
 
 @app.get("/health")
@@ -95,9 +113,19 @@ async def list_sessions(app_filter: str | None = None):
 def main():
     """Entry point for `ihomenerd` CLI or `python -m app.main`."""
     import uvicorn
+    from .certs import ensure_certs
 
     host = "0.0.0.0" if settings.lan_mode else settings.host
-    uvicorn.run(app, host=host, port=settings.port)
+
+    # Auto-generate TLS certs for LAN HTTPS (mic/camera access)
+    ssl_kwargs = {}
+    certs_dir = settings.data_dir / "certs"
+    result = ensure_certs(certs_dir)
+    if result:
+        cert_path, key_path = result
+        ssl_kwargs = {"ssl_certfile": str(cert_path), "ssl_keyfile": str(key_path)}
+
+    uvicorn.run(app, host=host, port=settings.port, **ssl_kwargs)
 
 
 if __name__ == "__main__":

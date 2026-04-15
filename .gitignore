@@ -41,3 +41,14 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# TLS certs (auto-generated per machine at first boot)
+certs/
+*.pem
+
+# Node
+node_modules/
+
+# Frontend build output (served by FastAPI, rebuilt from source)
+backend/app/static/assets/
+backend/app/static/index.html
