@@ -418,7 +418,14 @@ export const api = {
         body: JSON.stringify({ task })
       });
       if (!res.ok) throw new Error('Network response was not ok');
-      return await res.json();
+      const data = await res.json();
+      // Replay activities from the response so the UI renders them
+      if (data.activities) {
+        for (const act of data.activities) {
+          onActivity(act);
+        }
+      }
+      return data;
     } catch (e) {
       console.warn('Backend unavailable, using mock agent task', e);
       
