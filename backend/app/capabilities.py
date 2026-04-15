@@ -43,6 +43,9 @@ async def discover() -> list[Capability]:
         # Document RAG
         _cap("query_documents", "medium"),
         Capability(name="ingest_folder", available=True, tier="system", model=None, core=True),
+        # Investigate
+        Capability(name="investigate_network", available=True, tier="system", model=None, core=True),
+        Capability(name="investigate_scan", available=True, tier="system", model=None, core=True),
         # Not yet implemented (stubs)
         Capability(name="generate_drill", available=False, tier="light", core=True),
         Capability(name="explain_score", available=False, tier="medium", core=True),
