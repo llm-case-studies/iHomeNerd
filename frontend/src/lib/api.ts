@@ -1,4 +1,6 @@
-const BASE_URL = 'http://localhost:17777';
+// In dev: Vite proxy forwards /health, /capabilities, /v1/* to localhost:17777
+// In prod: FastAPI serves both static files and API on the same origin
+const BASE_URL = '';
 
 export const api = {
   /**
