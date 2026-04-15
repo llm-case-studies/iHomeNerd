@@ -84,7 +84,13 @@ export const api = {
         body: JSON.stringify({ messages, model, language })
       });
       if (!res.ok) throw new Error('Network response was not ok');
-      return await res.json();
+      const data = await res.json();
+      // Normalize: backend returns {response: "..."}, UI expects {role, content}
+      return {
+        role: 'assistant',
+        content: data.response ?? data.content ?? JSON.stringify(data),
+        model: data.model ?? 'gemma4:e2b',
+      };
     } catch (e) {
       console.warn('Backend unavailable, using mock chat response', e);
       // Simulate network delay
@@ -133,7 +139,14 @@ export const api = {
         body: JSON.stringify({ text, source, target })
       });
       if (!res.ok) throw new Error('Network response was not ok');
-      return await res.json();
+      const data = await res.json();
+      // Normalize: backend returns {translation: "..."}, UI expects {translatedText}
+      return {
+        translatedText: data.translatedText ?? data.translation ?? '',
+        detectedSource: data.detectedSource ?? data.source ?? source,
+        target: data.target ?? target,
+        model: data.model ?? 'gemma4:e2b',
+      };
     } catch (e) {
       console.warn('Backend unavailable, using mock translate response', e);
       // Simulate network delay
