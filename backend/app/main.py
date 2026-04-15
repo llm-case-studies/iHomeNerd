@@ -6,6 +6,7 @@ Auto-generates TLS certs on first boot for LAN mic/camera access.
 """
 
 import logging
+import time
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -25,10 +26,14 @@ app = FastAPI(
     description="Local AI brain for your home or office",
 )
 
+_startup_time = time.time()
+
 
 @app.on_event("startup")
 async def _startup():
     """Populate Ollama model cache so first request doesn't 500."""
+    global _startup_time
+    _startup_time = time.time()
     health = await ollama.check_health()
     if health["ok"]:
         logging.getLogger(__name__).info("Ollama ready: %s", health["models"])
@@ -112,6 +117,69 @@ async def capabilities():
     # Flat boolean map: { "extract_lesson_items": true, ... }
     flat = {name: info["available"] for name, info in full["capabilities"].items()}
     return {**flat, "_detail": full}
+
+
+# Registered plugins — name + description for the System dashboard
+_PLUGINS = [
+    {"name": "PronunCo", "description": "AI pronunciation coach & language learning"},
+]
+
+
+def _dir_size_bytes(path: Path) -> int:
+    """Total size of a directory tree in bytes."""
+    if not path.exists():
+        return 0
+    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+
+
+@app.get("/system/stats")
+async def system_stats():
+    """System statistics for the dashboard."""
+    from . import sessions
+
+    active = sessions.list_active()
+    storage_bytes = _dir_size_bytes(settings.data_dir)
+
+    # Derive connected apps from active sessions
+    apps_with_sessions: dict[str, dict] = {}
+    for s in active:
+        app_name = s["app"]
+        if app_name not in apps_with_sessions or s["created_at"] > apps_with_sessions[app_name]["last_seen"]:
+            apps_with_sessions[app_name] = {"last_seen": s["created_at"], "sessions": 0}
+        apps_with_sessions[app_name]["sessions"] += 1
+
+    # Merge plugin registry with session activity
+    connected_apps = []
+    seen_names = set()
+    for plugin in _PLUGINS:
+        name_lower = plugin["name"].lower()
+        session_info = apps_with_sessions.get(name_lower, {})
+        connected_apps.append({
+            "name": plugin["name"],
+            "description": plugin["description"],
+            "registered": True,
+            "active_sessions": session_info.get("sessions", 0),
+            "last_seen": session_info.get("last_seen"),
+        })
+        seen_names.add(name_lower)
+
+    # Add any apps with sessions that aren't in the plugin registry
+    for app_name, info in apps_with_sessions.items():
+        if app_name not in seen_names:
+            connected_apps.append({
+                "name": app_name,
+                "description": None,
+                "registered": False,
+                "active_sessions": info["sessions"],
+                "last_seen": info["last_seen"],
+            })
+
+    return {
+        "uptime_seconds": round(time.time() - _startup_time),
+        "session_count": len(active),
+        "storage_bytes": storage_bytes,
+        "connected_apps": connected_apps,
+    }
 
 
 @app.get("/sessions")

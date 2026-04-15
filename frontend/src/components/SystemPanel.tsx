@@ -1,24 +1,42 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Activity, Cpu, HardDrive, Network, Server, ShieldCheck } from 'lucide-react';
+import { Activity, Clock, Cpu, HardDrive, Network, Server, ShieldCheck } from 'lucide-react';
 import { api } from '../lib/api';
 import { useTranslation } from 'react-i18next';
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+}
+
+function formatUptime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
 
 export function SystemPanel() {
   const { t } = useTranslation();
   const [health, setHealth] = useState<any>(null);
   const [capabilities, setCapabilities] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [healthData, capsData] = await Promise.all([
+        const [healthData, capsData, statsData] = await Promise.all([
           api.getHealth(),
-          api.getCapabilities()
+          api.getCapabilities(),
+          api.getSystemStats(),
         ]);
         setHealth(healthData);
         setCapabilities(capsData);
+        setStats(statsData);
       } catch (error) {
         console.error("Failed to load system data", error);
       } finally {
@@ -26,6 +44,18 @@ export function SystemPanel() {
       }
     }
     loadData();
+    // Refresh stats every 30 seconds
+    const interval = setInterval(async () => {
+      try {
+        const [healthData, statsData] = await Promise.all([
+          api.getHealth(),
+          api.getSystemStats(),
+        ]);
+        setHealth(healthData);
+        setStats(statsData);
+      } catch { /* ignore refresh errors */ }
+    }, 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading || !health || !capabilities) {
@@ -51,9 +81,17 @@ export function SystemPanel() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard icon={Activity} label={t('sys_status')} value={health.status === 'ok' ? 'Healthy' : 'Degraded'} valueColor={health.status === 'ok' ? 'text-success' : 'text-warning'} />
         <StatCard icon={Cpu} label="Active Models" value={`${Object.keys(health.models || {}).length} Loaded`} />
-        <StatCard icon={Network} label="Active Sessions" value="2" />
-        <StatCard icon={HardDrive} label="Local Storage" value="4.2 GB" />
+        <StatCard icon={Network} label="Active Sessions" value={String(stats?.session_count ?? 0)} />
+        <StatCard icon={HardDrive} label="Local Storage" value={formatBytes(stats?.storage_bytes ?? 0)} />
       </div>
+
+      {/* Uptime */}
+      {stats?.uptime_seconds != null && (
+        <div className="flex items-center gap-2 text-sm text-text-secondary px-1">
+          <Clock size={14} />
+          <span>Uptime: {formatUptime(stats.uptime_seconds)}</span>
+        </div>
+      )}
 
       {/* Capabilities Table */}
       <div className="bg-bg-surface border border-border-color rounded-2xl overflow-hidden">
@@ -101,9 +139,30 @@ export function SystemPanel() {
           </h3>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <AppCard name="PronunCo" status="Connected" lastSeen="2 mins ago" />
-          <AppCard name="TelPro-Bro" status="Disconnected" lastSeen="5 hours ago" inactive />
-          <AppCard name="iScamHunter" status="Pending Plugin" lastSeen="-" inactive />
+          {stats?.connected_apps?.length > 0 ? (
+            stats.connected_apps.map((app: any) => {
+              const hasActivity = app.active_sessions > 0;
+              const status = hasActivity
+                ? `Active (${app.active_sessions} session${app.active_sessions > 1 ? 's' : ''})`
+                : app.registered ? 'Registered' : 'Unknown';
+              const lastSeen = app.last_seen
+                ? new Date(app.last_seen * 1000).toLocaleTimeString()
+                : '-';
+              return (
+                <AppCard
+                  key={app.name}
+                  name={app.name}
+                  status={status}
+                  lastSeen={lastSeen}
+                  inactive={!hasActivity}
+                />
+              );
+            })
+          ) : (
+            <div className="col-span-full text-center text-text-secondary py-4">
+              No plugins registered yet
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

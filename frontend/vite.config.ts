@@ -28,6 +28,8 @@ export default defineConfig({
     proxy: {
       '/health': 'http://localhost:17777',
       '/capabilities': 'http://localhost:17777',
+      '/system': 'http://localhost:17777',
+      '/sessions': 'http://localhost:17777',
       '/v1': 'http://localhost:17777',
     },
   },

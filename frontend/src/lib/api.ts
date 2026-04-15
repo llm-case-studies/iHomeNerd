@@ -207,6 +207,44 @@ export const api = {
   },
 
   /**
+   * GET /system/stats
+   * System dashboard stats: uptime, sessions, storage, connected apps.
+   */
+  async getSystemStats() {
+    try {
+      const res = await fetch(`${BASE_URL}/system/stats`);
+      if (!res.ok) throw new Error('Network response was not ok');
+      return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, using mock system stats', e);
+      return {
+        uptime_seconds: 3600,
+        session_count: 0,
+        storage_bytes: 0,
+        connected_apps: [],
+      };
+    }
+  },
+
+  /**
+   * GET /sessions
+   * List active sessions.
+   */
+  async getSessions(appFilter?: string) {
+    try {
+      const url = appFilter
+        ? `${BASE_URL}/sessions?app_filter=${encodeURIComponent(appFilter)}`
+        : `${BASE_URL}/sessions`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Network response was not ok');
+      return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, using mock sessions', e);
+      return { sessions: [] };
+    }
+  },
+
+  /**
    * GET /v1/docs/collections
    * List available document collections.
    */
