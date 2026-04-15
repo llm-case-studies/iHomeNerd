@@ -510,7 +510,14 @@ export const api = {
         body: JSON.stringify(config)
       });
       if (!res.ok) throw new Error('Network response was not ok');
-      return await res.json();
+      const data = await res.json();
+      // Replay logs from the response
+      if (data.logs) {
+        for (const log of data.logs) {
+          onLog(log);
+        }
+      }
+      return data;
     } catch (e) {
       console.warn('Backend unavailable, using mock build process', e);
       

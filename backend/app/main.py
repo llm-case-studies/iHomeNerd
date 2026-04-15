@@ -20,6 +20,7 @@ from .domains.language import router as language_router
 from .domains.docs import router as docs_router
 from .domains.investigate import router as investigate_router
 from .domains.agents import router as agents_router
+from .domains.builder import router as builder_router
 from .plugins.pronunco import router as pronunco_router
 from . import ollama
 
@@ -56,6 +57,7 @@ app.include_router(language_router)
 app.include_router(docs_router)
 app.include_router(investigate_router)
 app.include_router(agents_router)
+app.include_router(builder_router)
 
 # Mount plugins
 app.include_router(pronunco_router)
