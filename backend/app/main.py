@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from .capabilities import capabilities_response
 from .config import settings
 from .domains.language import router as language_router
+from .domains.docs import router as docs_router
 from .plugins.pronunco import router as pronunco_router
 from . import ollama
 
@@ -50,6 +51,7 @@ app.add_middleware(
 
 # Mount domain routers
 app.include_router(language_router)
+app.include_router(docs_router)
 
 # Mount plugins
 app.include_router(pronunco_router)

@@ -40,6 +40,9 @@ async def discover() -> list[Capability]:
         _cap("chat_persona", "medium"),
         _cap("dialogue_session", "medium"),
         _cap("dialogue_turn", "medium"),
+        # Document RAG
+        _cap("query_documents", "medium"),
+        Capability(name="ingest_folder", available=True, tier="system", model=None, core=True),
         # Not yet implemented (stubs)
         Capability(name="generate_drill", available=False, tier="light", core=True),
         Capability(name="explain_score", available=False, tier="medium", core=True),
