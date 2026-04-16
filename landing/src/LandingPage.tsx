@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Shield, Cpu, Lock, Zap, Server, Mic, FileText, Languages, Search, Bot, Package, ArrowRight, GlobeIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HardwareChecker from './HardwareChecker';
+import ScoutFlow from './ScoutFlow';
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const [isHwCheckerOpen, setIsHwCheckerOpen] = useState(false);
+  const [isScoutFlowOpen, setIsScoutFlowOpen] = useState(false);
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     i18n.changeLanguage(e.target.value);
@@ -45,12 +47,12 @@ export default function LandingPage() {
               <div className="absolute right-3 pointer-events-none text-text-secondary text-xs">▼</div>
             </div>
 
-            <a
-              href="#download"
+            <button
+              onClick={() => setIsScoutFlowOpen(true)}
               className="text-sm font-medium bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             >
               {t('nav_open_cc')}
-            </a>
+            </button>
           </div>
         </div>
       </nav>
@@ -80,13 +82,13 @@ export default function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href="#download"
+            <button
+              onClick={() => setIsScoutFlowOpen(true)}
               className="w-full sm:w-auto px-8 py-4 bg-accent hover:bg-accent-hover text-white rounded-xl font-medium transition-all hover:scale-105 flex items-center justify-center gap-2"
             >
               {t('hero_btn_launch')}
               <ArrowRight size={20} />
-            </a>
+            </button>
             <button 
               onClick={() => setIsHwCheckerOpen(true)}
               className="w-full sm:w-auto px-8 py-4 bg-bg-surface hover:bg-bg-input border border-border-color rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
@@ -204,13 +206,13 @@ export default function LandingPage() {
           <p className="text-xl text-text-secondary mb-10">
             {t('cta_desc')}
           </p>
-          <a
-            href="#download"
+          <button
+            onClick={() => setIsScoutFlowOpen(true)}
             className="inline-flex items-center gap-2 px-8 py-4 bg-text-primary text-bg-primary hover:bg-white rounded-xl font-bold transition-all hover:scale-105"
           >
             {t('nav_open_cc')}
             <ArrowRight size={20} />
-          </a>
+          </button>
         </div>
       </section>
 
@@ -226,9 +228,14 @@ export default function LandingPage() {
         </p>
       </footer>
 
-      <HardwareChecker 
-        isOpen={isHwCheckerOpen} 
-        onClose={() => setIsHwCheckerOpen(false)} 
+      <HardwareChecker
+        isOpen={isHwCheckerOpen}
+        onClose={() => setIsHwCheckerOpen(false)}
+      />
+
+      <ScoutFlow
+        isOpen={isScoutFlowOpen}
+        onClose={() => setIsScoutFlowOpen(false)}
       />
     </div>
   );

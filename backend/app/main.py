@@ -23,6 +23,7 @@ from .domains.agents import router as agents_router
 from .domains.builder import router as builder_router
 from .plugins.pronunco import router as pronunco_router
 from . import ollama
+from .discovery import advertise_start, advertise_stop, get_brain_info
 
 app = FastAPI(
     title="iHomeNerd",
@@ -35,7 +36,7 @@ _startup_time = time.time()
 
 @app.on_event("startup")
 async def _startup():
-    """Populate Ollama model cache so first request doesn't 500."""
+    """Populate Ollama model cache and advertise on network."""
     global _startup_time
     _startup_time = time.time()
     health = await ollama.check_health()
@@ -43,6 +44,12 @@ async def _startup():
         logging.getLogger(__name__).info("Ollama ready: %s", health["models"])
     else:
         logging.getLogger(__name__).warning("Ollama not reachable at startup: %s", health.get("error"))
+    advertise_start()
+
+
+@app.on_event("shutdown")
+async def _shutdown():
+    advertise_stop()
 
 # CORS — allow browser requests from localhost and LAN origins
 app.add_middleware(
@@ -112,6 +119,20 @@ async def health():
         "binding": "0.0.0.0" if settings.lan_mode else settings.host,
         "port": settings.port,
     }
+
+
+@app.get("/discover")
+async def discover():
+    """Brain discovery endpoint — returns this machine's capabilities.
+
+    Scouts probe this endpoint to find and evaluate Brains on the LAN.
+    """
+    info = get_brain_info()
+    # Add live model info
+    ollama_health = await ollama.check_health()
+    info["ollama"] = ollama_health["ok"]
+    info["models"] = ollama_health.get("models", [])
+    return info
 
 
 @app.get("/capabilities")
