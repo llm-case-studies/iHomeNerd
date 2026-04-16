@@ -1,0 +1,47 @@
+name: Deploy Landing Staging
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - 'landing/**'
+      - '.github/workflows/deploy-landing-staging.yml'
+  workflow_dispatch:
+
+jobs:
+  build-landing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: landing/package-lock.json
+
+      - name: Install and Build Landing
+        working-directory: landing
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload Landing artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: landing-build
+          path: landing/dist/
+
+  deploy-landing:
+    needs: build-landing
+    concurrency:
+      group: ihomenerd-landing-staging-deploy
+      cancel-in-progress: false
+    uses: llm-case-studies/ionos-4c8g-production/.github/workflows/deploy-ionos-reusable.yml@main
+    with:
+      app_name: ihomenerd-landing
+      environment: staging
+      domain: staging.ihomenerd.com
+      artifact_name: landing-build
+    secrets: inherit
