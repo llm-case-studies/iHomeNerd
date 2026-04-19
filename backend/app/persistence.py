@@ -18,10 +18,11 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 from .config import settings
 
@@ -75,6 +76,7 @@ class Resource:
 # ---------------------------------------------------------------------------
 
 _DB_NAME = "appstore.sqlite"
+_schema_initialized = False
 
 
 def _db_path() -> Path:
@@ -82,14 +84,27 @@ def _db_path() -> Path:
 
 
 def _connect() -> sqlite3.Connection:
+    global _schema_initialized
     path = _db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(str(path), timeout=5)
+    con = sqlite3.connect(str(path), timeout=10)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA foreign_keys=ON")
-    _ensure_schema(con)
+    if not _schema_initialized:
+        _ensure_schema(con)
+        _schema_initialized = True
     return con
+
+
+@contextmanager
+def _db() -> Generator[sqlite3.Connection, None, None]:
+    """Context manager that guarantees connection cleanup."""
+    con = _connect()
+    try:
+        yield con
+    finally:
+        con.close()
 
 
 def _ensure_schema(con: sqlite3.Connection) -> None:
@@ -176,50 +191,43 @@ def register_app(
         if rt not in policies:
             policies[rt] = "lww"
 
-    con = _connect()
-    now = _now()
-    con.execute(
-        """INSERT INTO app_registrations (app, display_name, resource_types, conflict_policies, enabled, registered_at)
-           VALUES (?, ?, ?, ?, 0, ?)
-           ON CONFLICT(app) DO UPDATE SET
-             display_name = excluded.display_name,
-             resource_types = excluded.resource_types,
-             conflict_policies = excluded.conflict_policies""",
-        (app, display_name, json.dumps(resource_types), json.dumps(policies), now),
-    )
-    con.commit()
-    reg = _get_app_registration(con, app)
-    con.close()
-    return reg
+    with _db() as con:
+        now = _now()
+        con.execute(
+            """INSERT INTO app_registrations (app, display_name, resource_types, conflict_policies, enabled, registered_at)
+               VALUES (?, ?, ?, ?, 0, ?)
+               ON CONFLICT(app) DO UPDATE SET
+                 display_name = excluded.display_name,
+                 resource_types = excluded.resource_types,
+                 conflict_policies = excluded.conflict_policies""",
+            (app, display_name, json.dumps(resource_types), json.dumps(policies), now),
+        )
+        con.commit()
+        return _get_app_registration(con, app)
 
 
 def get_app(app: str) -> Optional[AppRegistration]:
     """Get app registration, or None if not registered."""
-    con = _connect()
-    reg = _get_app_registration(con, app)
-    con.close()
-    return reg
+    with _db() as con:
+        return _get_app_registration(con, app)
 
 
 def list_apps() -> List[AppRegistration]:
     """List all registered apps."""
-    con = _connect()
-    rows = con.execute("SELECT * FROM app_registrations ORDER BY app").fetchall()
-    con.close()
-    return [_row_to_app(r) for r in rows]
+    with _db() as con:
+        rows = con.execute("SELECT * FROM app_registrations ORDER BY app").fetchall()
+        return [_row_to_app(r) for r in rows]
 
 
 def set_app_enabled(app: str, enabled: bool) -> bool:
     """Enable or disable persistence for an app. Returns success."""
-    con = _connect()
-    cur = con.execute(
-        "UPDATE app_registrations SET enabled = ? WHERE app = ?",
-        (1 if enabled else 0, app),
-    )
-    con.commit()
-    ok = cur.rowcount > 0
-    con.close()
-    return ok
+    with _db() as con:
+        cur = con.execute(
+            "UPDATE app_registrations SET enabled = ? WHERE app = ?",
+            (1 if enabled else 0, app),
+        )
+        con.commit()
+        return cur.rowcount > 0
 
 
 def _get_app_registration(con: sqlite3.Connection, app: str) -> Optional[AppRegistration]:
@@ -245,39 +253,34 @@ def _row_to_app(row: sqlite3.Row) -> AppRegistration:
 
 def create_profile(app: str, profile_id: str, display_name: str) -> Profile:
     """Create a profile within an app namespace."""
-    con = _connect()
-    _require_app_enabled(con, app)
-    now = _now()
-    con.execute(
-        """INSERT INTO profiles (id, app, display_name, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?)""",
-        (profile_id, app, display_name, now, now),
-    )
-    con.commit()
-    profile = _get_profile(con, app, profile_id)
-    con.close()
-    return profile
+    with _db() as con:
+        _require_app_enabled(con, app)
+        now = _now()
+        con.execute(
+            """INSERT INTO profiles (id, app, display_name, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (profile_id, app, display_name, now, now),
+        )
+        con.commit()
+        return _get_profile(con, app, profile_id)
 
 
 def get_profile(app: str, profile_id: str) -> Optional[Profile]:
     """Get a profile by app + id. Requires app to be enabled."""
-    con = _connect()
-    _require_app_enabled(con, app)
-    profile = _get_profile(con, app, profile_id)
-    con.close()
-    return profile
+    with _db() as con:
+        _require_app_enabled(con, app)
+        return _get_profile(con, app, profile_id)
 
 
 def list_profiles(app: str) -> List[Profile]:
     """List all profiles for an app. Requires app to be enabled."""
-    con = _connect()
-    _require_app_enabled(con, app)
-    rows = con.execute(
-        "SELECT * FROM profiles WHERE app = ? ORDER BY created_at",
-        (app,),
-    ).fetchall()
-    con.close()
-    return [_row_to_profile(r) for r in rows]
+    with _db() as con:
+        _require_app_enabled(con, app)
+        rows = con.execute(
+            "SELECT * FROM profiles WHERE app = ? ORDER BY created_at",
+            (app,),
+        ).fetchall()
+        return [_row_to_profile(r) for r in rows]
 
 
 def update_profile(
@@ -288,60 +291,55 @@ def update_profile(
     pin_hash: Optional[str] = None,
 ) -> Optional[Profile]:
     """Update profile fields. Returns updated profile or None if not found."""
-    con = _connect()
-    _require_app_enabled(con, app)
-    profile = _get_profile(con, app, profile_id)
-    if not profile:
-        con.close()
-        return None
+    with _db() as con:
+        _require_app_enabled(con, app)
+        profile = _get_profile(con, app, profile_id)
+        if not profile:
+            return None
 
-    updates = []
-    params: list = []
-    if display_name is not None:
-        updates.append("display_name = ?")
-        params.append(display_name)
-    if settings_json is not None:
-        updates.append("settings_json = ?")
-        params.append(settings_json)
-    if pin_hash is not None:
-        updates.append("pin_hash = ?")
-        params.append(pin_hash)
+        updates = []
+        params: list = []
+        if display_name is not None:
+            updates.append("display_name = ?")
+            params.append(display_name)
+        if settings_json is not None:
+            updates.append("settings_json = ?")
+            params.append(settings_json)
+        if pin_hash is not None:
+            updates.append("pin_hash = ?")
+            params.append(pin_hash)
 
-    if updates:
-        updates.append("updated_at = ?")
-        params.append(_now())
-        params.extend([app, profile_id])
-        con.execute(
-            f"UPDATE profiles SET {', '.join(updates)} WHERE app = ? AND id = ?",
-            params,
-        )
-        con.commit()
+        if updates:
+            updates.append("updated_at = ?")
+            params.append(_now())
+            params.extend([app, profile_id])
+            con.execute(
+                f"UPDATE profiles SET {', '.join(updates)} WHERE app = ? AND id = ?",
+                params,
+            )
+            con.commit()
 
-    profile = _get_profile(con, app, profile_id)
-    con.close()
-    return profile
+        return _get_profile(con, app, profile_id)
 
 
 def delete_profile(app: str, profile_id: str) -> bool:
     """Delete a profile and all its resources. Returns True if existed."""
-    con = _connect()
-    # Delete resources first (FK constraint)
-    con.execute(
-        "DELETE FROM append_log WHERE app = ? AND profile_id = ?",
-        (app, profile_id),
-    )
-    con.execute(
-        "DELETE FROM resources WHERE app = ? AND profile_id = ?",
-        (app, profile_id),
-    )
-    cur = con.execute(
-        "DELETE FROM profiles WHERE app = ? AND id = ?",
-        (app, profile_id),
-    )
-    con.commit()
-    ok = cur.rowcount > 0
-    con.close()
-    return ok
+    with _db() as con:
+        # Delete resources first (FK constraint)
+        con.execute(
+            "DELETE FROM append_log WHERE app = ? AND profile_id = ?",
+            (app, profile_id),
+        )
+        con.execute(
+            "DELETE FROM resources WHERE app = ? AND profile_id = ?",
+            (app, profile_id),
+        )
+        cur = con.execute(
+            "DELETE FROM profiles WHERE app = ? AND id = ?",
+            (app, profile_id),
+        )
+        con.commit()
+        return cur.rowcount > 0
 
 
 def _get_profile(con: sqlite3.Connection, app: str, profile_id: str) -> Optional[Profile]:
@@ -383,48 +381,45 @@ def put_resource(
     If base_revision is provided, the write is rejected if the current
     revision doesn't match (optimistic concurrency).
     """
-    con = _connect()
-    _require_profile(con, app, profile_id)
-    _require_resource_type(con, app, resource_type)
+    with _db() as con:
+        _require_profile(con, app, profile_id)
+        _require_resource_type(con, app, resource_type)
 
-    now = _now()
-    next_rev = _next_revision(con, app, profile_id)
+        now = _now()
+        next_rev = _next_revision(con, app, profile_id)
 
-    existing = con.execute(
-        "SELECT version, revision FROM resources WHERE app = ? AND profile_id = ? AND resource_type = ? AND id = ?",
-        (app, profile_id, resource_type, resource_id),
-    ).fetchone()
+        existing = con.execute(
+            "SELECT version, revision FROM resources WHERE app = ? AND profile_id = ? AND resource_type = ? AND id = ?",
+            (app, profile_id, resource_type, resource_id),
+        ).fetchone()
 
-    if existing:
-        if base_revision is not None and existing["revision"] != base_revision:
-            con.close()
-            raise ConflictError(
-                f"Conflict: expected revision {base_revision}, current is {existing['revision']}",
-                current_revision=existing["revision"],
+        if existing:
+            if base_revision is not None and existing["revision"] != base_revision:
+                raise ConflictError(
+                    f"Conflict: expected revision {base_revision}, current is {existing['revision']}",
+                    current_revision=existing["revision"],
+                )
+            new_version = existing["version"] + 1
+            con.execute(
+                """UPDATE resources
+                   SET data = ?, version = ?, updated_at = ?, source_device_id = ?,
+                       deleted_at = NULL, revision = ?
+                   WHERE app = ? AND profile_id = ? AND resource_type = ? AND id = ?""",
+                (json.dumps(data), new_version, now, source_device_id, next_rev,
+                 app, profile_id, resource_type, resource_id),
             )
-        new_version = existing["version"] + 1
-        con.execute(
-            """UPDATE resources
-               SET data = ?, version = ?, updated_at = ?, source_device_id = ?,
-                   deleted_at = NULL, revision = ?
-               WHERE app = ? AND profile_id = ? AND resource_type = ? AND id = ?""",
-            (json.dumps(data), new_version, now, source_device_id, next_rev,
-             app, profile_id, resource_type, resource_id),
-        )
-    else:
-        new_version = 1
-        con.execute(
-            """INSERT INTO resources
-               (id, app, profile_id, resource_type, data, version, created_at, updated_at, source_device_id, revision)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (resource_id, app, profile_id, resource_type, json.dumps(data),
-             new_version, now, now, source_device_id, next_rev),
-        )
+        else:
+            new_version = 1
+            con.execute(
+                """INSERT INTO resources
+                   (id, app, profile_id, resource_type, data, version, created_at, updated_at, source_device_id, revision)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (resource_id, app, profile_id, resource_type, json.dumps(data),
+                 new_version, now, now, source_device_id, next_rev),
+            )
 
-    con.commit()
-    resource = _get_resource(con, app, profile_id, resource_type, resource_id)
-    con.close()
-    return resource
+        con.commit()
+        return _get_resource(con, app, profile_id, resource_type, resource_id)
 
 
 def get_resource(
@@ -434,11 +429,9 @@ def get_resource(
     resource_id: str,
 ) -> Optional[Resource]:
     """Get a single resource."""
-    con = _connect()
-    _require_profile(con, app, profile_id)
-    resource = _get_resource(con, app, profile_id, resource_type, resource_id)
-    con.close()
-    return resource
+    with _db() as con:
+        _require_profile(con, app, profile_id)
+        return _get_resource(con, app, profile_id, resource_type, resource_id)
 
 
 def list_resources(
@@ -449,19 +442,18 @@ def list_resources(
     limit: int = 100,
 ) -> List[Resource]:
     """List resources of a given type within a profile."""
-    con = _connect()
-    _require_profile(con, app, profile_id)
-    sql = """SELECT * FROM resources
-             WHERE app = ? AND profile_id = ? AND resource_type = ? AND deleted_at IS NULL"""
-    params: list = [app, profile_id, resource_type]
-    if since:
-        sql += " AND updated_at > ?"
-        params.append(since)
-    sql += " ORDER BY updated_at DESC LIMIT ?"
-    params.append(limit)
-    rows = con.execute(sql, params).fetchall()
-    con.close()
-    return [_row_to_resource(r) for r in rows]
+    with _db() as con:
+        _require_profile(con, app, profile_id)
+        sql = """SELECT * FROM resources
+                 WHERE app = ? AND profile_id = ? AND resource_type = ? AND deleted_at IS NULL"""
+        params: list = [app, profile_id, resource_type]
+        if since:
+            sql += " AND updated_at > ?"
+            params.append(since)
+        sql += " ORDER BY updated_at DESC LIMIT ?"
+        params.append(limit)
+        rows = con.execute(sql, params).fetchall()
+        return [_row_to_resource(r) for r in rows]
 
 
 def delete_resource(
@@ -472,24 +464,22 @@ def delete_resource(
     hard: bool = False,
 ) -> bool:
     """Delete a resource (soft by default — sets deleted_at tombstone)."""
-    con = _connect()
-    if hard:
-        cur = con.execute(
-            "DELETE FROM resources WHERE app = ? AND profile_id = ? AND resource_type = ? AND id = ?",
-            (app, profile_id, resource_type, resource_id),
-        )
-    else:
-        now = _now()
-        next_rev = _next_revision(con, app, profile_id)
-        cur = con.execute(
-            """UPDATE resources SET deleted_at = ?, revision = ?
-               WHERE app = ? AND profile_id = ? AND resource_type = ? AND id = ? AND deleted_at IS NULL""",
-            (now, next_rev, app, profile_id, resource_type, resource_id),
-        )
-    con.commit()
-    ok = cur.rowcount > 0
-    con.close()
-    return ok
+    with _db() as con:
+        if hard:
+            cur = con.execute(
+                "DELETE FROM resources WHERE app = ? AND profile_id = ? AND resource_type = ? AND id = ?",
+                (app, profile_id, resource_type, resource_id),
+            )
+        else:
+            now = _now()
+            next_rev = _next_revision(con, app, profile_id)
+            cur = con.execute(
+                """UPDATE resources SET deleted_at = ?, revision = ?
+                   WHERE app = ? AND profile_id = ? AND resource_type = ? AND id = ? AND deleted_at IS NULL""",
+                (now, next_rev, app, profile_id, resource_type, resource_id),
+            )
+        con.commit()
+        return cur.rowcount > 0
 
 
 def _get_resource(
@@ -536,29 +526,26 @@ def append_resource(
 
     Returns the sequence number.
     """
-    con = _connect()
-    _require_profile(con, app, profile_id)
-    _require_resource_type(con, app, resource_type)
+    with _db() as con:
+        _require_profile(con, app, profile_id)
+        _require_resource_type(con, app, resource_type)
 
-    # Verify this type uses append policy
-    reg = _get_app_registration(con, app)
-    if reg and reg.conflict_policies.get(resource_type) != "append":
-        con.close()
-        raise ValueError(
-            f"Resource type '{resource_type}' uses '{reg.conflict_policies.get(resource_type, 'lww')}' "
-            f"policy, not 'append'. Use put_resource() instead."
+        # Verify this type uses append policy
+        reg = _get_app_registration(con, app)
+        if reg and reg.conflict_policies.get(resource_type) != "append":
+            raise ValueError(
+                f"Resource type '{resource_type}' uses '{reg.conflict_policies.get(resource_type, 'lww')}' "
+                f"policy, not 'append'. Use put_resource() instead."
+            )
+
+        now = _now()
+        cur = con.execute(
+            """INSERT INTO append_log (app, profile_id, resource_type, data, created_at, source_device_id)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (app, profile_id, resource_type, json.dumps(data), now, source_device_id),
         )
-
-    now = _now()
-    cur = con.execute(
-        """INSERT INTO append_log (app, profile_id, resource_type, data, created_at, source_device_id)
-           VALUES (?, ?, ?, ?, ?, ?)""",
-        (app, profile_id, resource_type, json.dumps(data), now, source_device_id),
-    )
-    con.commit()
-    seq = cur.lastrowid
-    con.close()
-    return seq
+        con.commit()
+        return cur.lastrowid
 
 
 def list_appended(
@@ -576,15 +563,14 @@ def list_appended(
         since_seq: Return entries with seq > this value.
         filter_key/filter_value: Optional JSON filter (e.g. deckId=xyz).
     """
-    con = _connect()
-    _require_profile(con, app, profile_id)
-    sql = """SELECT seq, data, created_at, source_device_id FROM append_log
-             WHERE app = ? AND profile_id = ? AND resource_type = ? AND seq > ?"""
-    params: list = [app, profile_id, resource_type, since_seq]
-    sql += " ORDER BY seq ASC LIMIT ?"
-    params.append(limit)
-    rows = con.execute(sql, params).fetchall()
-    con.close()
+    with _db() as con:
+        _require_profile(con, app, profile_id)
+        sql = """SELECT seq, data, created_at, source_device_id FROM append_log
+                 WHERE app = ? AND profile_id = ? AND resource_type = ? AND seq > ?"""
+        params: list = [app, profile_id, resource_type, since_seq]
+        sql += " ORDER BY seq ASC LIMIT ?"
+        params.append(limit)
+        rows = con.execute(sql, params).fetchall()
 
     results = []
     for row in rows:
@@ -614,50 +600,47 @@ def sync_status(app: str, profile_id: str) -> Dict[str, Any]:
     The client needs to check sync status to know whether to show the
     "enable persistence" prompt.  But it DOES require the profile to exist.
     """
-    con = _connect()
-    reg = _get_app_registration(con, app)
-    if not reg:
-        con.close()
-        return {"enabled": False, "resourceTypes": []}
+    with _db() as con:
+        reg = _get_app_registration(con, app)
+        if not reg:
+            return {"enabled": False, "resourceTypes": []}
 
-    profile = _get_profile(con, app, profile_id)
-    if not profile:
-        con.close()
-        raise ValueError(f"Profile '{profile_id}' not found for app '{app}'.")
+        profile = _get_profile(con, app, profile_id)
+        if not profile:
+            raise ValueError(f"Profile '{profile_id}' not found for app '{app}'.")
 
-    type_status = []
-    for rt in reg.resource_types:
-        policy = reg.conflict_policies.get(rt, "lww")
-        if policy == "append":
-            row = con.execute(
-                "SELECT MAX(seq) as latest, COUNT(*) as count FROM append_log WHERE app = ? AND profile_id = ? AND resource_type = ?",
-                (app, profile_id, rt),
-            ).fetchone()
-            type_status.append({
-                "resourceType": rt,
-                "policy": policy,
-                "count": row["count"] if row else 0,
-                "latestSeq": row["latest"] if row and row["latest"] else 0,
-            })
-        else:
-            row = con.execute(
-                "SELECT MAX(revision) as latest, COUNT(*) as count FROM resources WHERE app = ? AND profile_id = ? AND resource_type = ? AND deleted_at IS NULL",
-                (app, profile_id, rt),
-            ).fetchone()
-            type_status.append({
-                "resourceType": rt,
-                "policy": policy,
-                "count": row["count"] if row else 0,
-                "latestRevision": row["latest"] if row and row["latest"] else 0,
-            })
+        type_status = []
+        for rt in reg.resource_types:
+            policy = reg.conflict_policies.get(rt, "lww")
+            if policy == "append":
+                row = con.execute(
+                    "SELECT MAX(seq) as latest, COUNT(*) as count FROM append_log WHERE app = ? AND profile_id = ? AND resource_type = ?",
+                    (app, profile_id, rt),
+                ).fetchone()
+                type_status.append({
+                    "resourceType": rt,
+                    "policy": policy,
+                    "count": row["count"] if row else 0,
+                    "latestSeq": row["latest"] if row and row["latest"] else 0,
+                })
+            else:
+                row = con.execute(
+                    "SELECT MAX(revision) as latest, COUNT(*) as count FROM resources WHERE app = ? AND profile_id = ? AND resource_type = ? AND deleted_at IS NULL",
+                    (app, profile_id, rt),
+                ).fetchone()
+                type_status.append({
+                    "resourceType": rt,
+                    "policy": policy,
+                    "count": row["count"] if row else 0,
+                    "latestRevision": row["latest"] if row and row["latest"] else 0,
+                })
 
-    con.close()
-    return {
-        "enabled": reg.enabled,
-        "profileExists": True,
-        "profileId": profile_id,
-        "resourceTypes": type_status,
-    }
+        return {
+            "enabled": reg.enabled,
+            "profileExists": True,
+            "profileId": profile_id,
+            "resourceTypes": type_status,
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -667,16 +650,15 @@ def sync_status(app: str, profile_id: str) -> Dict[str, Any]:
 
 def storage_stats(app: Optional[str] = None) -> Dict[str, Any]:
     """Get storage statistics — total resources, profiles, db size."""
-    con = _connect()
-    if app:
-        profiles = con.execute("SELECT COUNT(*) as c FROM profiles WHERE app = ?", (app,)).fetchone()["c"]
-        resources = con.execute("SELECT COUNT(*) as c FROM resources WHERE app = ? AND deleted_at IS NULL", (app,)).fetchone()["c"]
-        appended = con.execute("SELECT COUNT(*) as c FROM append_log WHERE app = ?", (app,)).fetchone()["c"]
-    else:
-        profiles = con.execute("SELECT COUNT(*) as c FROM profiles").fetchone()["c"]
-        resources = con.execute("SELECT COUNT(*) as c FROM resources WHERE deleted_at IS NULL").fetchone()["c"]
-        appended = con.execute("SELECT COUNT(*) as c FROM append_log").fetchone()["c"]
-    con.close()
+    with _db() as con:
+        if app:
+            profiles = con.execute("SELECT COUNT(*) as c FROM profiles WHERE app = ?", (app,)).fetchone()["c"]
+            resources = con.execute("SELECT COUNT(*) as c FROM resources WHERE app = ? AND deleted_at IS NULL", (app,)).fetchone()["c"]
+            appended = con.execute("SELECT COUNT(*) as c FROM append_log WHERE app = ?", (app,)).fetchone()["c"]
+        else:
+            profiles = con.execute("SELECT COUNT(*) as c FROM profiles").fetchone()["c"]
+            resources = con.execute("SELECT COUNT(*) as c FROM resources WHERE deleted_at IS NULL").fetchone()["c"]
+            appended = con.execute("SELECT COUNT(*) as c FROM append_log").fetchone()["c"]
 
     db_size = _db_path().stat().st_size if _db_path().exists() else 0
 
