@@ -23,7 +23,10 @@ from .domains.agents import router as agents_router
 from .domains.builder import router as builder_router
 from .domains.rules_router import router as rules_router
 from .domains.vision_router import router as vision_router
+from .domains.persistence_router import router as persistence_router
 from .plugins.pronunco import router as pronunco_router
+from .plugins.pronunco_persistence import router as pronunco_persistence_router
+from .plugins import pronunco_persistence
 from . import ollama
 from .discovery import advertise_start, advertise_stop, get_brain_info
 
@@ -47,6 +50,8 @@ async def _startup():
     else:
         logging.getLogger(__name__).warning("Ollama not reachable at startup: %s", health.get("error"))
     advertise_start()
+    # Register app plugins with persistence service
+    pronunco_persistence.register()
 
 
 @app.on_event("shutdown")
@@ -69,9 +74,11 @@ app.include_router(agents_router)
 app.include_router(builder_router)
 app.include_router(rules_router)
 app.include_router(vision_router)
+app.include_router(persistence_router)
 
 # Mount plugins
 app.include_router(pronunco_router)
+app.include_router(pronunco_persistence_router)
 
 # --- Dashboard SPA (built by: cd frontend && npm run build) ---
 _here = Path(__file__).parent

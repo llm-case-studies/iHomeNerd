@@ -9,7 +9,7 @@ from __future__ import annotations
 import socket
 from dataclasses import dataclass, field
 
-from . import ollama, tts, asr, vision
+from . import ollama, tts, asr, vision, persistence
 
 
 @dataclass
@@ -47,6 +47,15 @@ async def discover() -> list[Capability]:
         Capability(name="investigate_network", available=True, tier="system", model=None, core=True),
         Capability(name="investigate_scan", available=True, tier="system", model=None, core=True),
         Capability(name="evaluate_rules", available=True, tier="system", model=None, core=True),
+        # Persistence — per-app profile-aware storage
+        Capability(
+            name="pronunco_persistence",
+            available=persistence.get_app("pronunco") is not None,
+            tier="system",
+            model=None,
+            core=False,
+            extra={"profiles": persistence.storage_stats("pronunco").get("profiles", 0)},
+        ),
         # Not yet implemented (stubs)
         Capability(name="generate_drill", available=False, tier="light", core=True),
         Capability(name="explain_score", available=False, tier="medium", core=True),
