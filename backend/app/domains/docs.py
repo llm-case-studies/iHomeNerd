@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from .. import ollama, docstore
+from .. import ollama, docstore, vision
 
 logger = logging.getLogger(__name__)
 
@@ -80,17 +80,25 @@ async def ingest_folder(req: IngestRequest):
         watching=req.watch,
     )
 
-    # Discover supported files
+    # Discover supported files — include images when OCR is enabled
+    supported = set(docstore.SUPPORTED_EXTENSIONS)
+    if req.ocr and vision.is_available():
+        supported |= vision.IMAGE_EXTENSIONS
+
     files = [
         f for f in folder.rglob("*")
-        if f.is_file() and f.suffix.lower() in docstore.SUPPORTED_EXTENSIONS
+        if f.is_file() and f.suffix.lower() in supported
     ]
 
     files_ingested = 0
     chunks_created = 0
 
     for filepath in files:
-        pages = docstore.extract_text_from_file(filepath)
+        # Route images through vision OCR, text files through normal extraction
+        if req.ocr and vision.is_image_file(filepath):
+            pages = await vision.ocr_for_ingest(filepath)
+        else:
+            pages = docstore.extract_text_from_file(filepath)
         if not pages:
             continue
 

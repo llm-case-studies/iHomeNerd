@@ -1,0 +1,149 @@
+{
+  "meta": {
+    "id": "medicare.enrollment-windows",
+    "version": "2026-01",
+    "domain": "medicare",
+    "title": "Medicare Enrollment Windows & Switching Penalties",
+    "authority": "CMS Medicare & You 2026, pp. 61-63",
+    "authority_url": "https://www.medicare.gov/publications/10050",
+    "effective": "2026-01-01",
+    "expires": "2026-12-31",
+    "author": "alex",
+    "reviewed": null,
+    "tags": ["medicare", "medigap", "enrollment", "switching"]
+  },
+
+  "facts_schema": {
+    "age": {
+      "type": "integer",
+      "required": true
+    },
+    "state": {
+      "type": "string",
+      "required": true
+    },
+    "has_original_medicare": {
+      "type": "boolean",
+      "required": true
+    },
+    "part_b_start_date": {
+      "type": "date",
+      "required": true
+    },
+    "current_plan_type": {
+      "type": "enum",
+      "values": ["MA", "Medigap", "none"],
+      "required": true
+    },
+    "current_plan_start_date": {
+      "type": "date"
+    },
+    "preexisting_conditions": {
+      "type": "string[]",
+      "default": []
+    }
+  },
+
+  "rules": [
+    {
+      "id": "medigap-oep",
+      "name": "Medigap Open Enrollment Period",
+      "description": "6-month guaranteed-issue window starting from Part B effective date at age 65 or older. During this period, any insurer must sell you any Medigap policy at the best available rate, regardless of health status.",
+      "when": {
+        "all": [
+          { "fact": "age", "op": ">=", "value": 65 },
+          { "fact": "has_original_medicare", "op": "==", "value": true },
+          { "fact": "part_b_start_date", "op": "within_months", "value": 6 }
+        ]
+      },
+      "then": {
+        "outcome": "guaranteed_issue",
+        "severity": "info",
+        "message": "You are in your Medigap Open Enrollment Period. Any insurer must sell you any Medigap policy at the best available rate, regardless of health status. This is your best window to lock in coverage.",
+        "deadline": {
+          "compute": "part_b_start_date + 6 months",
+          "label": "Medigap Open Enrollment closes",
+          "lead_time_days": 180
+        }
+      }
+    },
+    {
+      "id": "ma-to-medigap-after-oep",
+      "name": "MA to Medigap after Open Enrollment",
+      "description": "After the initial 6-month Medigap OEP, switching from Medicare Advantage to Medigap may require medical underwriting in most states. Some states mandate year-round guaranteed issue.",
+      "when": {
+        "all": [
+          { "fact": "current_plan_type", "op": "==", "value": "MA" },
+          { "fact": "part_b_start_date", "op": "beyond_months", "value": 6 }
+        ]
+      },
+      "then": {
+        "outcome": "underwriting_required",
+        "severity": "warning",
+        "message": "Your Medigap Open Enrollment has expired. Insurers in most states can deny Medigap coverage or charge higher premiums based on pre-existing conditions. Consider your state's specific rules before switching.",
+        "exceptions": [
+          {
+            "when": { "fact": "state", "op": "in", "value": ["NY", "CT", "MA", "ME", "VT", "WA"] },
+            "override_outcome": "guaranteed_issue",
+            "override_severity": "info",
+            "override_message": "Your state requires guaranteed issue for Medigap year-round. You can switch from Medicare Advantage to Medigap without medical underwriting, even outside the federal OEP.",
+            "note": "State year-round guaranteed issue"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ma-trial-right",
+      "name": "Medicare Advantage Trial Right",
+      "description": "If you joined a Medicare Advantage plan for the first time or dropped Medigap to join MA, you have a 12-month trial right to leave MA and return to Medigap with guaranteed issue.",
+      "when": {
+        "all": [
+          { "fact": "current_plan_type", "op": "==", "value": "MA" },
+          { "fact": "current_plan_start_date", "op": "within_months", "value": 12 }
+        ]
+      },
+      "then": {
+        "outcome": "trial_right_active",
+        "severity": "info",
+        "message": "You have a 12-month Medicare Advantage trial right. You can drop your MA plan and return to your previous Medigap policy (or buy Medigap Plan A, B, C, F, K, or L) with guaranteed issue. This right can only be used once.",
+        "deadline": {
+          "compute": "current_plan_start_date + 12 months",
+          "label": "MA Trial Right expires",
+          "lead_time_days": 90
+        }
+      }
+    },
+    {
+      "id": "annual-enrollment-period",
+      "name": "Annual Enrollment Period",
+      "description": "October 15 through December 7 each year. During AEP you can switch between Original Medicare and Medicare Advantage, change MA plans, or join/drop Part D.",
+      "when": {
+        "all": [
+          { "fact": "has_original_medicare", "op": "==", "value": true },
+          { "fact": "age", "op": ">=", "value": 65 }
+        ]
+      },
+      "then": {
+        "outcome": "aep_eligible",
+        "severity": "info",
+        "message": "You are eligible for the Annual Enrollment Period (October 15 - December 7). During AEP you can switch between Original Medicare and Medicare Advantage, change MA plans, or join/drop a Part D drug plan. Changes take effect January 1."
+      }
+    },
+    {
+      "id": "late-enrollment-penalty",
+      "name": "Part B Late Enrollment Penalty",
+      "description": "If you did not sign up for Part B during your Initial Enrollment Period and don't qualify for a Special Enrollment Period, you may face a permanent premium surcharge.",
+      "when": {
+        "all": [
+          { "fact": "age", "op": ">", "value": 65 },
+          { "fact": "has_original_medicare", "op": "==", "value": false }
+        ]
+      },
+      "then": {
+        "outcome": "late_penalty_risk",
+        "severity": "warning",
+        "message": "You are over 65 and do not have Original Medicare. If you did not sign up during your Initial Enrollment Period (3 months before to 3 months after turning 65) and do not qualify for a Special Enrollment Period (e.g., through employer coverage), you may face a permanent 10% premium surcharge for each 12-month period you were eligible but not enrolled."
+      }
+    }
+  ]
+}

@@ -1,0 +1,294 @@
+{
+  "meta": {
+    "id": "tax.filing-method",
+    "version": "2026-01",
+    "domain": "tax",
+    "title": "Tax Filing Method Selector",
+    "authority": "IRS Publication 17 (2025 tax year); IRS Free File Program; IRS Publication 501 (Filing Requirements)",
+    "authority_url": "https://www.irs.gov/forms-pubs/about-publication-17",
+    "effective": "2026-01-01",
+    "expires": "2026-12-31",
+    "author": "alex",
+    "reviewed": null,
+    "tags": ["tax", "filing", "CPA", "free-file", "software", "self-employed"]
+  },
+
+  "facts_schema": {
+    "filing_status": {
+      "type": "enum",
+      "values": ["single", "married_joint", "married_separate", "head_of_household", "qualifying_surviving_spouse"],
+      "required": true
+    },
+    "gross_income": {
+      "type": "integer",
+      "required": true
+    },
+    "age": {
+      "type": "integer",
+      "required": true
+    },
+    "has_w2_only": {
+      "type": "boolean",
+      "required": true
+    },
+    "has_self_employment_income": {
+      "type": "boolean",
+      "required": true
+    },
+    "has_rental_income": {
+      "type": "boolean",
+      "default": false
+    },
+    "has_investment_income": {
+      "type": "boolean",
+      "default": false
+    },
+    "has_foreign_income_or_accounts": {
+      "type": "boolean",
+      "default": false
+    },
+    "itemize_deductions": {
+      "type": "boolean",
+      "default": false
+    },
+    "has_dependents": {
+      "type": "boolean",
+      "default": false
+    },
+    "had_major_life_event": {
+      "type": "boolean",
+      "default": false
+    },
+    "owns_business_or_llc": {
+      "type": "boolean",
+      "default": false
+    },
+    "received_irs_notice": {
+      "type": "boolean",
+      "default": false
+    },
+    "comfortable_with_tax_software": {
+      "type": "boolean",
+      "default": true
+    },
+    "state": {
+      "type": "string",
+      "required": true
+    }
+  },
+
+  "rules": [
+    {
+      "id": "no-filing-required",
+      "name": "Filing Not Required",
+      "description": "Below the IRS filing threshold based on filing status, age, and income type. Note: filing may still be beneficial to claim refundable credits.",
+      "when": {
+        "all": [
+          { "fact": "has_self_employment_income", "op": "==", "value": false },
+          { "fact": "filing_status", "op": "==", "value": "single" },
+          { "fact": "age", "op": "<", "value": 65 },
+          { "fact": "gross_income", "op": "<", "value": 15700 }
+        ]
+      },
+      "then": {
+        "outcome": "filing_not_required",
+        "severity": "info",
+        "message": "Based on your income and filing status, you are NOT required to file a federal tax return for 2025. However, you should still file if: (1) you had federal tax withheld and want a refund, (2) you qualify for the Earned Income Tax Credit (EITC), (3) you qualify for other refundable credits (Child Tax Credit, education credits). Filing to claim these credits is free money left on the table."
+      }
+    },
+    {
+      "id": "no-filing-required-married",
+      "name": "Filing Not Required (Married Filing Jointly)",
+      "description": "Married filing jointly threshold for 2025 tax year.",
+      "when": {
+        "all": [
+          { "fact": "has_self_employment_income", "op": "==", "value": false },
+          { "fact": "filing_status", "op": "==", "value": "married_joint" },
+          { "fact": "age", "op": "<", "value": 65 },
+          { "fact": "gross_income", "op": "<", "value": 31400 }
+        ]
+      },
+      "then": {
+        "outcome": "filing_not_required",
+        "severity": "info",
+        "message": "Based on your combined income and filing status (MFJ, both under 65), you are NOT required to file a federal tax return for 2025. However, file anyway if you had withholding or qualify for refundable credits (EITC, Child Tax Credit). These credits can be worth thousands."
+      }
+    },
+    {
+      "id": "se-must-file",
+      "name": "Self-Employment Filing Requirement",
+      "description": "Self-employment income of $400 or more requires filing regardless of total income.",
+      "when": {
+        "all": [
+          { "fact": "has_self_employment_income", "op": "==", "value": true },
+          { "fact": "gross_income", "op": ">=", "value": 400 }
+        ]
+      },
+      "then": {
+        "outcome": "must_file_se",
+        "severity": "warning",
+        "message": "You MUST file a federal return because you have self-employment income of $400 or more. This is true even if your total income is below the normal filing threshold. You owe self-employment tax (Social Security + Medicare) at 15.3% on net SE income. Pay estimated quarterly taxes (Form 1040-ES) to avoid underpayment penalties."
+      }
+    },
+    {
+      "id": "irs-free-file",
+      "name": "IRS Free File Eligible",
+      "description": "AGI of $84,000 or less qualifies for IRS Free File partner software (guided preparation with e-file).",
+      "when": {
+        "all": [
+          { "fact": "gross_income", "op": "<=", "value": 84000 },
+          { "fact": "has_self_employment_income", "op": "==", "value": false },
+          { "fact": "has_foreign_income_or_accounts", "op": "==", "value": false }
+        ]
+      },
+      "then": {
+        "outcome": "free_file_eligible",
+        "severity": "info",
+        "message": "You qualify for IRS Free File — brand-name tax software (TurboTax, H&R Block, etc.) at zero cost for federal filing. Go to irs.gov/freefile to access partner offers. IMPORTANT: Go through the IRS portal, not directly to TurboTax.com — the direct site will try to upsell you. Free File includes guided preparation, e-filing, and direct deposit refund. State filing may or may not be included depending on the partner."
+      }
+    },
+    {
+      "id": "free-fillable-forms",
+      "name": "IRS Free Fillable Forms (Any Income)",
+      "description": "Free Fillable Forms are available at any income level but provide no guidance — just electronic versions of paper forms.",
+      "when": {
+        "all": [
+          { "fact": "gross_income", "op": ">", "value": 84000 },
+          { "fact": "has_w2_only", "op": "==", "value": true },
+          { "fact": "itemize_deductions", "op": "==", "value": false }
+        ]
+      },
+      "then": {
+        "outcome": "fillable_forms_option",
+        "severity": "info",
+        "message": "Your income is above the Free File threshold, but your tax situation is simple (W-2 only, standard deduction). You can use IRS Free Fillable Forms at irs.gov/freefile — these are electronic versions of paper forms with basic math calculations. No guided interview, no error checking beyond arithmetic. Alternative: tax software (TurboTax, H&R Block, FreeTaxUSA) costs $0-80 for federal and provides guided preparation with error checking."
+      }
+    },
+    {
+      "id": "tax-software-recommended",
+      "name": "Tax Software Recommended",
+      "description": "Moderate complexity (itemizing, investments, dependents) is well-handled by consumer tax software.",
+      "when": {
+        "all": [
+          { "fact": "has_w2_only", "op": "==", "value": true },
+          {
+            "any": [
+              { "fact": "itemize_deductions", "op": "==", "value": true },
+              { "fact": "has_investment_income", "op": "==", "value": true },
+              { "fact": "has_dependents", "op": "==", "value": true }
+            ]
+          }
+        ]
+      },
+      "then": {
+        "outcome": "software_recommended",
+        "severity": "info",
+        "message": "Your situation has moderate complexity — tax software handles this well. Options ranked by value: (1) FreeTaxUSA ($0 federal, ~$15 state) — best value, handles itemizing/investments/dependents. (2) H&R Block Deluxe (~$35+state) — good if you want human review add-on. (3) TurboTax Deluxe (~$60+state) — most polished UI but most expensive. All three handle W-2, itemized deductions, investment income, and dependent credits. State filing is usually extra."
+      }
+    },
+    {
+      "id": "se-software-or-cpa",
+      "name": "Self-Employed: Software or CPA",
+      "description": "Self-employment adds Schedule C, SE tax, quarterly estimates, and potential deductions that benefit from professional guidance.",
+      "when": {
+        "all": [
+          { "fact": "has_self_employment_income", "op": "==", "value": true },
+          { "fact": "owns_business_or_llc", "op": "==", "value": false }
+        ]
+      },
+      "then": {
+        "outcome": "se_software_or_cpa",
+        "severity": "info",
+        "message": "Self-employment adds complexity (Schedule C, SE tax, home office deduction, vehicle expenses, quarterly estimates). Two good options: (1) Tax software with SE tier — TurboTax Self-Employed (~$120+state), H&R Block Premium (~$85+state), or FreeTaxUSA ($0+state, handles Schedule C). (2) CPA or Enrolled Agent (~$300-500) — worth it in your first year of self-employment to establish what's deductible. A CPA catches deductions software misses (health insurance deduction, retirement contributions, home office). After year 1, you can switch to software if the pattern is stable."
+      }
+    },
+    {
+      "id": "cpa-recommended",
+      "name": "CPA / Enrolled Agent Recommended",
+      "description": "Complex situations with business entities, rental property, foreign income, or IRS notices benefit from professional preparation.",
+      "when": {
+        "any": [
+          { "fact": "owns_business_or_llc", "op": "==", "value": true },
+          { "fact": "has_foreign_income_or_accounts", "op": "==", "value": true },
+          { "fact": "received_irs_notice", "op": "==", "value": true },
+          {
+            "all": [
+              { "fact": "has_rental_income", "op": "==", "value": true },
+              { "fact": "has_self_employment_income", "op": "==", "value": true }
+            ]
+          }
+        ]
+      },
+      "then": {
+        "outcome": "cpa_recommended",
+        "severity": "warning",
+        "message": "Your tax situation has high complexity. A CPA or Enrolled Agent (EA) is strongly recommended. Reasons: (1) Business entities (LLC, S-Corp, Partnership) require separate returns and have election deadlines. (2) Foreign income/accounts trigger FBAR and Form 8938 with severe penalties for non-filing ($10K+ per account). (3) IRS notices need professional response to protect your rights. (4) Rental + SE income involves passive activity rules that even good software handles poorly. Cost: $300-800 for individual, $500-2000+ for business returns. An EA has the same IRS representation rights as a CPA and often charges less."
+      }
+    },
+    {
+      "id": "major-life-event-review",
+      "name": "Major Life Event Tax Review",
+      "description": "Marriage, divorce, home purchase, job change, inheritance, or retirement can significantly affect tax strategy.",
+      "when": {
+        "all": [
+          { "fact": "had_major_life_event", "op": "==", "value": true }
+        ]
+      },
+      "then": {
+        "outcome": "life_event_review",
+        "severity": "info",
+        "message": "A major life event can change your optimal filing strategy. Common impacts: (1) Marriage — consider MFJ vs MFS; MFJ is usually better but not always (student loans, income-driven repayment). (2) Home purchase — mortgage interest and property tax may make itemizing worthwhile. (3) Job change/layoff — check W-4 withholding to avoid surprise balance due. (4) Inheritance — generally not taxable income, but inherited IRAs have distribution rules. (5) Retirement — Social Security taxation depends on other income. Consider a one-time CPA consultation in the year of the event."
+      }
+    },
+    {
+      "id": "no-state-income-tax",
+      "name": "No State Income Tax",
+      "description": "Some states have no income tax, simplifying the filing process.",
+      "when": {
+        "all": [
+          { "fact": "state", "op": "in", "value": ["AK", "FL", "NV", "NH", "SD", "TN", "TX", "WA", "WY"] }
+        ]
+      },
+      "then": {
+        "outcome": "no_state_tax",
+        "severity": "info",
+        "message": "Your state has no state income tax (or taxes only interest/dividends). You only need to file a federal return. This simplifies your process and makes free/cheap filing options more attractive since you don't need to pay for a state return add-on. Note: NH taxes interest and dividends only; TN phased out its Hall Tax in 2021."
+      }
+    },
+    {
+      "id": "filing-deadline",
+      "name": "Tax Filing Deadline",
+      "description": "Federal filing deadline for 2025 tax year.",
+      "when": {
+        "all": [
+          { "fact": "age", "op": ">=", "value": 18 }
+        ]
+      },
+      "then": {
+        "outcome": "deadline_reminder",
+        "severity": "info",
+        "message": "Federal tax filing deadline for 2025 returns: April 15, 2026. If you need more time, file Form 4868 for an automatic 6-month extension (to October 15, 2026). IMPORTANT: an extension to FILE is not an extension to PAY — estimate and pay any tax owed by April 15 to avoid interest and penalties. Self-employed estimated tax due dates: April 15, June 15, September 15, January 15.",
+        "deadline": {
+          "compute": "2026-04-15",
+          "label": "Federal tax filing deadline (2025 returns)",
+          "lead_time_days": 90
+        }
+      }
+    },
+    {
+      "id": "quarterly-estimates-needed",
+      "name": "Quarterly Estimated Tax Payments",
+      "description": "Self-employed and people with significant non-withheld income should pay quarterly estimates to avoid underpayment penalty.",
+      "when": {
+        "all": [
+          { "fact": "has_self_employment_income", "op": "==", "value": true }
+        ]
+      },
+      "then": {
+        "outcome": "quarterly_estimates",
+        "severity": "warning",
+        "message": "With self-employment income, you likely owe quarterly estimated taxes (Form 1040-ES). Missing these results in an underpayment penalty even if you pay in full at filing. Safe harbor: pay at least 100% of last year's tax (110% if AGI > $150K) spread across four quarterly payments, OR 90% of current year's tax. Due dates: Q1 Apr 15, Q2 Jun 15, Q3 Sep 15, Q4 Jan 15."
+      }
+    }
+  ]
+}

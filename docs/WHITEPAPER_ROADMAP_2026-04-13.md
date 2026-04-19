@@ -281,12 +281,14 @@ pronunco    telpro     scam     medisys    w2w        omw        hic
 
 | Deliverable | Domain | Status |
 |---|---|---|
-| Chat panel (general Q&A) | Chat | Backend ✅, UI needed |
-| Translate panel | Translate | Backend ✅, UI needed |
-| System panel (status dashboard) | System | Backend ✅, UI needed |
-| Talk panel (voice pipeline) | Talk | ASR ✅, TTS ✅, Brain ✅, UI needed |
-| Dashboard shell (tab navigation, dark theme) | All | UI needed |
-| Frontend ↔ backend API contract | All | This document |
+| Chat panel (general Q&A) | Chat | ✅ Live |
+| Translate panel | Translate | ✅ Live |
+| System panel (status dashboard) | System | Backend ✅, UI wiring needed |
+| Talk panel (voice pipeline) | Talk | ✅ Live (ASR → Gemma 4 → Kokoro) |
+| Dashboard shell (tab navigation, dark theme, 10 langs) | All | ✅ Live |
+| Frontend ↔ backend API contract | All | ✅ This document |
+| Auto-TLS cert generation for LAN mic/camera access | System | ✅ Live |
+| Tool use — Gemma 4 as tool orchestrator (Kokoro, Docs, Scan) | All | Architecture planned |
 
 **Phase 1 integration milestone:** PronunCo companion works end-to-end through the dashboard (lesson extract, dialogue, TTS). On-My-Watch can call `/v1/chat` for "The Watcher" AI, replacing browser WebLLM with GPU inference (15× speedup).
 

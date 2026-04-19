@@ -18,6 +18,12 @@ TIER_PREFERENCES = {
     "light": ["gemma4:e2b", "gemma4:e4b", "gemma3:4b", "gemma3:1b", "llama3.2:3b", "llama3.2:1b"],
     "medium": ["gemma4:e4b", "gemma4:e2b", "gemma3:12b", "gemma3:4b", "llama3:8b", "llama3.2:3b"],
     "heavy": ["gemma4:26b", "gemma4:31b", "gemma4:e4b", "gemma3:27b", "gemma3:12b"],
+    "vision": [
+        "gemma3:12b", "gemma3:4b",          # Gemma 3 has native multimodal
+        "llama3.2-vision:11b", "llama3.2-vision:latest",
+        "llava:13b", "llava:7b", "llava:latest",
+        "moondream:latest",                  # lightweight vision (1.8B)
+    ],
     "embedding": ["nomic-embed-text", "mxbai-embed-large"],
     "transcription": ["whisper"],
 }

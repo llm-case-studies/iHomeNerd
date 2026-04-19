@@ -21,6 +21,8 @@ from .domains.docs import router as docs_router
 from .domains.investigate import router as investigate_router
 from .domains.agents import router as agents_router
 from .domains.builder import router as builder_router
+from .domains.rules_router import router as rules_router
+from .domains.vision_router import router as vision_router
 from .plugins.pronunco import router as pronunco_router
 from . import ollama
 from .discovery import advertise_start, advertise_stop, get_brain_info
@@ -65,6 +67,8 @@ app.include_router(docs_router)
 app.include_router(investigate_router)
 app.include_router(agents_router)
 app.include_router(builder_router)
+app.include_router(rules_router)
+app.include_router(vision_router)
 
 # Mount plugins
 app.include_router(pronunco_router)

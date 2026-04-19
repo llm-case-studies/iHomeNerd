@@ -1,0 +1,284 @@
+{
+  "meta": {
+    "id": "healthcare.plan-selector",
+    "version": "2026-01",
+    "domain": "healthcare",
+    "title": "Health Plan Type Selector (PPO vs HMO vs HDHP vs Marketplace)",
+    "authority": "HealthCare.gov Plan Categories; IRS Publication 969 (HSA); ACA Open Enrollment Rules",
+    "authority_url": "https://www.healthcare.gov/choose-a-plan/plan-types/",
+    "effective": "2026-01-01",
+    "expires": "2026-12-31",
+    "author": "alex",
+    "reviewed": null,
+    "tags": ["healthcare", "insurance", "PPO", "HMO", "HDHP", "HSA", "marketplace", "ACA"]
+  },
+
+  "facts_schema": {
+    "has_employer_coverage": {
+      "type": "boolean",
+      "required": true
+    },
+    "household_income_pct_fpl": {
+      "type": "integer",
+      "required": true
+    },
+    "household_size": {
+      "type": "integer",
+      "required": true
+    },
+    "annual_medical_spending_estimate": {
+      "type": "enum",
+      "values": ["low", "moderate", "high"],
+      "required": true
+    },
+    "has_chronic_conditions": {
+      "type": "boolean",
+      "required": true
+    },
+    "needs_specialist_access": {
+      "type": "boolean",
+      "required": true
+    },
+    "willing_to_use_network_only": {
+      "type": "boolean",
+      "required": true
+    },
+    "state": {
+      "type": "string",
+      "required": true
+    },
+    "age": {
+      "type": "integer",
+      "required": true
+    },
+    "has_dependents_under_26": {
+      "type": "boolean",
+      "default": false
+    },
+    "wants_tax_advantaged_savings": {
+      "type": "boolean",
+      "default": false
+    },
+    "needs_vision": {
+      "type": "boolean",
+      "default": false
+    },
+    "needs_dental": {
+      "type": "boolean",
+      "default": false
+    },
+    "self_employed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+
+  "rules": [
+    {
+      "id": "medicaid-eligible",
+      "name": "Medicaid Eligibility",
+      "description": "Household income at or below 138% FPL in Medicaid expansion states qualifies for Medicaid (free or very low cost).",
+      "when": {
+        "all": [
+          { "fact": "household_income_pct_fpl", "op": "<=", "value": 138 },
+          { "fact": "has_employer_coverage", "op": "==", "value": false }
+        ]
+      },
+      "then": {
+        "outcome": "medicaid_eligible",
+        "severity": "info",
+        "message": "Your household income suggests you may qualify for Medicaid, which provides free or very low-cost coverage. Apply through your state Medicaid office or HealthCare.gov. Medicaid enrollment is year-round — no open enrollment window needed.",
+        "exceptions": [
+          {
+            "when": {
+              "fact": "state", "op": "in",
+              "value": ["TX", "WI", "GA", "FL", "MS", "AL", "SC", "TN", "WY", "KS", "SD"]
+            },
+            "override_outcome": "medicaid_gap_risk",
+            "override_severity": "warning",
+            "override_message": "Your state has not expanded Medicaid. You may fall in the 'coverage gap' — earning too much for traditional Medicaid but too little for Marketplace subsidies. Check your state's specific income limits, as some non-expansion states have partial coverage programs.",
+            "note": "Non-expansion state coverage gap"
+          }
+        ]
+      }
+    },
+    {
+      "id": "marketplace-subsidy",
+      "name": "ACA Marketplace with Premium Subsidy",
+      "description": "Income between 100-400% FPL without employer coverage qualifies for premium tax credits on HealthCare.gov.",
+      "when": {
+        "all": [
+          { "fact": "household_income_pct_fpl", "op": "between", "value": [100, 400] },
+          { "fact": "has_employer_coverage", "op": "==", "value": false }
+        ]
+      },
+      "then": {
+        "outcome": "marketplace_subsidized",
+        "severity": "info",
+        "message": "You likely qualify for premium tax credits (subsidies) on HealthCare.gov or your state marketplace. The subsidy reduces your monthly premium. At your income level, also check if you qualify for Cost-Sharing Reductions (CSR) by choosing a Silver plan — CSR lowers your deductibles and copays, not just premiums."
+      }
+    },
+    {
+      "id": "marketplace-csr-eligible",
+      "name": "Cost-Sharing Reduction Eligible (Silver Plan)",
+      "description": "Income between 100-250% FPL qualifies for Cost-Sharing Reductions, but ONLY if you choose a Silver-tier plan.",
+      "when": {
+        "all": [
+          { "fact": "household_income_pct_fpl", "op": "between", "value": [100, 250] },
+          { "fact": "has_employer_coverage", "op": "==", "value": false }
+        ]
+      },
+      "then": {
+        "outcome": "csr_eligible",
+        "severity": "info",
+        "message": "At your income level, you qualify for Cost-Sharing Reductions (CSR). IMPORTANT: CSR only applies to Silver plans. Choosing Bronze (cheaper premium) or Gold (better coverage) means you lose the CSR benefit. A Silver plan with CSR often has lower out-of-pocket costs than Gold, despite the lower tier name."
+      }
+    },
+    {
+      "id": "hdhp-hsa-candidate",
+      "name": "HDHP + HSA Candidate",
+      "description": "Young, healthy individuals with low medical spending and interest in tax-advantaged savings benefit most from High Deductible Health Plans paired with Health Savings Accounts.",
+      "when": {
+        "all": [
+          { "fact": "annual_medical_spending_estimate", "op": "==", "value": "low" },
+          { "fact": "has_chronic_conditions", "op": "==", "value": false },
+          { "fact": "wants_tax_advantaged_savings", "op": "==", "value": true }
+        ]
+      },
+      "then": {
+        "outcome": "hdhp_hsa_recommended",
+        "severity": "info",
+        "message": "An HDHP + HSA may be your best option. You get the lowest premiums, and HSA contributions are triple-tax-advantaged (tax-deductible going in, tax-free growth, tax-free withdrawals for medical expenses). 2026 HSA limits: $4,300 individual / $8,550 family. The HSA rolls over year to year — it's a retirement savings vehicle disguised as a health account. Caution: the high deductible means you pay more out-of-pocket before insurance kicks in."
+      }
+    },
+    {
+      "id": "hdhp-warning-chronic",
+      "name": "HDHP Warning for Chronic Conditions",
+      "description": "People with chronic conditions or high medical spending face significant out-of-pocket costs with HDHPs.",
+      "when": {
+        "all": [
+          { "fact": "has_chronic_conditions", "op": "==", "value": true },
+          { "fact": "annual_medical_spending_estimate", "op": "in", "value": ["moderate", "high"] }
+        ]
+      },
+      "then": {
+        "outcome": "hdhp_not_recommended",
+        "severity": "warning",
+        "message": "With chronic conditions and regular medical expenses, an HDHP is usually NOT your best option. You will likely hit the high deductible every year, paying thousands out-of-pocket before coverage starts. A PPO or HMO with lower deductible and predictable copays typically costs less overall when you have ongoing medical needs."
+      }
+    },
+    {
+      "id": "ppo-recommended",
+      "name": "PPO Recommended (Specialist Access Needed)",
+      "description": "PPO is the best fit when specialist access without referrals and out-of-network flexibility are important.",
+      "when": {
+        "all": [
+          { "fact": "needs_specialist_access", "op": "==", "value": true },
+          { "fact": "willing_to_use_network_only", "op": "==", "value": false }
+        ]
+      },
+      "then": {
+        "outcome": "ppo_recommended",
+        "severity": "info",
+        "message": "A PPO (Preferred Provider Organization) fits your needs. PPO advantages: see any specialist without a referral, out-of-network coverage (at higher cost), no primary care gatekeeper. PPO trade-off: higher premiums than HMO. If you have doctors you want to keep or need specialists in different networks, PPO gives you that flexibility."
+      }
+    },
+    {
+      "id": "hmo-recommended",
+      "name": "HMO Recommended (Cost-Conscious, Network OK)",
+      "description": "HMO is the best fit when you are willing to stay in-network and want lower premiums with coordinated care.",
+      "when": {
+        "all": [
+          { "fact": "willing_to_use_network_only", "op": "==", "value": true },
+          { "fact": "annual_medical_spending_estimate", "op": "in", "value": ["low", "moderate"] }
+        ]
+      },
+      "then": {
+        "outcome": "hmo_recommended",
+        "severity": "info",
+        "message": "An HMO (Health Maintenance Organization) is a strong choice. HMO advantages: lowest premiums, predictable copays, coordinated care through your primary care physician. HMO trade-off: you need referrals for specialists, and out-of-network care is typically not covered (except emergencies). If you are comfortable choosing doctors from a directory and getting referrals, HMO saves you money."
+      }
+    },
+    {
+      "id": "young-adult-parent-plan",
+      "name": "Under-26 Parent Plan Option",
+      "description": "Adults under 26 can stay on a parent's health plan regardless of student status, marital status, or financial independence.",
+      "when": {
+        "all": [
+          { "fact": "age", "op": "<", "value": 26 }
+        ]
+      },
+      "then": {
+        "outcome": "parent_plan_eligible",
+        "severity": "info",
+        "message": "You are under 26 and eligible to stay on a parent's health plan under the ACA. This applies regardless of whether you are married, a student, living with your parents, or financially independent. Compare the parent plan's coverage and your share of the premium against marketplace options — sometimes staying on a parent's plan is cheapest, sometimes marketplace subsidies make your own plan cheaper."
+      }
+    },
+    {
+      "id": "self-employed-deduction",
+      "name": "Self-Employed Health Insurance Deduction",
+      "description": "Self-employed individuals can deduct 100% of health insurance premiums from taxable income.",
+      "when": {
+        "all": [
+          { "fact": "self_employed", "op": "==", "value": true },
+          { "fact": "has_employer_coverage", "op": "==", "value": false }
+        ]
+      },
+      "then": {
+        "outcome": "self_employed_deduction",
+        "severity": "info",
+        "message": "As a self-employed individual, you can deduct 100% of your health insurance premiums (medical, dental, and vision) as an above-the-line tax deduction. This applies to coverage for you, your spouse, and dependents. This deduction reduces your adjusted gross income, which may also help you qualify for larger marketplace subsidies. Buy through HealthCare.gov to layer the premium tax credit on top of the self-employment deduction."
+      }
+    },
+    {
+      "id": "vision-standalone",
+      "name": "Vision Coverage Decision",
+      "description": "Standalone vision plans are inexpensive and worthwhile if you wear glasses/contacts or need regular eye exams.",
+      "when": {
+        "all": [
+          { "fact": "needs_vision", "op": "==", "value": true }
+        ]
+      },
+      "then": {
+        "outcome": "vision_plan_recommended",
+        "severity": "info",
+        "message": "Standalone vision plans typically cost $5-15/month and cover annual eye exams plus allowances for glasses or contacts ($100-200/year). If you wear corrective lenses, the plan usually pays for itself. Options: VSP and EyeMed are the two largest networks. Check if your employer offers a vision plan before buying standalone — employer group rates are cheaper. Note: medical eye conditions (glaucoma, cataracts) are covered by your health plan, not a vision plan."
+      }
+    },
+    {
+      "id": "dental-coverage",
+      "name": "Dental Coverage Decision",
+      "description": "Dental plans have annual maximums that limit their value for major work, but are worth it for preventive care.",
+      "when": {
+        "all": [
+          { "fact": "needs_dental", "op": "==", "value": true }
+        ]
+      },
+      "then": {
+        "outcome": "dental_plan_recommended",
+        "severity": "info",
+        "message": "Dental plans typically cover: preventive care (cleanings, X-rays) at 100%, basic procedures (fillings) at 80%, and major procedures (crowns, root canals) at 50%. Most plans have an annual maximum of $1,000-2,000. For routine preventive care, dental insurance usually pays for itself. For major work: compare the plan's annual maximum against the cost of the procedure — sometimes paying out-of-pocket or using a dental discount plan is cheaper. DHMO plans have lower premiums but restrict you to network dentists."
+      }
+    },
+    {
+      "id": "open-enrollment-reminder",
+      "name": "Open Enrollment Window",
+      "description": "ACA Marketplace open enrollment is November 1 through January 15. Employer open enrollment varies by company.",
+      "when": {
+        "all": [
+          { "fact": "age", "op": ">=", "value": 18 }
+        ]
+      },
+      "then": {
+        "outcome": "open_enrollment_reminder",
+        "severity": "info",
+        "message": "ACA Marketplace Open Enrollment: November 1, 2025 - January 15, 2026 (for 2026 coverage). If you miss it, you can only enroll during a Special Enrollment Period triggered by a qualifying life event (job loss, marriage, birth, moving to a new state). Employer open enrollment dates vary — check with your HR department. Tip: don't auto-renew without checking — plan networks, premiums, and formularies change every year.",
+        "deadline": {
+          "compute": "2026-01-15",
+          "label": "ACA Open Enrollment closes",
+          "lead_time_days": 76
+        }
+      }
+    }
+  ]
+}
