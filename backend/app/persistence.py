@@ -246,7 +246,7 @@ def _row_to_app(row: sqlite3.Row) -> AppRegistration:
 def create_profile(app: str, profile_id: str, display_name: str) -> Profile:
     """Create a profile within an app namespace."""
     con = _connect()
-    _require_app(con, app)
+    _require_app_enabled(con, app)
     now = _now()
     con.execute(
         """INSERT INTO profiles (id, app, display_name, created_at, updated_at)
@@ -260,16 +260,18 @@ def create_profile(app: str, profile_id: str, display_name: str) -> Profile:
 
 
 def get_profile(app: str, profile_id: str) -> Optional[Profile]:
-    """Get a profile by app + id."""
+    """Get a profile by app + id. Requires app to be enabled."""
     con = _connect()
+    _require_app_enabled(con, app)
     profile = _get_profile(con, app, profile_id)
     con.close()
     return profile
 
 
 def list_profiles(app: str) -> List[Profile]:
-    """List all profiles for an app."""
+    """List all profiles for an app. Requires app to be enabled."""
     con = _connect()
+    _require_app_enabled(con, app)
     rows = con.execute(
         "SELECT * FROM profiles WHERE app = ? ORDER BY created_at",
         (app,),
@@ -287,6 +289,7 @@ def update_profile(
 ) -> Optional[Profile]:
     """Update profile fields. Returns updated profile or None if not found."""
     con = _connect()
+    _require_app_enabled(con, app)
     profile = _get_profile(con, app, profile_id)
     if not profile:
         con.close()
@@ -432,6 +435,7 @@ def get_resource(
 ) -> Optional[Resource]:
     """Get a single resource."""
     con = _connect()
+    _require_profile(con, app, profile_id)
     resource = _get_resource(con, app, profile_id, resource_type, resource_id)
     con.close()
     return resource
@@ -446,6 +450,7 @@ def list_resources(
 ) -> List[Resource]:
     """List resources of a given type within a profile."""
     con = _connect()
+    _require_profile(con, app, profile_id)
     sql = """SELECT * FROM resources
              WHERE app = ? AND profile_id = ? AND resource_type = ? AND deleted_at IS NULL"""
     params: list = [app, profile_id, resource_type]
@@ -572,6 +577,7 @@ def list_appended(
         filter_key/filter_value: Optional JSON filter (e.g. deckId=xyz).
     """
     con = _connect()
+    _require_profile(con, app, profile_id)
     sql = """SELECT seq, data, created_at, source_device_id FROM append_log
              WHERE app = ? AND profile_id = ? AND resource_type = ? AND seq > ?"""
     params: list = [app, profile_id, resource_type, since_seq]
@@ -602,7 +608,12 @@ def list_appended(
 
 
 def sync_status(app: str, profile_id: str) -> Dict[str, Any]:
-    """Get sync status for a profile — latest revisions per resource type."""
+    """Get sync status for a profile — latest revisions per resource type.
+
+    Unlike other operations, sync_status does NOT require enabled=true.
+    The client needs to check sync status to know whether to show the
+    "enable persistence" prompt.  But it DOES require the profile to exist.
+    """
     con = _connect()
     reg = _get_app_registration(con, app)
     if not reg:
@@ -612,7 +623,7 @@ def sync_status(app: str, profile_id: str) -> Dict[str, Any]:
     profile = _get_profile(con, app, profile_id)
     if not profile:
         con.close()
-        return {"enabled": reg.enabled, "profileExists": False, "resourceTypes": []}
+        raise ValueError(f"Profile '{profile_id}' not found for app '{app}'.")
 
     type_status = []
     for rt in reg.resource_types:
@@ -691,14 +702,28 @@ def _next_revision(con: sqlite3.Connection, app: str, profile_id: str) -> int:
     return (row["r"] or 0) + 1
 
 
+class AppDisabledError(Exception):
+    """Raised when an operation is attempted on a disabled app."""
+    pass
+
+
 def _require_app(con: sqlite3.Connection, app: str) -> None:
     row = con.execute("SELECT app FROM app_registrations WHERE app = ?", (app,)).fetchone()
     if not row:
         raise ValueError(f"App '{app}' is not registered. Call register_app() first.")
 
 
+def _require_app_enabled(con: sqlite3.Connection, app: str) -> None:
+    """Require that the app is both registered and enabled."""
+    row = con.execute("SELECT app, enabled FROM app_registrations WHERE app = ?", (app,)).fetchone()
+    if not row:
+        raise ValueError(f"App '{app}' is not registered. Call register_app() first.")
+    if not row["enabled"]:
+        raise AppDisabledError(f"Persistence is disabled for app '{app}'. Enable it via PATCH /v1/persistence/apps/{app}/enable")
+
+
 def _require_profile(con: sqlite3.Connection, app: str, profile_id: str) -> None:
-    _require_app(con, app)
+    _require_app_enabled(con, app)
     row = con.execute(
         "SELECT id FROM profiles WHERE app = ? AND id = ?",
         (app, profile_id),

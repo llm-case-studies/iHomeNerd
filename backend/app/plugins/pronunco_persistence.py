@@ -23,8 +23,23 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from .. import persistence
+from ..persistence import AppDisabledError
 
 logger = logging.getLogger(__name__)
+
+
+def _handle_persistence_error(e: Exception) -> HTTPException:
+    """Map persistence layer exceptions to HTTP errors."""
+    if isinstance(e, AppDisabledError):
+        return HTTPException(status_code=403, detail=str(e))
+    if isinstance(e, ValueError):
+        msg = str(e)
+        if "not found" in msg.lower():
+            return HTTPException(status_code=404, detail=msg)
+        return HTTPException(status_code=400, detail=msg)
+    if isinstance(e, persistence.ConflictError):
+        return HTTPException(status_code=409, detail=str(e))
+    return HTTPException(status_code=500, detail=str(e))
 
 router = APIRouter(prefix="/v1/pronunco", tags=["pronunco-persistence"])
 
@@ -75,6 +90,11 @@ class UpdateProfileRequest(BaseModel):
     settings: Optional[Dict[str, Any]] = None
 
 
+class ProfileSettingsRequest(BaseModel):
+    data: Dict[str, Any]
+    sourceDeviceId: str = ""
+
+
 class DeckStateRequest(BaseModel):
     data: Dict[str, Any]
     sourceDeviceId: str = ""
@@ -113,7 +133,10 @@ class TopicGroupRequest(BaseModel):
 @router.get("/profiles")
 async def list_profiles():
     """List all PronunCo learner profiles on this node."""
-    profiles = persistence.list_profiles(APP_NAME)
+    try:
+        profiles = persistence.list_profiles(APP_NAME)
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     return {
         "profiles": [
             {
@@ -131,13 +154,14 @@ async def list_profiles():
 @router.post("/profiles", status_code=201)
 async def create_profile(req: CreateProfileRequest):
     """Create a new PronunCo learner profile."""
-    existing = persistence.get_profile(APP_NAME, req.profileId)
-    if existing:
-        raise HTTPException(status_code=409, detail=f"Profile '{req.profileId}' already exists")
     try:
         profile = persistence.create_profile(APP_NAME, req.profileId, req.displayName)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
+    except Exception as e:
+        if "UNIQUE constraint" in str(e):
+            raise HTTPException(status_code=409, detail=f"Profile '{req.profileId}' already exists")
+        raise
     return {
         "profileId": profile.id,
         "displayName": profile.display_name,
@@ -148,7 +172,10 @@ async def create_profile(req: CreateProfileRequest):
 @router.get("/profiles/{profile_id}")
 async def get_profile(profile_id: str):
     """Get a specific PronunCo learner profile."""
-    profile = persistence.get_profile(APP_NAME, profile_id)
+    try:
+        profile = persistence.get_profile(APP_NAME, profile_id)
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     if not profile:
         raise HTTPException(status_code=404, detail=f"Profile '{profile_id}' not found")
     import json
@@ -167,17 +194,59 @@ async def update_profile(profile_id: str, req: UpdateProfileRequest):
     """Update a PronunCo learner profile."""
     import json
     settings_json = json.dumps(req.settings) if req.settings is not None else None
-    profile = persistence.update_profile(
-        APP_NAME, profile_id,
-        display_name=req.displayName,
-        settings_json=settings_json,
-    )
+    try:
+        profile = persistence.update_profile(
+            APP_NAME, profile_id,
+            display_name=req.displayName,
+            settings_json=settings_json,
+        )
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     if not profile:
         raise HTTPException(status_code=404, detail=f"Profile '{profile_id}' not found")
     return {
         "profileId": profile.id,
         "displayName": profile.display_name,
         "updatedAt": profile.updated_at,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Profile settings (LWW) — per-profile preferences stored as a resource
+# ---------------------------------------------------------------------------
+
+
+@router.get("/profiles/{profile_id}/settings")
+async def get_profile_settings(profile_id: str):
+    """Get profile settings (UI preferences, coach config, etc.)."""
+    try:
+        resource = persistence.get_resource(APP_NAME, profile_id, "profile_settings", "default")
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
+    if not resource:
+        return {"data": {}, "version": 0, "updatedAt": None}
+    return {
+        "data": resource.data,
+        "version": resource.version,
+        "updatedAt": resource.updated_at,
+        "sourceDeviceId": resource.source_device_id,
+    }
+
+
+@router.put("/profiles/{profile_id}/settings")
+async def put_profile_settings(profile_id: str, req: ProfileSettingsRequest):
+    """Create or update profile settings."""
+    try:
+        resource = persistence.put_resource(
+            APP_NAME, profile_id, "profile_settings", "default",
+            data=req.data, source_device_id=req.sourceDeviceId,
+        )
+    except (AppDisabledError, ValueError, persistence.ConflictError) as e:
+        raise _handle_persistence_error(e)
+    return {
+        "version": resource.version,
+        "updatedAt": resource.updated_at,
+        "revision": resource.revision,
     }
 
 
@@ -192,8 +261,12 @@ async def get_sync_status(profile_id: str):
 
     Returns whether persistence is enabled, available resource classes,
     and latest revision tokens per resource class.
+    Does NOT require enabled=true (client needs this to show enable prompt).
     """
-    status = persistence.sync_status(APP_NAME, profile_id)
+    try:
+        status = persistence.sync_status(APP_NAME, profile_id)
+    except ValueError as e:
+        raise _handle_persistence_error(e)
     return status
 
 
@@ -207,8 +280,8 @@ async def list_decks(profile_id: str, since: Optional[str] = None):
     """List deck states for a profile."""
     try:
         decks = persistence.list_resources(APP_NAME, profile_id, "deck_state", since=since)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     return {
         "decks": [
             {
@@ -231,10 +304,8 @@ async def put_deck(profile_id: str, deck_id: str, req: DeckStateRequest):
             APP_NAME, profile_id, "deck_state", deck_id,
             data=req.data, source_device_id=req.sourceDeviceId,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except persistence.ConflictError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+    except (AppDisabledError, ValueError, persistence.ConflictError) as e:
+        raise _handle_persistence_error(e)
     return {
         "deckId": resource.id,
         "version": resource.version,
@@ -246,7 +317,10 @@ async def put_deck(profile_id: str, deck_id: str, req: DeckStateRequest):
 @router.delete("/profiles/{profile_id}/decks/{deck_id}")
 async def delete_deck(profile_id: str, deck_id: str):
     """Remove a deck from the learner's library."""
-    ok = persistence.delete_resource(APP_NAME, profile_id, "deck_state", deck_id)
+    try:
+        ok = persistence.delete_resource(APP_NAME, profile_id, "deck_state", deck_id)
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     if not ok:
         raise HTTPException(status_code=404, detail="Deck not found")
     return {"deleted": True}
@@ -275,8 +349,8 @@ async def list_practice(
             filter_key="deckId" if deckId else None,
             filter_value=deckId,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     return {"attempts": entries, "count": len(entries)}
 
 
@@ -296,8 +370,8 @@ async def append_practice(profile_id: str, req: PracticeAppendRequest):
             APP_NAME, profile_id, "practice_attempt",
             data=entry, source_device_id=req.sourceDeviceId,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     return {"seq": seq}
 
 
@@ -311,8 +385,8 @@ async def list_weak_spots(profile_id: str):
     """List weak spot summaries for a profile."""
     try:
         spots = persistence.list_resources(APP_NAME, profile_id, "weak_spot_summary")
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     return {
         "weakSpots": [
             {
@@ -334,8 +408,8 @@ async def put_weak_spot(profile_id: str, scope_id: str, req: WeakSpotRequest):
             APP_NAME, profile_id, "weak_spot_summary", scope_id,
             data=req.data, source_device_id=req.sourceDeviceId,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (AppDisabledError, ValueError, persistence.ConflictError) as e:
+        raise _handle_persistence_error(e)
     return {
         "scopeId": resource.id,
         "version": resource.version,
@@ -353,8 +427,8 @@ async def list_tutor_notes(profile_id: str):
     """List tutor/handoff notes for a profile."""
     try:
         notes = persistence.list_resources(APP_NAME, profile_id, "tutor_note")
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     return {
         "notes": [
             {
@@ -376,8 +450,8 @@ async def put_tutor_note(profile_id: str, note_id: str, req: TutorNoteRequest):
             APP_NAME, profile_id, "tutor_note", note_id,
             data=req.data, source_device_id=req.sourceDeviceId,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (AppDisabledError, ValueError, persistence.ConflictError) as e:
+        raise _handle_persistence_error(e)
     return {
         "noteId": resource.id,
         "version": resource.version,
@@ -388,7 +462,10 @@ async def put_tutor_note(profile_id: str, note_id: str, req: TutorNoteRequest):
 @router.delete("/profiles/{profile_id}/tutor-notes/{note_id}")
 async def delete_tutor_note(profile_id: str, note_id: str):
     """Delete a tutor note."""
-    ok = persistence.delete_resource(APP_NAME, profile_id, "tutor_note", note_id)
+    try:
+        ok = persistence.delete_resource(APP_NAME, profile_id, "tutor_note", note_id)
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     if not ok:
         raise HTTPException(status_code=404, detail="Note not found")
     return {"deleted": True}
@@ -404,8 +481,8 @@ async def list_groups(profile_id: str):
     """List topic groups for a profile."""
     try:
         groups = persistence.list_resources(APP_NAME, profile_id, "topic_group")
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     return {
         "groups": [
             {
@@ -427,8 +504,8 @@ async def put_group(profile_id: str, group_id: str, req: TopicGroupRequest):
             APP_NAME, profile_id, "topic_group", group_id,
             data=req.data, source_device_id=req.sourceDeviceId,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except (AppDisabledError, ValueError, persistence.ConflictError) as e:
+        raise _handle_persistence_error(e)
     return {
         "groupId": resource.id,
         "version": resource.version,
@@ -439,7 +516,10 @@ async def put_group(profile_id: str, group_id: str, req: TopicGroupRequest):
 @router.delete("/profiles/{profile_id}/groups/{group_id}")
 async def delete_group(profile_id: str, group_id: str):
     """Delete a topic group."""
-    ok = persistence.delete_resource(APP_NAME, profile_id, "topic_group", group_id)
+    try:
+        ok = persistence.delete_resource(APP_NAME, profile_id, "topic_group", group_id)
+    except (AppDisabledError, ValueError) as e:
+        raise _handle_persistence_error(e)
     if not ok:
         raise HTTPException(status_code=404, detail="Group not found")
     return {"deleted": True}
