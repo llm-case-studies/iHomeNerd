@@ -167,6 +167,9 @@ def test_enabled_enforcement():
     r = patch("/v1/persistence/apps/pronunco/enable", data={"enabled": True})
     check("re-enable persistence", r.status_code == 200)
 
+    # Brief pause to let SQLite WAL settle after rapid toggle
+    time.sleep(0.5)
+
     # Confirm enabled
     r = get("/v1/pronunco/profiles")
     check(
