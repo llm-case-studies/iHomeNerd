@@ -366,8 +366,53 @@ async def list_sessions(app_filter: str | None = None):
     return {"sessions": sessions.list_active(app=app_filter)}
 
 
+def _build_setup_app():
+    """Build a minimal HTTP-only app that serves /setup routes.
+
+    This solves the chicken-and-egg problem: users need to reach /setup
+    to install the CA certificate, but the main server requires HTTPS.
+    This lightweight HTTP server on port+1 serves only setup-related
+    routes — no API, no app, just trust bootstrap.
+    """
+    from fastapi import FastAPI as _FastAPI
+
+    setup_app = _FastAPI(title="iHomeNerd Setup", docs_url=None, redoc_url=None)
+
+    setup_app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"https?://.*",
+        allow_methods=["GET"],
+        allow_headers=["*"],
+    )
+
+    # Re-use the setup routes from the main app
+    @setup_app.get("/")
+    @setup_app.get("/setup")
+    async def setup_redirect():
+        return await setup_page()
+
+    @setup_app.get("/setup/ca.crt")
+    async def setup_ca():
+        return await download_ca_cert()
+
+    @setup_app.get("/setup/profile.mobileconfig")
+    async def setup_profile():
+        return await download_mobileconfig()
+
+    @setup_app.get("/setup/extension")
+    async def setup_ext():
+        return await download_extension_zip()
+
+    @setup_app.get("/setup/test")
+    async def setup_test_redirect():
+        return await setup_test()
+
+    return setup_app
+
+
 def main():
     """Entry point for `ihomenerd` CLI or `python -m app.main`."""
+    import asyncio
     import uvicorn
     from .certs import ensure_certs
 
@@ -382,11 +427,35 @@ def main():
     if result:
         cert_path, key_path = result
         ssl_kwargs = {"ssl_certfile": str(cert_path), "ssl_keyfile": str(key_path)}
-        logging.getLogger(__name__).info(
-            "TLS enabled — trust setup at http://<lan-ip>:%d/setup", settings.port,
+
+    http_port = settings.port + 1  # 17778
+
+    logging.getLogger(__name__).info(
+        "HTTPS on port %d | HTTP setup on port %d — http://<lan-ip>:%d/setup",
+        settings.port, http_port, http_port,
+    )
+
+    async def _serve():
+        # Main HTTPS server
+        main_config = uvicorn.Config(
+            app, host=host, port=settings.port,
+            log_level=settings.log_level, **ssl_kwargs,
+        )
+        main_server = uvicorn.Server(main_config)
+
+        # HTTP-only setup server (no TLS — so users can bootstrap trust)
+        setup_config = uvicorn.Config(
+            _build_setup_app(), host=host, port=http_port,
+            log_level=settings.log_level,
+        )
+        setup_server = uvicorn.Server(setup_config)
+
+        await asyncio.gather(
+            main_server.serve(),
+            setup_server.serve(),
         )
 
-    uvicorn.run(app, host=host, port=settings.port, **ssl_kwargs)
+    asyncio.run(_serve())
 
 
 if __name__ == "__main__":
