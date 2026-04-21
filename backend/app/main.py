@@ -209,6 +209,30 @@ async def download_mobileconfig():
     )
 
 
+@app.get("/setup/extension")
+async def download_extension_zip():
+    """Download the iHomeNerd Bridge extension as a zip for sideloading."""
+    import io
+    import zipfile
+
+    ext_dir = Path(__file__).resolve().parent.parent.parent / "browser-extension" / "ihomenerd-bridge"
+    if not ext_dir.exists():
+        return HTMLResponse("<h1>Extension files not found</h1>", status_code=404)
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for fpath in sorted(ext_dir.rglob("*")):
+            if fpath.is_file():
+                zf.write(fpath, f"ihomenerd-bridge/{fpath.relative_to(ext_dir)}")
+    buf.seek(0)
+
+    return Response(
+        content=buf.read(),
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=ihomenerd-bridge.zip"},
+    )
+
+
 @app.get("/setup/test")
 async def setup_test():
     """HTTPS test endpoint — if the browser can reach this, the cert is trusted."""

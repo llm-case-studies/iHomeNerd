@@ -135,6 +135,17 @@
     </ol>
   </div>
 
+  <!-- ============ EXTENSION ============ -->
+  <div class="card" id="extension-card">
+    <h2>Step 2: Install iHomeNerd Bridge Extension</h2>
+    <p style="font-size:0.9rem; color:var(--muted); margin-bottom:0.75rem;">
+      The browser extension lets web apps like PronunCo find and talk to this
+      iHomeNerd without typing addresses. It auto-discovers brains on your network.
+    </p>
+    <div id="extension-status" class="test-result" style="display:none;"></div>
+    <div id="extension-install-instructions"></div>
+  </div>
+
   <!-- ============ TEST ============ -->
   <div class="card">
     <h2>Test your connection</h2>
@@ -363,6 +374,103 @@ for (const key of Object.keys(PLATFORMS)) {
   if (key !== os && key !== 'unknown') {
     renderPlatform(key, allList, false);
   }
+}
+
+// ---- Extension detection & install instructions ----
+function checkExtension() {
+  const statusEl = document.getElementById('extension-status');
+  const instructionsEl = document.getElementById('extension-install-instructions');
+
+  // Try to detect iHomeNerd Bridge extension via postMessage
+  let responded = false;
+  const requestId = 'setup-check-' + Date.now();
+
+  function onMessage(event) {
+    if (event.source !== window) return;
+    const d = event.data;
+    if (!d) return;
+    // Check for iHomeNerd bridge or PronunCo legacy bridge response
+    if ((d.source === 'ihomenerd-bridge-extension' || d.source === 'pronunco-local-bridge-extension')
+        && d.requestId === requestId) {
+      responded = true;
+      window.removeEventListener('message', onMessage);
+      statusEl.style.display = 'block';
+      statusEl.className = 'test-result success';
+      statusEl.innerHTML = '✅ <strong>Extension detected!</strong> iHomeNerd Bridge is active in this browser.';
+      instructionsEl.innerHTML = '<p style="font-size:0.9rem; margin-top:0.5rem;">You\'re all set. The extension will auto-discover this brain. Open the extension popup to verify.</p>';
+    }
+  }
+
+  window.addEventListener('message', onMessage);
+
+  // Send a ping
+  window.postMessage({
+    source: 'ihomenerd-bridge-page',
+    type: 'ihomenerd-bridge/request',
+    requestId: requestId,
+    payload: { kind: 'ihomenerd-bridge/ping' },
+  }, window.location.origin || '*');
+
+  // Also try legacy protocol
+  window.postMessage({
+    source: 'pronunco-local-bridge-page',
+    type: 'pronunco-local-bridge/request',
+    requestId: requestId,
+    payload: { kind: 'pronunco-local-bridge/ping' },
+  }, window.location.origin || '*');
+
+  // If no response after 600ms, show install instructions
+  setTimeout(() => {
+    if (responded) return;
+    window.removeEventListener('message', onMessage);
+    showExtensionInstallInstructions(instructionsEl);
+  }, 600);
+}
+
+function showExtensionInstallInstructions(container) {
+  const isFirefoxBrowser = /Firefox/i.test(navigator.userAgent);
+  const isChromium = /Chrome/i.test(navigator.userAgent) && !/Firefox/i.test(navigator.userAgent);
+
+  let html = '';
+
+  if (isChromium) {
+    html = `
+      <ol class="steps">
+        <li>Download the extension: <a class="btn" href="/setup/extension" download style="display:inline-flex;padding:0.4rem 0.8rem;font-size:0.85rem;margin-top:0.25rem;">Download Extension (.zip)</a></li>
+        <li>Unzip the downloaded file.</li>
+        <li>Open <code>chrome://extensions</code> (or <code>edge://extensions</code>) in your browser.</li>
+        <li>Enable <strong>Developer mode</strong> (toggle in the top-right corner).</li>
+        <li>Click <strong>Load unpacked</strong> and select the unzipped <code>ihomenerd-bridge</code> folder.</li>
+        <li>Click the extension icon in the toolbar, then <strong>Scan LAN</strong> to find this brain automatically.</li>
+      </ol>
+      <p class="note" style="margin-top:0.5rem;">Once the extension is on the Chrome/Edge Web Store, installation will be a single click.</p>`;
+  } else if (isFirefoxBrowser) {
+    html = `
+      <ol class="steps">
+        <li>Download the extension: <a class="btn" href="/setup/extension" download style="display:inline-flex;padding:0.4rem 0.8rem;font-size:0.85rem;margin-top:0.25rem;">Download Extension (.zip)</a></li>
+        <li>Open <code>about:debugging#/runtime/this-firefox</code> in Firefox.</li>
+        <li>Click <strong>Load Temporary Add-on</strong>.</li>
+        <li>Select the <code>manifest.json</code> file from the unzipped folder.</li>
+        <li>Click the extension icon, then <strong>Scan LAN</strong> to find this brain.</li>
+      </ol>
+      <p class="note" style="margin-top:0.5rem;">Firefox temporary add-ons are removed on restart. The Firefox Add-ons store listing will make this permanent.</p>`;
+  } else {
+    html = `
+      <ol class="steps">
+        <li>Download the extension: <a class="btn" href="/setup/extension" download style="display:inline-flex;padding:0.4rem 0.8rem;font-size:0.85rem;margin-top:0.25rem;">Download Extension (.zip)</a></li>
+        <li>Unzip and load it as an unpacked/temporary extension in your browser's developer mode.</li>
+        <li>Click the extension icon, then <strong>Scan LAN</strong> to find this brain.</li>
+      </ol>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// Run extension check after page loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', checkExtension);
+} else {
+  checkExtension();
 }
 
 // ---- Test connection ----

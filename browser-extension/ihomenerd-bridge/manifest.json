@@ -33,7 +33,9 @@
         "https://crypto-fakes.com/*",
         "https://*.crypto-fakes.com/*",
         "http://localhost/*",
-        "http://127.0.0.1/*"
+        "http://127.0.0.1/*",
+        "https://*.local/*",
+        "http://*.local/*"
       ],
       "js": [
         "content-script.js"
