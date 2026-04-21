@@ -11,7 +11,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .capabilities import capabilities_response
@@ -100,6 +100,119 @@ else:
     @app.get("/")
     async def no_ui():
         return {"message": "iHomeNerd API is running. Build the frontend: cd frontend && npm run build"}
+
+
+# --- Trust setup page (serves on both HTTP and HTTPS) ---
+_templates = _here / "templates"
+_certs_dir = settings.data_dir / "certs"
+
+
+@app.get("/setup")
+async def setup_page():
+    """Serve the trust certificate setup page.
+
+    Auto-detects the user's OS/browser and shows only the relevant
+    installation instructions for the iHomeNerd local CA certificate.
+    """
+    template = _templates / "setup.html"
+    if not template.exists():
+        return HTMLResponse("<h1>Setup template not found</h1>", status_code=500)
+    return HTMLResponse(template.read_text())
+
+
+@app.get("/setup/ca.crt")
+async def download_ca_cert():
+    """Download the CA certificate for manual trust installation."""
+    from .certs import get_ca_cert_path
+    ca_path = get_ca_cert_path(_certs_dir)
+    if not ca_path:
+        return HTMLResponse("<h1>CA certificate not generated yet</h1>", status_code=404)
+    return FileResponse(
+        str(ca_path),
+        media_type="application/x-x509-ca-cert",
+        filename="ihomenerd-ca.crt",
+    )
+
+
+@app.get("/setup/profile.mobileconfig")
+async def download_mobileconfig():
+    """Download an Apple .mobileconfig profile that installs the CA cert.
+
+    This provides a clean installation experience on iOS and macOS.
+    """
+    from .certs import get_ca_cert_path
+    import base64, uuid as _uuid
+    ca_path = get_ca_cert_path(_certs_dir)
+    if not ca_path:
+        return HTMLResponse("<h1>CA certificate not generated yet</h1>", status_code=404)
+
+    # Read the DER-encoded cert (convert from PEM)
+    import subprocess
+    try:
+        der_bytes = subprocess.check_output([
+            "openssl", "x509", "-in", str(ca_path), "-outform", "DER",
+        ], stderr=subprocess.DEVNULL)
+    except Exception:
+        # Fallback: serve PEM as-is (still works, just less clean)
+        der_bytes = ca_path.read_bytes()
+
+    cert_b64 = base64.b64encode(der_bytes).decode()
+    profile_uuid = str(_uuid.uuid5(_uuid.NAMESPACE_DNS, "ihomenerd.local.ca"))
+    cert_uuid = str(_uuid.uuid5(_uuid.NAMESPACE_DNS, "ihomenerd.local.ca.cert"))
+
+    mobileconfig = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadCertificateFileName</key>
+            <string>ihomenerd-ca.crt</string>
+            <key>PayloadContent</key>
+            <data>{cert_b64}</data>
+            <key>PayloadDescription</key>
+            <string>Adds the iHomeNerd Local CA to your trusted certificates.</string>
+            <key>PayloadDisplayName</key>
+            <string>iHomeNerd Local CA</string>
+            <key>PayloadIdentifier</key>
+            <string>com.ihomenerd.local.ca.cert</string>
+            <key>PayloadType</key>
+            <string>com.apple.security.root</string>
+            <key>PayloadUUID</key>
+            <string>{cert_uuid}</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+        </dict>
+    </array>
+    <key>PayloadDisplayName</key>
+    <string>iHomeNerd Trust Certificate</string>
+    <key>PayloadDescription</key>
+    <string>Install this profile to trust your iHomeNerd for secure connections (microphone, camera, sync).</string>
+    <key>PayloadIdentifier</key>
+    <string>com.ihomenerd.local.ca</string>
+    <key>PayloadOrganization</key>
+    <string>iHomeNerd</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>{profile_uuid}</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>"""
+
+    return Response(
+        content=mobileconfig,
+        media_type="application/x-apple-aspen-config",
+        headers={"Content-Disposition": "attachment; filename=iHomeNerd-Trust.mobileconfig"},
+    )
+
+
+@app.get("/setup/test")
+async def setup_test():
+    """HTTPS test endpoint — if the browser can reach this, the cert is trusted."""
+    return {"trusted": True, "product": "iHomeNerd"}
 
 
 @app.get("/health")
@@ -237,12 +350,17 @@ def main():
     host = "0.0.0.0" if settings.lan_mode else settings.host
 
     # Auto-generate TLS certs for LAN HTTPS (mic/camera access)
+    # Uses a local CA (ca.crt/ca.key) + signed server cert (server.crt/server.key).
+    # Users install ca.crt once via /setup page → all server certs trusted.
     ssl_kwargs = {}
     certs_dir = settings.data_dir / "certs"
     result = ensure_certs(certs_dir)
     if result:
         cert_path, key_path = result
         ssl_kwargs = {"ssl_certfile": str(cert_path), "ssl_keyfile": str(key_path)}
+        logging.getLogger(__name__).info(
+            "TLS enabled — trust setup at http://<lan-ip>:%d/setup", settings.port,
+        )
 
     uvicorn.run(app, host=host, port=settings.port, **ssl_kwargs)
 

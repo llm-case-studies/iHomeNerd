@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iHomeNerd — Secure Setup</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e4e7;
+    --muted: #9ca3af;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 2rem 1rem;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .container { max-width: 520px; width: 100%; }
+  h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+  .detected {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+  }
+  .detected .label { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .detected .value { margin-top: 0.25rem; font-weight: 500; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.5rem; margin-bottom: 1rem;
+  }
+  .card h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+  .steps { list-style: none; counter-reset: step; }
+  .steps li {
+    counter-increment: step; padding: 0.5rem 0 0.5rem 2.5rem;
+    position: relative; font-size: 0.9rem; line-height: 1.5;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute; left: 0; top: 0.45rem;
+    width: 1.75rem; height: 1.75rem; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 600;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--accent); color: white; border: none;
+    padding: 0.65rem 1.25rem; border-radius: 8px;
+    font-size: 0.95rem; font-weight: 500; cursor: pointer;
+    text-decoration: none; transition: background 0.15s;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn-outline {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-outline:hover { background: var(--card); }
+  .btn-row { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+  .test-result {
+    margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 8px;
+    font-size: 0.9rem; display: none;
+  }
+  .test-result.success { display: block; background: #0a2e1a; border: 1px solid var(--green); color: var(--green); }
+  .test-result.fail { display: block; background: #2e0a0a; border: 1px solid var(--red); color: var(--red); }
+  .test-result.pending { display: block; background: #2e2a0a; border: 1px solid var(--orange); color: var(--orange); }
+  .firefox-note {
+    background: #1a1500; border: 1px solid var(--orange);
+    border-radius: 8px; padding: 1rem; margin-top: 0.75rem;
+    font-size: 0.85rem; color: var(--orange);
+  }
+  .hidden { display: none !important; }
+  .divider { border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  code {
+    background: #252830; padding: 0.15rem 0.4rem; border-radius: 4px;
+    font-size: 0.85rem; font-family: 'SF Mono', Menlo, monospace;
+  }
+  .note { color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem; }
+  .all-platforms { margin-top: 1rem; }
+  .all-platforms summary {
+    color: var(--muted); font-size: 0.85rem; cursor: pointer;
+    padding: 0.5rem 0;
+  }
+  .platform-list { margin-top: 0.5rem; }
+  .platform-list .card { margin-bottom: 0.75rem; padding: 1.25rem; }
+  .platform-list .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>iHomeNerd — Secure Setup</h1>
+  <p class="subtitle">
+    Install the trust certificate so your browser allows microphone,
+    camera, and secure connections to this iHomeNerd.
+  </p>
+
+  <div class="detected">
+    <div class="label">Detected device</div>
+    <div class="value" id="detected-device">Detecting...</div>
+  </div>
+
+  <!-- ============ PRIMARY: auto-detected platform ============ -->
+  <div id="instructions-main" class="card">
+    <h2 id="instructions-title">Loading...</h2>
+    <div id="instructions-body"></div>
+  </div>
+
+  <!-- ============ FIREFOX WARNING ============ -->
+  <div id="firefox-extra" class="card hidden">
+    <h2>Extra step for Firefox</h2>
+    <p style="font-size:0.9rem; margin-bottom:0.75rem;">
+      Firefox uses its own certificate store and ignores your system certificates by default.
+      Choose one:
+    </p>
+    <ol class="steps">
+      <li>
+        <strong>Recommended:</strong> Open Firefox, type <code>about:config</code> in the address bar,
+        search for <code>security.enterprise_roots.enabled</code>, and set it to <code>true</code>.
+        This makes Firefox trust your system certificates (including iHomeNerd's).
+      </li>
+      <li>
+        <strong>Alternative:</strong> In Firefox go to Settings → Privacy &amp; Security →
+        Certificates → View Certificates → Authorities → Import →
+        select the downloaded <code>ca.crt</code> file → check "Trust to identify websites" → OK.
+      </li>
+    </ol>
+  </div>
+
+  <!-- ============ TEST ============ -->
+  <div class="card">
+    <h2>Test your connection</h2>
+    <p style="font-size:0.9rem; color:var(--muted); margin-bottom:0.75rem;">
+      After installing the certificate, click below to verify it works.
+    </p>
+    <button class="btn" onclick="testConnection()">Test Secure Connection</button>
+    <div id="test-result" class="test-result"></div>
+  </div>
+
+  <!-- ============ OTHER PLATFORMS ============ -->
+  <details class="all-platforms">
+    <summary>Show instructions for other devices</summary>
+    <div class="platform-list" id="all-platforms-list"></div>
+  </details>
+
+</div>
+
+<script>
+const HTTPS_BASE = location.protocol === 'https:'
+  ? location.origin
+  : location.origin.replace('http:', 'https:');
+
+// ---- Platform detection ----
+function detectPlatform() {
+  const ua = navigator.userAgent;
+  const p = navigator.platform || '';
+
+  const isFirefox = /Firefox/i.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (p === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isMac = /Macintosh|MacIntel/.test(ua) && !isIOS;
+  const isAndroid = /Android/i.test(ua);
+  const isWindows = /Windows/i.test(ua);
+  const isLinux = /Linux/i.test(ua) && !isAndroid;
+  const isChromeOS = /CrOS/i.test(ua);
+
+  let os = 'unknown';
+  if (isIOS) os = 'ios';
+  else if (isMac) os = 'mac';
+  else if (isAndroid) os = 'android';
+  else if (isWindows) os = 'windows';
+  else if (isChromeOS) os = 'chromeos';
+  else if (isLinux) os = 'linux';
+
+  return { os, isFirefox };
+}
+
+// ---- Instructions per platform ----
+const PLATFORMS = {
+  ios: {
+    icon: '📱',
+    name: 'iPhone / iPad',
+    steps: [
+      'Tap the button below to download the configuration profile.',
+      'iOS will say <em>"This website is trying to download a configuration profile."</em> Tap <strong>Allow</strong>.',
+      'Open <strong>Settings</strong> → you\'ll see <strong>"Profile Downloaded"</strong> near the top. Tap it.',
+      'Tap <strong>Install</strong> (top right) → enter your passcode → tap <strong>Install</strong> again.',
+      'Go to <strong>Settings → General → About → Certificate Trust Settings</strong> → toggle <strong>iHomeNerd Local CA</strong> ON.',
+    ],
+    buttons: [
+      { label: 'Download Profile', href: '/setup/profile.mobileconfig' },
+    ],
+  },
+  mac: {
+    icon: '💻',
+    name: 'Mac',
+    steps: [
+      'Click the button below to download the CA certificate.',
+      'Open the downloaded <code>ihomenerd-ca.crt</code> file — Keychain Access will open.',
+      'Find <strong>iHomeNerd Local CA</strong> in the list, double-click it.',
+      'Expand <strong>Trust</strong> → set <em>"When using this certificate"</em> to <strong>Always Trust</strong>.',
+      'Close the window — enter your Mac password to confirm.',
+    ],
+    buttons: [
+      { label: 'Download Certificate', href: '/setup/ca.crt' },
+    ],
+  },
+  windows: {
+    icon: '🖥️',
+    name: 'Windows',
+    steps: [
+      'Click the button below to download the CA certificate.',
+      'Double-click the downloaded <code>ihomenerd-ca.crt</code> file.',
+      'Click <strong>Install Certificate</strong> → select <strong>Local Machine</strong> → Next.',
+      'Select <strong>"Place all certificates in the following store"</strong> → Browse → <strong>Trusted Root Certification Authorities</strong> → OK → Next → Finish.',
+      'Click <strong>Yes</strong> on the security warning.',
+    ],
+    buttons: [
+      { label: 'Download Certificate', href: '/setup/ca.crt' },
+    ],
+  },
+  android: {
+    icon: '📱',
+    name: 'Android',
+    steps: [
+      'Tap the button below to download the CA certificate.',
+      'Open <strong>Settings → Security</strong> (or <strong>Security & Privacy</strong>).',
+      'Tap <strong>Encryption & credentials</strong> (or <strong>Advanced</strong>) → <strong>Install a certificate</strong> → <strong>CA certificate</strong>.',
+      'Select the downloaded <code>ihomenerd-ca.crt</code> file.',
+      'Confirm the installation. You may need to set a screen lock if you haven\'t already.',
+    ],
+    buttons: [
+      { label: 'Download Certificate', href: '/setup/ca.crt' },
+    ],
+    note: 'Android settings vary by manufacturer. If you can\'t find it, search "certificate" in Settings.',
+  },
+  linux: {
+    icon: '🐧',
+    name: 'Linux',
+    steps: [
+      'Click the button below to download the CA certificate.',
+      'Open a terminal and run:',
+    ],
+    buttons: [
+      { label: 'Download Certificate', href: '/setup/ca.crt' },
+    ],
+    commands: [
+      'sudo cp ~/Downloads/ihomenerd-ca.crt /usr/local/share/ca-certificates/',
+      'sudo update-ca-certificates',
+    ],
+    commandNote: 'Chrome will pick this up after restart. For Firefox, see the extra step below.',
+  },
+  chromeos: {
+    icon: '💻',
+    name: 'ChromeOS',
+    steps: [
+      'Tap the button below to download the CA certificate.',
+      'Open <strong>Settings → Security and Privacy → More</strong> → <strong>Manage certificates</strong>.',
+      'Go to the <strong>Authorities</strong> tab → <strong>Import</strong>.',
+      'Select the downloaded file → check <strong>"Trust this certificate for identifying websites"</strong> → OK.',
+    ],
+    buttons: [
+      { label: 'Download Certificate', href: '/setup/ca.crt' },
+    ],
+  },
+  unknown: {
+    icon: '🌐',
+    name: 'Your device',
+    steps: [
+      'Download the CA certificate using the button below.',
+      'Open your device\'s <strong>Settings</strong> and find the <strong>Certificates</strong> or <strong>Security</strong> section.',
+      'Import or install the certificate as a <strong>trusted root CA</strong>.',
+    ],
+    buttons: [
+      { label: 'Download Certificate', href: '/setup/ca.crt' },
+    ],
+  },
+};
+
+function renderPlatform(key, container, isMain) {
+  const p = PLATFORMS[key];
+  const title = isMain
+    ? `${p.icon} Setup for ${p.name}`
+    : `${p.icon} ${p.name}`;
+
+  let html = isMain ? '' : `<h3>${title}</h3>`;
+  if (isMain) container.previousElementSibling
+    ? null
+    : null; // title set separately for main
+
+  html += '<ol class="steps">';
+  for (const step of p.steps) {
+    html += `<li>${step}</li>`;
+  }
+  html += '</ol>';
+
+  if (p.commands) {
+    html += '<div style="margin:0.75rem 0 0.25rem 2.5rem;">';
+    for (const cmd of p.commands) {
+      html += `<code style="display:block;margin:0.25rem 0;padding:0.4rem 0.6rem;font-size:0.85rem;background:#252830;border-radius:4px;">${cmd}</code>`;
+    }
+    if (p.commandNote) {
+      html += `<p class="note">${p.commandNote}</p>`;
+    }
+    html += '</div>';
+  }
+
+  html += '<div class="btn-row">';
+  for (const btn of p.buttons) {
+    html += `<a class="btn" href="${btn.href}" download>${btn.label}</a>`;
+  }
+  html += '</div>';
+
+  if (p.note) {
+    html += `<p class="note">${p.note}</p>`;
+  }
+
+  if (isMain) {
+    document.getElementById('instructions-title').textContent = title;
+    container.innerHTML = html;
+  } else {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<h3>${title}</h3>${html}`;
+    container.appendChild(card);
+  }
+}
+
+// ---- Init ----
+const { os, isFirefox } = detectPlatform();
+
+// Friendly name for detected device
+const osNames = {
+  ios: 'iPhone / iPad', mac: 'Mac', windows: 'Windows',
+  android: 'Android', linux: 'Linux', chromeos: 'ChromeOS', unknown: 'Unknown',
+};
+const browserName = isFirefox ? 'Firefox' : (
+  /Edg/i.test(navigator.userAgent) ? 'Edge' :
+  /Chrome/i.test(navigator.userAgent) ? 'Chrome' :
+  /Safari/i.test(navigator.userAgent) ? 'Safari' : 'Browser'
+);
+document.getElementById('detected-device').textContent =
+  `${osNames[os] || 'Unknown'} — ${browserName}`;
+
+// Render main instructions
+renderPlatform(os, document.getElementById('instructions-body'), true);
+
+// Show Firefox extra if needed
+if (isFirefox) {
+  document.getElementById('firefox-extra').classList.remove('hidden');
+}
+
+// Render "other platforms"
+const allList = document.getElementById('all-platforms-list');
+for (const key of Object.keys(PLATFORMS)) {
+  if (key !== os && key !== 'unknown') {
+    renderPlatform(key, allList, false);
+  }
+}
+
+// ---- Test connection ----
+async function testConnection() {
+  const el = document.getElementById('test-result');
+  el.className = 'test-result pending';
+  el.style.display = 'block';
+  el.textContent = 'Testing secure connection...';
+
+  try {
+    const r = await fetch(HTTPS_BASE + '/setup/test', {
+      mode: 'cors',
+      cache: 'no-store',
+    });
+    if (r.ok) {
+      const data = await r.json();
+      el.className = 'test-result success';
+      el.innerHTML = '✅ <strong>Connection secure!</strong> Your device trusts iHomeNerd. Microphone and camera access will work.';
+    } else {
+      throw new Error(`HTTP ${r.status}`);
+    }
+  } catch (e) {
+    el.className = 'test-result fail';
+    el.innerHTML = '❌ <strong>Not yet trusted.</strong> Make sure you completed the certificate installation steps above, then try again. You may need to restart your browser.';
+  }
+}
+</script>
+</body>
+</html>
