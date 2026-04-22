@@ -28,7 +28,7 @@ from .plugins.pronunco import router as pronunco_router
 from .plugins.pronunco_persistence import router as pronunco_persistence_router
 from .plugins import pronunco_persistence
 from . import ollama
-from .discovery import advertise_start, advertise_stop, get_brain_info
+from .discovery import advertise_start, advertise_stop, get_brain_info, browse_peers
 
 app = FastAPI(
     title="iHomeNerd",
@@ -283,6 +283,16 @@ async def discover():
     return info
 
 
+@app.get("/discover/peers")
+async def discover_peers():
+    """Find other iHomeNerd brains on the LAN via mDNS (avahi-browse).
+
+    The browser extension cannot do mDNS/DNS-SD directly, so it calls
+    this endpoint on any reachable brain to discover other brains.
+    """
+    return {"peers": browse_peers()}
+
+
 @app.get("/capabilities")
 async def capabilities():
     """Capability registry.
@@ -406,6 +416,20 @@ def _build_setup_app():
     @setup_app.get("/setup/test")
     async def setup_test_redirect():
         return await setup_test()
+
+    # Discovery + health on HTTP too — the extension needs these to find
+    # brains before the user has installed the HTTPS CA certificate.
+    @setup_app.get("/discover/peers")
+    async def setup_discover_peers():
+        return await discover_peers()
+
+    @setup_app.get("/discover")
+    async def setup_discover():
+        return await discover()
+
+    @setup_app.get("/health")
+    async def setup_health():
+        return await health()
 
     return setup_app
 

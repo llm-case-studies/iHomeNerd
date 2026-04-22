@@ -257,7 +257,7 @@ const PLATFORMS = {
     name: 'Linux',
     steps: [
       'Click the button below to download the CA certificate.',
-      'Open a terminal and run:',
+      'Open a terminal and run these commands to add it to the <strong>system</strong> trust store:',
     ],
     buttons: [
       { label: 'Download Certificate', href: '/setup/ca.crt' },
@@ -266,7 +266,15 @@ const PLATFORMS = {
       'sudo cp ~/Downloads/ihomenerd-ca.crt /usr/local/share/ca-certificates/',
       'sudo update-ca-certificates',
     ],
-    commandNote: 'Chrome will pick this up after restart. For Firefox, see the extra step below.',
+    commandNote: 'This covers <code>curl</code>, <code>wget</code>, and apps that use the system store.',
+    extraSteps: [
+      '<strong>For Chrome / Edge / Chromium</strong> — Chrome uses its own certificate database (NSS). Run:',
+    ],
+    extraCommands: [
+      'sudo apt-get install -y libnss3-tools  # one-time',
+      'certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "iHomeNerd Local CA" -i ~/Downloads/ihomenerd-ca.crt',
+    ],
+    extraCommandNote: 'Then <strong>restart Chrome</strong>. No <code>sudo</code> needed for the <code>certutil</code> command — it writes to your user profile. For Firefox, see the extra step below.',
   },
   chromeos: {
     icon: '💻',
@@ -319,6 +327,26 @@ function renderPlatform(key, container, isMain) {
     }
     if (p.commandNote) {
       html += `<p class="note">${p.commandNote}</p>`;
+    }
+    html += '</div>';
+  }
+
+  // Extra steps (e.g., Chrome NSS on Linux)
+  if (p.extraSteps) {
+    html += '<ol class="steps" style="margin-top:0.75rem;">';
+    for (const step of p.extraSteps) {
+      html += `<li>${step}</li>`;
+    }
+    html += '</ol>';
+  }
+
+  if (p.extraCommands) {
+    html += '<div style="margin:0.75rem 0 0.25rem 2.5rem;">';
+    for (const cmd of p.extraCommands) {
+      html += `<code style="display:block;margin:0.25rem 0;padding:0.4rem 0.6rem;font-size:0.85rem;background:#252830;border-radius:4px;">${cmd}</code>`;
+    }
+    if (p.extraCommandNote) {
+      html += `<p class="note">${p.extraCommandNote}</p>`;
     }
     html += '</div>';
   }

@@ -18,8 +18,12 @@ const STORAGE_KEY_DISCOVERED_BRAINS = 'ihomenerd.discoveredBrains' // [ { url, h
 const STORAGE_KEY_PRONUNCO_BASE_URL = 'pronuncoLocalBridge.baseUrl'
 
 const DEFAULT_PORT = 17777
-const DISCOVERY_TIMEOUT_MS = 2500
+const SETUP_PORT = 17778        // HTTP-only setup server (no TLS)
+const DISCOVERY_TIMEOUT_MS = 1200
 const REQUEST_DEFAULT_TIMEOUT_MS = 3000
+
+// Progress tracking key (uses chrome.storage.session for ephemeral data)
+const STORAGE_KEY_SCAN_PROGRESS = 'ihomenerd.scanProgress'
 
 // ---------------------------------------------------------------------------
 // Utility
@@ -257,105 +261,221 @@ async function guessSubnets() {
 }
 
 /**
- * Probe a single IP:port for an iHomeNerd brain.
+ * Probe a single IP for an iHomeNerd brain.
+ * Tries multiple port/protocol/endpoint combinations in parallel:
+ *   - HTTP :17778 /discover, /setup/test  (no cert needed)
+ *   - HTTPS :17777 /discover, /health     (needs trusted cert)
+ * Uses Promise.any — first successful response wins.
  * Returns brain info or null.
  */
-async function probeBrain(ip, port = DEFAULT_PORT) {
-  // Try HTTPS first, then HTTP
-  for (const protocol of ['https', 'http']) {
-    const baseUrl = `${protocol}://${ip}:${port}`
+async function probeBrain(ip) {
+  const probes = [
+    { protocol: 'http',  port: SETUP_PORT,  path: '/discover' },
+    { protocol: 'http',  port: SETUP_PORT,  path: '/setup/test' },
+    { protocol: 'https', port: DEFAULT_PORT, path: '/discover' },
+    { protocol: 'https', port: DEFAULT_PORT, path: '/health' },
+  ]
+
+  const probePromises = probes.map(async ({ protocol, port, path }) => {
+    const url = `${protocol}://${ip}:${port}${path}`
+    const controller = new AbortController()
+    const tid = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS)
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS)
-      const response = await fetch(`${baseUrl}/discover`, {
-        signal: controller.signal,
-        headers: { 'Accept': 'application/json' },
-      })
-      clearTimeout(timeoutId)
+      const r = await fetch(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } })
+      clearTimeout(tid)
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const data = await r.json()
+      if (!data || data.product !== 'iHomeNerd') throw new Error('not iHomeNerd')
+      return data
+    } catch (e) {
+      clearTimeout(tid)
+      throw e
+    }
+  })
 
-      if (!response.ok) continue
+  try {
+    const data = await Promise.any(probePromises)
+    return {
+      url: `https://${ip}:${DEFAULT_PORT}`,
+      hostname: data.hostname || ip,
+      ip: ip,
+      port: DEFAULT_PORT,
+      protocol: 'https',
+      version: data.version || 'unknown',
+      gpu: data.gpu || null,
+      models: data.models || [],
+      ollama: data.ollama || false,
+      role: data.role || 'brain',
+      discoveredAt: Date.now(),
+    }
+  } catch {
+    return null
+  }
+}
 
-      const data = await response.json()
-      if (data && data.product === 'iHomeNerd') {
-        return {
-          url: baseUrl,
-          hostname: data.hostname || ip,
-          ip: ip,
-          port: port,
-          protocol: protocol,
-          version: data.version || 'unknown',
-          gpu: data.gpu || null,
-          models: data.models || [],
-          ollama: data.ollama || false,
-          role: data.role || 'brain',
-          discoveredAt: Date.now(),
-        }
-      }
-    } catch {
-      // Not reachable on this protocol, try next
+/**
+ * Prioritize IPs: common router-assigned ranges first, then the rest.
+ * This finds brains faster on typical home networks.
+ */
+function prioritizeIps(allIps) {
+  // Common DHCP ranges that routers assign to devices
+  const hotRanges = new Set()
+  for (const ip of allIps) {
+    const lastOctet = parseInt(ip.split('.').pop())
+    // Common ranges: .1 (gateway), .100-.120, .200-.220, .2-.30
+    if (lastOctet === 1 || (lastOctet >= 2 && lastOctet <= 30) ||
+        (lastOctet >= 100 && lastOctet <= 120) ||
+        (lastOctet >= 200 && lastOctet <= 220)) {
+      hotRanges.add(ip)
     }
   }
-  return null
+
+  const hot = allIps.filter(ip => hotRanges.has(ip))
+  const cold = allIps.filter(ip => !hotRanges.has(ip))
+  return [...hot, ...cold]
+}
+
+/**
+ * Write scan progress to storage so the popup can display it.
+ */
+async function updateScanProgress(scanned, total, found) {
+  try {
+    await chrome.storage.session.set({
+      [STORAGE_KEY_SCAN_PROGRESS]: { scanned, total, found, ts: Date.now() },
+    })
+  } catch {
+    // chrome.storage.session may not be available in older Firefox
+    await chrome.storage.local.set({
+      [STORAGE_KEY_SCAN_PROGRESS]: { scanned, total, found, ts: Date.now() },
+    })
+  }
 }
 
 /**
  * Scan local subnets for iHomeNerd brains.
- * Fires probes in parallel batches to avoid overwhelming the network.
+ *
+ * Discovery strategy (fastest-first):
+ *   Phase 0: Probe localhost (loopback brain on this machine)
+ *   Phase 1: Probe known .local hostnames (from previous discoveries)
+ *   Phase 2: If any brain is reachable, ask it for mDNS peers via /discover/peers
+ *   Phase 3: IP subnet scan (slow fallback, needs optional permissions)
  */
 async function discoverBrains() {
-  const subnets = await guessSubnets()
-  const allIps = []
+  const brains = []
+  const seenIps = new Set()
 
-  for (const prefix of subnets) {
-    for (let i = 1; i <= 254; i++) {
-      allIps.push(`${prefix}${i}`)
-    }
+  function addBrain(brain) {
+    if (!brain) return
+    const key = brain.ip || brain.hostname
+    if (seenIps.has(key)) return
+    seenIps.add(key)
+    brains.push(brain)
   }
 
-  // Also probe .local hostnames if we know any
+  // Report initial progress
+  await updateScanProgress(0, 1, 0)
+
+  // --- Phase 0: Probe localhost ---
+  const localResult = await probeBrain('127.0.0.1').catch(() => null)
+  addBrain(localResult)
+
+  // --- Phase 1: Probe known .local hostnames (have permanent permission) ---
   const existing = await getDiscoveredBrains()
+  const selected = await getSelectedBrain()
   const localHosts = new Set()
+
+  // Collect .local hostnames from previous discoveries and selected brain
   for (const b of existing) {
     try {
       const url = new URL(b.url)
-      if (url.hostname.endsWith('.local')) {
-        localHosts.add(url.hostname)
-      }
+      if (url.hostname.endsWith('.local')) localHosts.add(url.hostname)
+    } catch { /* ignore */ }
+  }
+  if (selected && selected.url) {
+    try {
+      const url = new URL(selected.url)
+      if (url.hostname.endsWith('.local')) localHosts.add(url.hostname)
     } catch { /* ignore */ }
   }
 
-  const brains = []
-  const BATCH_SIZE = 30
-
-  // Process in batches
-  for (let i = 0; i < allIps.length; i += BATCH_SIZE) {
-    const batch = allIps.slice(i, i + BATCH_SIZE)
-    const results = await Promise.allSettled(
-      batch.map(ip => probeBrain(ip))
-    )
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value) {
-        brains.push(result.value)
-      }
-    }
-  }
-
-  // Also probe known .local hostnames
   for (const hostname of localHosts) {
     const result = await probeBrain(hostname).catch(() => null)
-    if (result) {
-      // Deduplicate by IP if we already found it by IP
-      const isDupe = brains.some(b => b.ip === result.ip)
-      if (!isDupe) brains.push(result)
+    addBrain(result)
+  }
+
+  await updateScanProgress(0, 1, brains.length)
+
+  // --- Phase 2: Ask any reachable brain for mDNS peers ---
+  if (brains.length > 0) {
+    for (const brain of [...brains]) {
+      try {
+        // Try the HTTPS main port first, then HTTP setup port
+        let peersData = null
+        for (const baseUrl of [brain.url, `http://${brain.ip}:${SETUP_PORT}`]) {
+          try {
+            const controller = new AbortController()
+            const tid = setTimeout(() => controller.abort(), 3000)
+            const r = await fetch(`${baseUrl}/discover/peers`, {
+              signal: controller.signal,
+              headers: { 'Accept': 'application/json' },
+            })
+            clearTimeout(tid)
+            if (r.ok) { peersData = await r.json(); break }
+          } catch { /* try next */ }
+        }
+        if (peersData && Array.isArray(peersData.peers)) {
+          for (const peer of peersData.peers) {
+            // Probe each peer — use hostname.local which has permanent permission
+            const peerHost = peer.hostname || peer.ip
+            const result = await probeBrain(peerHost).catch(() => null)
+            addBrain(result)
+          }
+        }
+      } catch { /* ignore */ }
     }
   }
+
+  await updateScanProgress(0, 1, brains.length)
+
+  // --- Phase 3: IP subnet scan (slow fallback) ---
+  // Only if we haven't found anything yet
+  if (brains.length === 0) {
+    const subnets = await guessSubnets()
+    let allIps = []
+    for (const prefix of subnets) {
+      for (let i = 1; i <= 254; i++) {
+        allIps.push(`${prefix}${i}`)
+      }
+    }
+    allIps = prioritizeIps(allIps)
+
+    const BATCH_SIZE = 50
+    const totalIps = allIps.length
+    await updateScanProgress(0, totalIps, 0)
+
+    for (let i = 0; i < allIps.length; i += BATCH_SIZE) {
+      const batch = allIps.slice(i, i + BATCH_SIZE)
+      const results = await Promise.allSettled(
+        batch.map(ip => probeBrain(ip))
+      )
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          addBrain(result.value)
+        }
+      }
+      await updateScanProgress(Math.min(i + BATCH_SIZE, totalIps), totalIps, brains.length)
+    }
+  }
+
+  // Final progress
+  await updateScanProgress(1, 1, brains.length)
 
   // Store discovered brains
   await setDiscoveredBrains(brains)
 
   // If no brain is selected and we found exactly one, auto-select it
-  const selected = await getSelectedBrain()
-  if (!selected && brains.length === 1) {
+  const currentSelected = await getSelectedBrain()
+  if (!currentSelected && brains.length === 1) {
     await setSelectedBrain(brains[0])
   }
 

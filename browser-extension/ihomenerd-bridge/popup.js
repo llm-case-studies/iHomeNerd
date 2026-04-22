@@ -22,6 +22,7 @@ const btnManualSave = document.getElementById('btn-manual-save')
 const diagSection = document.getElementById('diag-section')
 const diagContent = document.getElementById('diag-content')
 const versionLabel = document.getElementById('version-label')
+const progressFill = document.getElementById('progress-fill')
 
 // ---------------------------------------------------------------------------
 // Bridge message helper
@@ -170,6 +171,39 @@ async function selectBrain(brain) {
 // Scan LAN
 // ---------------------------------------------------------------------------
 let isScanning = false
+let progressPollId = null
+
+function startProgressPoll() {
+  stopProgressPoll()
+  progressPollId = setInterval(async () => {
+    try {
+      // Try session storage first, fall back to local
+      let data
+      try {
+        data = await chrome.storage.session.get('ihomenerd.scanProgress')
+      } catch {
+        data = await chrome.storage.local.get('ihomenerd.scanProgress')
+      }
+      const progress = data['ihomenerd.scanProgress']
+      if (progress) {
+        const pct = progress.total > 0 ? Math.round((progress.scanned / progress.total) * 100) : 0
+        if (progressFill) progressFill.style.width = `${pct}%`
+        if (progress.found > 0) {
+          scanningText.textContent = `Found ${progress.found} brain${progress.found > 1 ? 's' : ''}! Finishing scan... (${pct}%)`
+        } else {
+          scanningText.textContent = `Scanning your network... ${progress.scanned}/${progress.total} IPs (${pct}%)`
+        }
+      }
+    } catch { /* ignore */ }
+  }, 400)
+}
+
+function stopProgressPoll() {
+  if (progressPollId) {
+    clearInterval(progressPollId)
+    progressPollId = null
+  }
+}
 
 async function scanLAN() {
   if (isScanning) return
@@ -179,19 +213,52 @@ async function scanLAN() {
   scanningIndicator.classList.remove('hidden')
   emptyState.classList.add('hidden')
   brainListEl.classList.add('hidden')
-  scanningText.textContent = 'Scanning your network...'
+  scanningText.textContent = 'Requesting network access...'
+  if (progressFill) progressFill.style.width = '0%'
+
+  // Request permission to access LAN IPs — needed for discovery probes.
+  // The manifest only grants permanent access to localhost and .local hosts.
+  try {
+    const granted = await chrome.permissions.request({
+      origins: ['http://*/*', 'https://*/*'],
+    })
+    if (!granted) {
+      scanningIndicator.classList.add('hidden')
+      showDiag('warn', 'Network access denied. The extension needs permission to scan your LAN for iHomeNerd brains.')
+      isScanning = false
+      btnScan.disabled = false
+      return
+    }
+  } catch (err) {
+    // Permission request failed (e.g., not in user gesture context)
+    // Continue anyway — some hosts may still work with existing permissions
+  }
+
+  scanningText.textContent = 'Starting scan...'
+
+  // Poll for progress updates from background
+  startProgressPoll()
 
   try {
     const result = await sendBridge({ kind: 'ihomenerd-bridge/discover' })
     discoveredBrains = result.brains || []
 
+    stopProgressPoll()
+
     if (discoveredBrains.length === 0) {
       scanningIndicator.classList.add('hidden')
       emptyState.classList.remove('hidden')
       emptyState.innerHTML = `
-        No iHomeNerd brains found on your network.<br>
-        Make sure iHomeNerd is running and try again,<br>
-        or enter the address manually below.`
+        No iHomeNerd brains found on your network.<br><br>
+        <strong>Try entering the address manually below.</strong><br>
+        <span style="font-size:11px;color:#6b7280;">
+          Example: https://msi-raider-linux.local:17777<br>
+          or: https://192.168.0.206:17777
+        </span>`
+      // Auto-expand manual entry section
+      manualSection.classList.remove('hidden')
+      manualUrlInput.focus()
+      showDiag('info', 'Scan checked ' + (result._scannedCount || '~1000') + ' IPs. If iHomeNerd is running, try the manual address above. Common issues: browser may need network permissions granted, or the HTTPS cert may not be trusted yet.')
     } else {
       scanningIndicator.classList.add('hidden')
 
@@ -210,6 +277,7 @@ async function scanLAN() {
       }
     }
   } catch (err) {
+    stopProgressPoll()
     scanningIndicator.classList.add('hidden')
     showDiag('err', `Scan failed: ${err.message}`)
   } finally {

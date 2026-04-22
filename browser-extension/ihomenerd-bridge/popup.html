@@ -185,11 +185,17 @@
 
   .scanning {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 6px;
     padding: 10px 0;
     font-size: 12px;
     color: var(--muted);
+  }
+
+  .scanning-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .spinner {
@@ -199,9 +205,26 @@
     border-top: 2px solid var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
 
   .empty-state {
     text-align: center;
@@ -262,8 +285,13 @@
     </div>
     <ul class="brain-list hidden" id="brain-list"></ul>
     <div class="scanning hidden" id="scanning-indicator">
-      <div class="spinner"></div>
-      <span id="scanning-text">Scanning your network...</span>
+      <div class="scanning-row">
+        <div class="spinner"></div>
+        <span id="scanning-text">Scanning your network...</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
     </div>
   </div>
   <div class="btn-row">
@@ -271,7 +299,7 @@
   </div>
   <button class="toggle-manual" id="toggle-manual">Enter address manually...</button>
   <div class="manual-input hidden" id="manual-section">
-    <input type="text" id="manual-url" placeholder="https://192.168.0.206:17777" />
+    <input type="text" id="manual-url" placeholder="https://your-brain.local:17777" />
     <button class="btn btn-secondary" id="btn-manual-save" style="flex:none;padding:8px 14px;">Use</button>
   </div>
 </div>

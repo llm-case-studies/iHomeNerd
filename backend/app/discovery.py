@@ -118,3 +118,49 @@ def advertise_stop():
         _avahi_process.terminate()
         _avahi_process = None
         logger.info("mDNS: stopped advertising")
+
+
+def browse_peers() -> list[dict]:
+    """Use avahi-browse to find other iHomeNerd instances on the LAN.
+
+    Returns a list of discovered peers with hostname, ip, port.
+    The extension can call this on any reachable brain to discover
+    other brains — solving the chicken-and-egg where browser JS
+    cannot do mDNS/DNS-SD directly.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "avahi-browse", "-tpr",  # terminate, parseable, resolve
+                "_ihomenerd._tcp",
+            ],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return []
+
+        peers = []
+        seen = set()
+        for line in result.stdout.strip().splitlines():
+            # Format: =;iface;protocol;name;type;domain;hostname;address;port;txt
+            if not line.startswith("="):
+                continue
+            parts = line.split(";")
+            if len(parts) < 9:
+                continue
+            hostname = parts[6].rstrip(".")  # remove trailing dot
+            address = parts[7]
+            port = int(parts[8])
+            key = f"{address}:{port}"
+            if key in seen:
+                continue
+            seen.add(key)
+            peers.append({
+                "hostname": hostname,
+                "ip": address,
+                "port": port,
+            })
+        return peers
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as e:
+        logger.debug("avahi-browse failed: %s", e)
+        return []
