@@ -1,5 +1,23 @@
 import React, { useState } from 'react';
-import { Shield, Cpu, Lock, Zap, Server, Mic, FileText, Languages, Search, Bot, Package, ArrowRight, GlobeIcon } from 'lucide-react';
+import {
+  Shield,
+  Cpu,
+  Lock,
+  Zap,
+  Server,
+  Mic,
+  FileText,
+  Languages,
+  Search,
+  Bot,
+  Package,
+  ArrowRight,
+  GlobeIcon,
+  Brain,
+  Monitor,
+  CheckCircle2,
+  Copy,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HardwareChecker from './HardwareChecker';
 import ScoutFlow from './ScoutFlow';
@@ -8,9 +26,20 @@ export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const [isHwCheckerOpen, setIsHwCheckerOpen] = useState(false);
   const [isScoutFlowOpen, setIsScoutFlowOpen] = useState(false);
+  const [copiedPageLink, setCopiedPageLink] = useState(false);
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     i18n.changeLanguage(e.target.value);
+  };
+
+  const handleCopyPageLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedPageLink(true);
+      window.setTimeout(() => setCopiedPageLink(false), 2000);
+    } catch {
+      setCopiedPageLink(false);
+    }
   };
 
   return (
@@ -80,7 +109,7 @@ export default function LandingPage() {
           <p className="text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
             {t('hero_desc')}
           </p>
-          
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={() => setIsScoutFlowOpen(true)}
@@ -89,19 +118,116 @@ export default function LandingPage() {
               {t('hero_btn_launch')}
               <ArrowRight size={20} />
             </button>
-            <button 
-              onClick={() => setIsHwCheckerOpen(true)}
+            <a
+              href="#start"
               className="w-full sm:w-auto px-8 py-4 bg-bg-surface hover:bg-bg-input border border-border-color rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <ArrowRight size={20} className="text-accent" />
+              {t('hero_btn_explore')}
+            </a>
+            <button
+              onClick={() => setIsHwCheckerOpen(true)}
+              className="w-full sm:w-auto px-8 py-4 bg-bg-surface hover:bg-bg-input border border-border-color rounded-xl font-medium transition-colors flex items-center justify-center"
             >
               <Cpu size={20} className="text-accent" />
               {t('hero_btn_check_hw')}
             </button>
-            <a 
-              href="#features" 
-              className="w-full sm:w-auto px-8 py-4 bg-bg-surface hover:bg-bg-input border border-border-color rounded-xl font-medium transition-colors flex items-center justify-center"
-            >
-              {t('hero_btn_explore')}
-            </a>
+          </div>
+        </div>
+      </section>
+
+      <section id="start" className="py-24 border-y border-border-color bg-bg-surface/20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center mb-14">
+            <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent mb-4">
+              Start Without Lock-In
+            </p>
+            <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">
+              Choose the lowest-friction path.
+            </h2>
+            <p className="text-lg text-text-secondary leading-relaxed">
+              Most first-time visitors should start in a VM. If you have a spare PC or mini-PC,
+              the live image path makes more sense. If you already trust GPT, Claude, Gemini,
+              Grok, or DeepSeek, share this page and ask which path fits your hardware and comfort
+              level.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <PathCard
+              icon={<Brain size={24} />}
+              title="Use Your Trusted AI"
+              description="Share this page with the AI you already trust, tell it what hardware you have, and ask for the easiest way to try iHomeNerd. For extra confidence, compare two answers."
+              color="text-purple-400"
+              bg="bg-purple-500/10"
+              action={
+                <button
+                  onClick={handleCopyPageLink}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
+                >
+                  {copiedPageLink ? <CheckCircle2 size={16} className="text-success" /> : <Copy size={16} className="text-accent" />}
+                  {copiedPageLink ? 'Link Copied' : 'Copy This Page Link'}
+                </button>
+              }
+            />
+
+            <PathCard
+              icon={<Monitor size={24} />}
+              title="Try in a VM"
+              description="Best default for most Windows and Mac visitors. It is the safest way to see iHomeNerd working without BIOS changes, USB booting, or touching your main install."
+              color="text-blue-400"
+              bg="bg-blue-400/10"
+              action={
+                <button
+                  onClick={() => setIsScoutFlowOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent hover:bg-accent-hover transition-colors text-sm font-medium text-white"
+                >
+                  Open Path Guide
+                  <ArrowRight size={16} />
+                </button>
+              }
+            />
+
+            <PathCard
+              icon={<Server size={24} />}
+              title="Boot a Spare PC"
+              description="Best if you have an unused PC or mini-PC. The live image does not need to host the AI models yet. It can scout your network and help you choose the right permanent home."
+              color="text-emerald-400"
+              bg="bg-emerald-400/10"
+              action={
+                <button
+                  onClick={() => setIsScoutFlowOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-bg-input hover:bg-bg-primary border border-border-color transition-colors text-sm font-medium"
+                >
+                  Compare Paths
+                  <ArrowRight size={16} className="text-accent" />
+                </button>
+              }
+            />
+
+            <PathCard
+              icon={<Package size={24} />}
+              title="Advanced Docker"
+              description="Keep Docker as the self-hoster path, not the default first experience. It is appropriate when containers already make sense to you and you want more control than convenience."
+              color="text-cyan-400"
+              bg="bg-cyan-400/10"
+              action={
+                <button
+                  onClick={() => setIsScoutFlowOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-bg-input hover:bg-bg-primary border border-border-color transition-colors text-sm font-medium"
+                >
+                  See When Docker Fits
+                  <ArrowRight size={16} className="text-accent" />
+                </button>
+              }
+            />
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-border-color bg-bg-primary/70 p-6 text-center">
+            <p className="text-base text-text-secondary leading-relaxed">
+              Already have iHomeNerd running somewhere on your network? Open the path guide and
+              connect directly to that machine instead of starting from scratch.
+            </p>
           </div>
         </div>
       </section>
@@ -202,17 +328,30 @@ export default function LandingPage() {
       <section className="py-32 bg-bg-surface border-t border-border-color relative overflow-hidden">
         <div className="absolute inset-0 bg-accent/5"></div>
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <h2 className="text-4xl md:text-5xl font-display font-bold mb-8">{t('cta_title')}</h2>
-          <p className="text-xl text-text-secondary mb-10">
-            {t('cta_desc')}
+          <h2 className="text-4xl md:text-5xl font-display font-bold mb-8">
+            Ask the AI you already trust.
+          </h2>
+          <p className="text-xl text-text-secondary mb-10 leading-relaxed">
+            Share this page with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you
+            already have and ask for the lowest-friction way to try iHomeNerd. If the answers
+            differ, compare two of them before you commit.
           </p>
-          <button
-            onClick={() => setIsScoutFlowOpen(true)}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-text-primary text-bg-primary hover:bg-white rounded-xl font-bold transition-all hover:scale-105"
-          >
-            {t('nav_open_cc')}
-            <ArrowRight size={20} />
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={handleCopyPageLink}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-text-primary text-bg-primary hover:bg-white rounded-xl font-bold transition-all hover:scale-105"
+            >
+              {copiedPageLink ? <CheckCircle2 size={20} /> : <Copy size={20} />}
+              {copiedPageLink ? 'Link Copied' : 'Copy This Page Link'}
+            </button>
+            <button
+              onClick={() => setIsScoutFlowOpen(true)}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-bg-primary hover:bg-bg-input border border-border-color rounded-xl font-bold transition-colors"
+            >
+              Choose Here Instead
+              <ArrowRight size={20} className="text-accent" />
+            </button>
+          </div>
         </div>
       </section>
 
@@ -251,6 +390,33 @@ function FeatureCard({ icon, title, description, color, bg }: { icon: React.Reac
       <p className="text-text-secondary leading-relaxed">
         {description}
       </p>
+    </div>
+  );
+}
+
+function PathCard({
+  icon,
+  title,
+  description,
+  color,
+  bg,
+  action,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  color: string;
+  bg: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="p-8 rounded-2xl bg-bg-surface border border-border-color hover:border-accent/50 transition-colors h-full">
+      <div className={`w-12 h-12 rounded-xl ${bg} ${color} flex items-center justify-center mb-6`}>
+        {icon}
+      </div>
+      <h3 className="text-2xl font-display font-bold mb-3">{title}</h3>
+      <p className="text-text-secondary leading-relaxed mb-6">{description}</p>
+      {action}
     </div>
   );
 }
