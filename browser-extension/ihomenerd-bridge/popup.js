@@ -246,6 +246,37 @@ async function scanLAN() {
     stopProgressPoll()
 
     if (discoveredBrains.length === 0) {
+      // Fallback: if a brain is already selected, probe it directly
+      // This handles cases where the background scan fails (e.g., Firefox
+      // event page fetch quirks) but the brain is clearly reachable.
+      try {
+        const config = await sendBridge({ kind: 'ihomenerd-bridge/get-config' })
+        if (config.selectedBrain && config.selectedBrain.url) {
+          const probe = await sendBridge({
+            kind: 'ihomenerd-bridge/probe',
+            path: '/health',
+            timeoutMs: 5000,
+          })
+          if (probe && probe.ok && probe.body) {
+            const b = probe.body
+            discoveredBrains = [{
+              url: config.selectedBrain.url,
+              hostname: b.hostname || config.selectedBrain.hostname || '',
+              ip: config.selectedBrain.ip || '',
+              port: config.selectedBrain.port || DEFAULT_PORT,
+              protocol: 'https',
+              version: b.version || 'unknown',
+              models: b.models ? Object.keys(b.models) : [],
+              ollama: b.ollama || false,
+              role: 'brain',
+              discoveredAt: Date.now(),
+            }]
+          }
+        }
+      } catch { /* ignore fallback failure */ }
+    }
+
+    if (discoveredBrains.length === 0) {
       scanningIndicator.classList.add('hidden')
       emptyState.classList.remove('hidden')
       emptyState.innerHTML = `

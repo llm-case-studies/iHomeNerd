@@ -19,7 +19,12 @@ const STORAGE_KEY_PRONUNCO_BASE_URL = 'pronuncoLocalBridge.baseUrl'
 
 const DEFAULT_PORT = 17777
 const SETUP_PORT = 17778        // HTTP-only setup server (no TLS)
-const DISCOVERY_TIMEOUT_MS = 1200
+const DISCOVERY_TIMEOUT_MS = 2500
+
+// Firefox MV3 CSP auto-upgrades all HTTP→HTTPS (upgrade-insecure-requests),
+// making HTTP probes to the setup server (port 17778) silently fail.
+const IS_FIREFOX = /Firefox\//.test(navigator.userAgent)
+console.log('[iHN] IS_FIREFOX =', IS_FIREFOX, navigator.userAgent)
 const REQUEST_DEFAULT_TIMEOUT_MS = 3000
 
 // Progress tracking key (uses chrome.storage.session for ephemeral data)
@@ -269,7 +274,12 @@ async function guessSubnets() {
  * Returns brain info or null.
  */
 async function probeBrain(ip) {
-  const probes = [
+  // Firefox CSP upgrades all HTTP→HTTPS, which breaks HTTP:17778 probes.
+  // On Firefox, only probe the HTTPS endpoints.
+  const probes = IS_FIREFOX ? [
+    { protocol: 'https', port: DEFAULT_PORT, path: '/discover' },
+    { protocol: 'https', port: DEFAULT_PORT, path: '/health' },
+  ] : [
     { protocol: 'http',  port: SETUP_PORT,  path: '/discover' },
     { protocol: 'http',  port: SETUP_PORT,  path: '/setup/test' },
     { protocol: 'https', port: DEFAULT_PORT, path: '/discover' },
@@ -281,7 +291,7 @@ async function probeBrain(ip) {
     const controller = new AbortController()
     const tid = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS)
     try {
-      const r = await fetch(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } })
+      const r = await fetch(url, { signal: controller.signal, mode: 'cors', credentials: 'omit', headers: { 'Accept': 'application/json' } })
       clearTimeout(tid)
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       const data = await r.json()
@@ -375,14 +385,17 @@ async function discoverBrains() {
   // Report initial progress
   await updateScanProgress(0, 1, 0)
 
+  console.log('[iHN discover] Phase 0: probing localhost')
   // --- Phase 0: Probe localhost ---
-  const localResult = await probeBrain('127.0.0.1').catch(() => null)
+  const localResult = await probeBrain('127.0.0.1').catch(e => { console.log('[iHN discover] localhost probe failed:', e.message); return null })
   addBrain(localResult)
 
   // --- Phase 1: Probe known .local hostnames (have permanent permission) ---
   const existing = await getDiscoveredBrains()
   const selected = await getSelectedBrain()
   const localHosts = new Set()
+
+  console.log('[iHN discover] Phase 1: existing brains:', existing.length, 'selected:', selected?.url)
 
   // Collect .local hostnames from previous discoveries and selected brain
   for (const b of existing) {
@@ -398,11 +411,14 @@ async function discoverBrains() {
     } catch { /* ignore */ }
   }
 
+  console.log('[iHN discover] Phase 1: .local hosts to probe:', [...localHosts])
   for (const hostname of localHosts) {
-    const result = await probeBrain(hostname).catch(() => null)
+    const result = await probeBrain(hostname).catch(e => { console.log('[iHN discover] .local probe failed for', hostname, ':', e.message); return null })
+    console.log('[iHN discover] Phase 1 probe result for', hostname, ':', result ? 'FOUND' : 'null')
     addBrain(result)
   }
 
+  console.log('[iHN discover] After phase 1: brains found =', brains.length)
   await updateScanProgress(0, 1, brains.length)
 
   // --- Phase 2: Ask any reachable brain for mDNS peers ---
