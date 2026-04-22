@@ -256,14 +256,14 @@ const PLATFORMS = {
     icon: '🐧',
     name: 'Linux',
     steps: [
-      'Click the button below to download the CA certificate.',
-      'Open a terminal and run these commands to add it to the <strong>system</strong> trust store:',
+      'Open a terminal and run these commands to add the iHomeNerd CA to the <strong>system</strong> trust store:',
     ],
     buttons: [
       { label: 'Download Certificate', href: '/setup/ca.crt' },
     ],
     commands: [
-      'sudo cp ~/Downloads/ihomenerd-ca.crt /usr/local/share/ca-certificates/',
+      `curl -so /tmp/ihomenerd-ca.crt ${location.origin}/setup/ca.crt`,
+      'sudo cp /tmp/ihomenerd-ca.crt /usr/local/share/ca-certificates/',
       'sudo update-ca-certificates',
     ],
     commandNote: 'This covers <code>curl</code>, <code>wget</code>, and apps that use the system store.',
@@ -272,7 +272,7 @@ const PLATFORMS = {
     ],
     extraCommands: [
       'sudo apt-get install -y libnss3-tools  # one-time',
-      'certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "iHomeNerd Local CA" -i ~/Downloads/ihomenerd-ca.crt',
+      'certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "iHomeNerd Local CA" -i /tmp/ihomenerd-ca.crt',
     ],
     extraCommandNote: 'Then <strong>restart Chrome</strong>. No <code>sudo</code> needed for the <code>certutil</code> command — it writes to your user profile. For Firefox, see the extra step below.',
   },
