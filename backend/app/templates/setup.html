@@ -116,7 +116,7 @@
 
   <!-- ============ FIREFOX WARNING ============ -->
   <div id="firefox-extra" class="card hidden">
-    <h2>Extra step for Firefox</h2>
+    <h2>🦊 Extra step for Firefox</h2>
     <p style="font-size:0.9rem; margin-bottom:0.75rem;">
       Firefox uses its own certificate store and ignores your system certificates by default.
       Choose one:
@@ -126,11 +126,12 @@
         <strong>Recommended:</strong> Open Firefox, type <code>about:config</code> in the address bar,
         search for <code>security.enterprise_roots.enabled</code>, and set it to <code>true</code>.
         This makes Firefox trust your system certificates (including iHomeNerd's).
+        <span style="color:var(--muted);font-size:0.85rem;">One-time change — persists across restarts.</span>
       </li>
       <li>
         <strong>Alternative:</strong> In Firefox go to Settings → Privacy &amp; Security →
         Certificates → View Certificates → Authorities → Import →
-        select the downloaded <code>ca.crt</code> file → check "Trust to identify websites" → OK.
+        select <code>/tmp/ihomenerd-ca.crt</code> → check "Trust to identify websites" → OK.
       </li>
     </ol>
   </div>
@@ -391,8 +392,8 @@ document.getElementById('detected-device').textContent =
 // Render main instructions
 renderPlatform(os, document.getElementById('instructions-body'), true);
 
-// Show Firefox extra if needed
-if (isFirefox) {
+// Show Firefox extra if Firefox detected OR on Linux (many Linux users have both browsers)
+if (isFirefox || os === 'linux') {
   document.getElementById('firefox-extra').classList.remove('hidden');
 }
 
