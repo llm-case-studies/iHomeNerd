@@ -167,7 +167,7 @@
 <script>
 const HTTPS_BASE = location.protocol === 'https:'
   ? location.origin
-  : location.origin.replace('http:', 'https:');
+  : location.origin.replace('http:', 'https:').replace(':17778', ':17777');
 
 // ---- Platform detection ----
 function detectPlatform() {
