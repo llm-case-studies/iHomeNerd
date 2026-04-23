@@ -9,6 +9,7 @@ Falls back gracefully if avahi is not available.
 from __future__ import annotations
 
 import logging
+import os
 import socket
 import subprocess
 from pathlib import Path
@@ -20,8 +21,21 @@ logger = logging.getLogger(__name__)
 _avahi_process: subprocess.Popen | None = None
 
 
+def _preferred_hostname() -> str:
+    """Prefer installer-provided host identity over container hostname."""
+    env_names = os.environ.get("IHN_CERT_HOSTNAMES", "")
+    for name in env_names.split(","):
+        name = name.strip()
+        if name:
+            return name
+    return socket.gethostname()
+
+
 def _get_local_ip() -> str | None:
     """Get the primary LAN IP address."""
+    env_ip = os.environ.get("IHN_CERT_LAN_IP", "").strip()
+    if env_ip:
+        return env_ip
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 53))
@@ -36,7 +50,7 @@ def get_brain_info() -> dict:
     """Return this Brain's discovery info."""
     import platform
 
-    hostname = socket.gethostname()
+    hostname = _preferred_hostname()
     local_ip = _get_local_ip()
 
     # Try to get GPU info
@@ -86,7 +100,7 @@ def advertise_start():
         logger.info("Not in LAN mode — skipping mDNS advertisement")
         return
 
-    hostname = socket.gethostname()
+    hostname = _preferred_hostname()
     port = settings.port
 
     try:

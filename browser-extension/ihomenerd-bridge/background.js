@@ -48,6 +48,12 @@ function isLoopbackUrl(baseUrl) {
   }
 }
 
+function isLoopbackBrain(brain) {
+  if (!brain) return false
+  if (brain.url && isLoopbackUrl(brain.url)) return true
+  return brain.ip === '127.0.0.1' || brain.hostname === 'localhost'
+}
+
 function isPrivateNetworkUrl(baseUrl) {
   try {
     const url = new URL(baseUrl)
@@ -418,6 +424,19 @@ async function discoverBrains() {
     addBrain(result)
   }
 
+  // --- Phase 1b: Probe the currently selected brain directly, even if it is an IP ---
+  if (selected && selected.url) {
+    try {
+      const selectedHost = new URL(selected.url).hostname
+      console.log('[iHN discover] Phase 1b: probing selected host', selectedHost)
+      const result = await probeBrain(selectedHost).catch(e => {
+        console.log('[iHN discover] selected probe failed for', selectedHost, ':', e.message)
+        return null
+      })
+      addBrain(result)
+    } catch { /* ignore invalid selected URL */ }
+  }
+
   console.log('[iHN discover] After phase 1: brains found =', brains.length)
   await updateScanProgress(0, 1, brains.length)
 
@@ -453,9 +472,10 @@ async function discoverBrains() {
 
   await updateScanProgress(0, 1, brains.length)
 
-  // --- Phase 3: IP subnet scan (slow fallback) ---
-  // Only if we haven't found anything yet
-  if (brains.length === 0) {
+  // --- Phase 3: IP subnet scan (LAN enumeration) ---
+  // Run even if localhost or one known remote brain was found: users click
+  // "Scan LAN" because they want the rest of the network, not just seeds.
+  {
     const subnets = await guessSubnets()
     let allIps = []
     for (const prefix of subnets) {
@@ -482,6 +502,13 @@ async function discoverBrains() {
       await updateScanProgress(Math.min(i + BATCH_SIZE, totalIps), totalIps, brains.length)
     }
   }
+
+  // Prefer real LAN nodes before loopback-only results in the stored list.
+  brains.sort((a, b) => {
+    const aloop = isLoopbackBrain(a) ? 1 : 0
+    const bloop = isLoopbackBrain(b) ? 1 : 0
+    return aloop - bloop
+  })
 
   // Final progress
   await updateScanProgress(1, 1, brains.length)
