@@ -183,7 +183,8 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                   sandbox machine and use a trusted AI to guide you. A headless Linux box that you
                   can already reach over SSH is one of the best current cases. The guided VM path
                   should be easier soon. Docker still changes the host, so use a machine you can
-                  repair or wipe. The live image is the longer-term spare-PC path unless you are
+                  repair or wipe. The current Docker path is repo-based, not a polished one-line
+                  Docker image. The live image is the longer-term spare-PC path unless you are
                   comfortable building pieces yourself.
                 </p>
               </div>
@@ -236,6 +237,15 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                   title="Live Image: Spare-PC Path"
                   description="Best eventual path when you have an unused PC or mini-PC. Public live-image download flow is longer-term; DIY builders can experiment earlier."
                 />
+              </div>
+
+              <div className="rounded-2xl border border-border-color bg-bg-input/40 p-5">
+                <h3 className="font-bold text-lg mb-2">Current Docker reality</h3>
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  Today&apos;s Docker path uses the public repo plus its compose and installer files.
+                  If an AI invents a `docker run some-image:latest` command without pointing to the
+                  exact repo files or installer script, it is guessing.
+                </p>
               </div>
 
               <div className="rounded-2xl border border-border-color bg-bg-input/40 p-5">

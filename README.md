@@ -20,8 +20,27 @@ Dashboard at http://127.0.0.1:17777 | API at http://127.0.0.1:17777/docs
 
 ## With Docker
 
+There is not yet a polished one-line `docker run ihomenerd/...` image for cold
+visitors. The current Docker path is repo-based: use this repo directly or run
+the installer script on the target Linux machine. A headless Linux box that you
+can already reach over SSH is one of the best current cases.
+
+Target-machine installer:
+
 ```bash
-docker compose up
+bash get-ihomenerd.sh
+```
+
+CPU/sandbox default:
+
+```bash
+docker compose up -d --build
+```
+
+NVIDIA GPU host:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
 ```
 
 This starts Ollama + iHomeNerd together. Pull models into the Ollama container:
@@ -29,6 +48,17 @@ This starts Ollama + iHomeNerd together. Pull models into the Ollama container:
 ```bash
 docker compose exec ollama ollama pull gemma3:4b
 ```
+
+The HTTPS Command Center is exposed at `https://localhost:17777`.
+The HTTP setup/bootstrap page is exposed at `http://localhost:17778/setup`.
+Ollama stays private inside Docker; use `docker compose exec ollama ...`
+instead of exposing port `11434` to the LAN.
+
+## Trial VM scaffold
+
+The VM-first path is scaffolded in `vm/`. It uses cloud-init to boot an Ubuntu
+cloud image and start the same Docker Compose stack, so the VM path stays tied
+to the Docker runtime instead of becoming a second installer.
 
 ## CLI
 
