@@ -55,7 +55,7 @@ function getVmSummary(platform: Platform): string {
 
 function getDockerSummary(platform: Platform): string {
   if (platform === 'windows') {
-    return 'Docker is the practical path today if you are willing to use a trusted AI as your guide. Prefer a spare machine or VM/sandbox over your main Windows install. Expect Docker Desktop, WSL2, and more moving parts than the upcoming VM path.';
+    return 'Docker is the practical path today if you are willing to use a trusted AI as your guide. Prefer a spare machine or VM/sandbox over your main Windows install. Docker still changes the host, so do not treat it as risk-free isolation.';
   }
   if (platform === 'macos') {
     return 'Docker is the practical path today if containers already make sense to you. Prefer a spare machine or disposable VM/sandbox if possible, and use a trusted AI to walk through the tradeoffs before you run commands.';
@@ -180,8 +180,9 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                 <p className="text-sm text-text-secondary leading-relaxed">
                   Docker is the practical early-adopter path today if you run it on a spare or
                   sandbox machine and use a trusted AI to guide you. The guided VM path should be
-                  easier soon. The live image is the longer-term spare-PC path unless you are
-                  comfortable building pieces yourself.
+                  easier soon. Docker still changes the host, so use a machine you can repair or
+                  wipe. The live image is the longer-term spare-PC path unless you are comfortable
+                  building pieces yourself.
                 </p>
               </div>
 
