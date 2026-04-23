@@ -55,15 +55,15 @@ function getVmSummary(platform: Platform): string {
 
 function getDockerSummary(platform: Platform): string {
   if (platform === 'windows') {
-    return 'Docker is the practical path today if you are willing to use a trusted AI as your guide. Prefer a spare machine or VM/sandbox over your main Windows install. Docker still changes the host, so do not treat it as risk-free isolation.';
+    return 'Docker is the practical path today if you are willing to use a trusted AI as your guide. Prefer a spare machine, especially a Linux box you can already SSH into, over your main Windows install. Docker still changes the host, so do not treat it as risk-free isolation.';
   }
   if (platform === 'macos') {
-    return 'Docker is the practical path today if containers already make sense to you. Prefer a spare machine or disposable VM/sandbox if possible, and use a trusted AI to walk through the tradeoffs before you run commands.';
+    return 'Docker is the practical path today if containers already make sense to you. Prefer a spare machine, especially a Linux box you can already SSH into, over your main Mac, and use a trusted AI to walk through the tradeoffs before you run commands.';
   }
   if (platform === 'linux') {
-    return 'Docker is the practical early-adopter path on Linux if you already self-host or are comfortable getting AI-guided help. A spare mini-PC or wipeable Linux box is ideal.';
+    return 'Docker is the practical early-adopter path on Linux if you already self-host or are comfortable getting AI-guided help. A spare mini-PC, wipeable Linux box, or headless GPU machine with SSH is ideal.';
   }
-  return 'Docker is the practical early-adopter path today, ideally on a spare machine or disposable sandbox, but it is not the low-friction default for a cold visitor.';
+  return 'Docker is the practical early-adopter path today, ideally on a spare machine or headless Linux box you can already SSH into, but it is not the low-friction default for a cold visitor.';
 }
 
 export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
@@ -87,6 +87,7 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
 
   const shareUrl =
     typeof window !== 'undefined' ? window.location.href : 'https://staging.ihomenerd.com/';
+  const githubUrl = 'https://github.com/llm-case-studies/iHomeNerd';
 
   const copyToClipboard = async (text: string, token: string) => {
     try {
@@ -179,10 +180,11 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                 <p className="text-lg font-semibold mb-2">Pick the path that matches your patience.</p>
                 <p className="text-sm text-text-secondary leading-relaxed">
                   Docker is the practical early-adopter path today if you run it on a spare or
-                  sandbox machine and use a trusted AI to guide you. The guided VM path should be
-                  easier soon. Docker still changes the host, so use a machine you can repair or
-                  wipe. The live image is the longer-term spare-PC path unless you are comfortable
-                  building pieces yourself.
+                  sandbox machine and use a trusted AI to guide you. A headless Linux box that you
+                  can already reach over SSH is one of the best current cases. The guided VM path
+                  should be easier soon. Docker still changes the host, so use a machine you can
+                  repair or wipe. The live image is the longer-term spare-PC path unless you are
+                  comfortable building pieces yourself.
                 </p>
               </div>
 
@@ -190,19 +192,30 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                 <ChooserCard
                   icon={<Brain size={22} />}
                   title="Ask Your Trusted AI"
-                  description="Share this page with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you have and ask whether Docker now, VM soon, or live image later fits your patience and skill level."
+                  description="Share this page or the public GitHub repo with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you have and ask whether Docker now, VM soon, or live image later fits your patience and skill level."
                   action={
-                    <button
-                      onClick={() => copyToClipboard(shareUrl, 'page-link')}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
-                    >
-                      {copiedToken === 'page-link' ? (
-                        <CheckCircle2 size={16} className="text-success" />
-                      ) : (
-                        <Copy size={16} className="text-accent" />
-                      )}
-                      {copiedToken === 'page-link' ? 'Link Copied' : 'Copy Page Link'}
-                    </button>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => copyToClipboard(shareUrl, 'page-link')}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
+                      >
+                        {copiedToken === 'page-link' ? (
+                          <CheckCircle2 size={16} className="text-success" />
+                        ) : (
+                          <Copy size={16} className="text-accent" />
+                        )}
+                        {copiedToken === 'page-link' ? 'Link Copied' : 'Copy Page Link'}
+                      </button>
+                      <a
+                        href={githubUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
+                      >
+                        <ExternalLink size={16} className="text-accent" />
+                        GitHub Repo
+                      </a>
+                    </div>
                   }
                 />
 
@@ -223,6 +236,31 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                   title="Live Image: Spare-PC Path"
                   description="Best eventual path when you have an unused PC or mini-PC. Public live-image download flow is longer-term; DIY builders can experiment earlier."
                 />
+              </div>
+
+              <div className="rounded-2xl border border-border-color bg-bg-input/40 p-5">
+                <h3 className="font-bold text-lg mb-2">Common situations</h3>
+                <p className="text-sm text-text-secondary leading-relaxed mb-4">
+                  Use the hardware you already have to choose the least painful first step.
+                </p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <ScenarioTile
+                    title="Busy laptop you do not want to touch"
+                    description="Wait for the guided VM. Do not start with Docker on your daily machine if you are trying to avoid friction."
+                  />
+                  <ScenarioTile
+                    title="Headless Linux box on your LAN, SSH already works"
+                    description="Best Docker-today case. Install there, then open the LAN URL from your laptop, phone, or tablet."
+                  />
+                  <ScenarioTile
+                    title="Spare mini-PC or wipeable Linux machine"
+                    description="Good Docker-now target with trusted-AI help. Later, the live image should become the cleaner appliance path."
+                  />
+                  <ScenarioTile
+                    title="Kid's gaming rig or unknown-state GPU box"
+                    description="Wait for the live image unless you first verify it is safe to wipe, recover, and reach remotely."
+                  />
+                </div>
               </div>
 
               <div className="rounded-2xl border border-border-color bg-bg-input/40 p-5 space-y-4">
@@ -363,6 +401,21 @@ function ChooserCard({
       <h3 className="text-lg font-display font-bold mb-2">{title}</h3>
       <p className="text-sm text-text-secondary leading-relaxed mb-4">{description}</p>
       {action}
+    </div>
+  );
+}
+
+function ScenarioTile({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border-color bg-bg-primary/70 p-4">
+      <h4 className="text-sm font-semibold mb-2">{title}</h4>
+      <p className="text-sm text-text-secondary leading-relaxed">{description}</p>
     </div>
   );
 }
