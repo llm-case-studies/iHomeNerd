@@ -147,9 +147,9 @@ export default function LandingPage() {
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
               This staging page is the canonical summary of the current trial paths. Docker is the
-              practical early-adopter path today if you use a trusted AI as your guide. A guided VM
-              path should become the smoother default soon, and the live image is the longer-term
-              spare-PC path.
+              practical early-adopter path today if you run it on a spare or sandbox machine and
+              use a trusted AI as your guide. A guided VM path should become the smoother default
+              soon, and the live image is the longer-term spare-PC path.
             </p>
           </div>
 
@@ -158,7 +158,7 @@ export default function LandingPage() {
               title="Today"
               label="Docker + AI guide"
               tone="ready"
-              description="Doable for early adopters if you are comfortable letting GPT, Claude, Gemini, Grok, or DeepSeek walk you through the Docker path and explain each step."
+              description="Doable for early adopters, especially on a spare mini-PC or other sandbox machine, if you are comfortable letting GPT, Claude, Gemini, Grok, or DeepSeek explain each Docker step."
             />
             <TimelineCard
               title="Next"
@@ -177,11 +177,11 @@ export default function LandingPage() {
           <div className="mb-8 rounded-2xl border border-warning/30 bg-warning/5 p-6">
             <h3 className="text-xl font-display font-bold mb-3">Choose based on patience and comfort.</h3>
             <p className="text-text-secondary leading-relaxed">
-              If you want to try something now, Docker is the path, but use a trusted AI and avoid
-              copy-pasting commands you do not understand. If you want the smoother first
+              If you want to try something now, Docker is the path; the safest place to do that is
+              a spare mini-PC, spare PC, or VM/sandbox you are willing to wipe. Use a trusted AI and
+              avoid copy-pasting commands you do not understand. If you want the smoother first
               experience, wait for the guided VM path. If you want a bootable spare-PC experience,
-              expect the live image to take longer unless you are comfortable building pieces
-              yourself.
+              expect the live image to take longer unless you are comfortable building pieces yourself.
             </p>
           </div>
 
@@ -215,8 +215,8 @@ export default function LandingPage() {
 
             <PathCard
               icon={<Package size={24} />}
-              title="Docker: Try Now With Help"
-              description="This is the practical path today for early adopters. It is not the low-friction default, but a trusted AI can help you understand each step and decide whether your machine is a fit."
+              title="Docker: Try Now on a Sandbox"
+              description="This is the practical path today for early adopters. Use a spare machine or VM if you have one, and let a trusted AI help you understand each step before you run it."
               color="text-cyan-400"
               bg="bg-cyan-400/10"
               action={

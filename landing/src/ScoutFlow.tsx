@@ -55,15 +55,15 @@ function getVmSummary(platform: Platform): string {
 
 function getDockerSummary(platform: Platform): string {
   if (platform === 'windows') {
-    return 'Docker is the practical path today if you are willing to use a trusted AI as your guide. On Windows, expect Docker Desktop, WSL2, and more moving parts than the upcoming VM path.';
+    return 'Docker is the practical path today if you are willing to use a trusted AI as your guide. Prefer a spare machine or VM/sandbox over your main Windows install. Expect Docker Desktop, WSL2, and more moving parts than the upcoming VM path.';
   }
   if (platform === 'macos') {
-    return 'Docker is the practical path today if containers already make sense to you. Use a trusted AI to walk through the tradeoffs before you run commands.';
+    return 'Docker is the practical path today if containers already make sense to you. Prefer a spare machine or disposable VM/sandbox if possible, and use a trusted AI to walk through the tradeoffs before you run commands.';
   }
   if (platform === 'linux') {
-    return 'Docker is the practical early-adopter path on Linux if you already self-host or are comfortable getting AI-guided help.';
+    return 'Docker is the practical early-adopter path on Linux if you already self-host or are comfortable getting AI-guided help. A spare mini-PC or wipeable Linux box is ideal.';
   }
-  return 'Docker is the practical early-adopter path today, but it is not the low-friction default for a cold visitor.';
+  return 'Docker is the practical early-adopter path today, ideally on a spare machine or disposable sandbox, but it is not the low-friction default for a cold visitor.';
 }
 
 export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
@@ -178,9 +178,10 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
               <div className="rounded-2xl border border-accent/20 bg-accent/10 p-5">
                 <p className="text-lg font-semibold mb-2">Pick the path that matches your patience.</p>
                 <p className="text-sm text-text-secondary leading-relaxed">
-                  Docker is the practical early-adopter path today if you use a trusted AI to guide
-                  you. The guided VM path should be easier soon. The live image is the longer-term
-                  spare-PC path unless you are comfortable building pieces yourself.
+                  Docker is the practical early-adopter path today if you run it on a spare or
+                  sandbox machine and use a trusted AI to guide you. The guided VM path should be
+                  easier soon. The live image is the longer-term spare-PC path unless you are
+                  comfortable building pieces yourself.
                 </p>
               </div>
 
@@ -206,7 +207,7 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
 
                 <ChooserCard
                   icon={<Package size={22} />}
-                  title="Docker: Try Now With Help"
+                  title="Docker: Try Now on a Sandbox"
                   description={getDockerSummary(platform)}
                 />
 
