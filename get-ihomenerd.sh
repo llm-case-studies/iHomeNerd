@@ -45,6 +45,17 @@ warn() { echo -e "  ${YELLOW}${WARN}  $1${NC}"; }
 fail() { echo -e "  ${RED}✘  $1${NC}"; exit 1; }
 step() { echo -e "\n${CYAN}${BOLD}── $1 ──${NC}"; }
 
+confirm_or_exit() {
+    local prompt="$1"
+    if [[ "${IHN_AUTO_YES:-0}" == "1" ]]; then
+        ok "${prompt} — auto-accepted"
+        return 0
+    fi
+    read -p "   ${prompt} (y/N) " -n 1 -r
+    echo
+    [[ $REPLY =~ ^[Yy]$ ]] || exit 1
+}
+
 copy_ca_file_from_ssh() {
     local ssh_host="$1"
     local remote_command="$2"
@@ -139,9 +150,7 @@ ok "RAM: ${RAM_GB}GB"
 DISK_AVAIL=$(df -BG / | tail -1 | awk '{print $4}' | tr -d 'G')
 if [[ $DISK_AVAIL -lt 10 ]]; then
     warn "Only ${DISK_AVAIL}GB disk free. We'll need ~8GB for models."
-    read -p "   Continue anyway? (y/N) " -n 1 -r
-    echo
-    [[ $REPLY =~ ^[Yy]$ ]] || exit 1
+    confirm_or_exit "Continue anyway?"
 fi
 ok "Disk: ${DISK_AVAIL}GB available"
 
@@ -161,9 +170,7 @@ if [[ -z "$GPU_NAME" ]]; then
     warn "No NVIDIA GPU detected."
     say "iHomeNerd can run on CPU, but it'll be like thinking through molasses."
     say "If you have a machine with a GPU, install there instead!"
-    read -p "   Continue with CPU-only mode? (y/N) " -n 1 -r
-    echo
-    [[ $REPLY =~ ^[Yy]$ ]] || exit 1
+    confirm_or_exit "Continue with CPU-only mode?"
 fi
 
 # ============================================================================
@@ -249,7 +256,12 @@ ok "Selected: ${MODEL_DESC}"
 # ============================================================================
 step "${HOUSE} Setting up the Nerd Cave..."
 
-INSTALL_DIR="${HOME}/.ihomenerd"
+INSTALL_DIR="${IHN_INSTALL_DIR:-${HOME}/.ihomenerd}"
+if [[ "$INSTALL_DIR" == "~/"* ]]; then
+    INSTALL_DIR="${HOME}/${INSTALL_DIR#~/}"
+elif [[ "$INSTALL_DIR" == "~" ]]; then
+    INSTALL_DIR="${HOME}"
+fi
 REPO_REF="${IHN_REPO_REF:-main}"
 ARCHIVE_URL="https://github.com/llm-case-studies/iHomeNerd/archive/refs/heads/${REPO_REF}.tar.gz"
 HOME_CA_DIR="${INSTALL_DIR}/home-ca"
@@ -398,7 +410,7 @@ echo -e "  ${DIM}Update:${NC}  cd ~/.ihomenerd && bash get-ihomenerd.sh"
 echo ""
 
 # Try to open browser
-if command -v xdg-open &>/dev/null; then
+if [[ "${IHN_SKIP_OPEN:-0}" != "1" ]] && command -v xdg-open &>/dev/null; then
     xdg-open "https://localhost:17777" 2>/dev/null &
 fi
 

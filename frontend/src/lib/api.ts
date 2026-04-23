@@ -287,6 +287,116 @@ export const api = {
   },
 
   /**
+   * GET /v1/control/nodes
+   * Managed nodes known to the gateway control plane.
+   */
+  async getControlNodes() {
+    try {
+      const res = await fetch(`${BASE_URL}/v1/control/nodes`);
+      if (!res.ok) throw new Error('Network response was not ok');
+      return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, using mock control-plane nodes', e);
+      return {
+        nodes: [
+          {
+            id: 'node-gateway',
+            hostname: 'home-gateway.local',
+            ip: '192.168.0.10',
+            controlHost: 'home-gateway.local',
+            sshUser: 'alex',
+            sshPort: 22,
+            platform: 'linux',
+            arch: 'x86_64',
+            runtimeKind: 'docker_compose',
+            installPath: '~/.ihomenerd',
+            serviceName: 'ihomenerd',
+            state: 'managed',
+            managed: true,
+            installSupported: true,
+            metadata: {
+              recommendedRoles: ['gateway', 'automation', 'docs'],
+              recommendedModels: ['gemma3:1b', 'llama3.2:1b'],
+            },
+          },
+        ],
+      };
+    }
+  },
+
+  /**
+   * POST /v1/control/preflight
+   * Probe an SSH-reachable candidate node.
+   */
+  async preflightNode(host: string, sshUser: string, sshPort: number = 22) {
+    const res = await fetch(`${BASE_URL}/v1/control/preflight`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host, sshUser, sshPort }),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => null);
+      throw new Error(detail?.detail?.message || detail?.detail || 'Preflight failed');
+    }
+    return await res.json();
+  },
+
+  /**
+   * POST /v1/control/promote
+   * Register or install a managed node over SSH.
+   */
+  async promoteNode(payload: {
+    host: string;
+    sshUser: string;
+    sshPort?: number;
+    installNow?: boolean;
+    installPath?: string;
+    runtimeKind?: string | null;
+    nodeName?: string | null;
+  }) {
+    const res = await fetch(`${BASE_URL}/v1/control/promote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => null);
+      throw new Error(detail?.detail?.message || detail?.detail || 'Promote failed');
+    }
+    return await res.json();
+  },
+
+  /**
+   * POST /v1/control/nodes/:id/actions
+   * Start, stop, restart, or inspect a managed node runtime.
+   */
+  async runNodeAction(nodeId: string, action: 'start' | 'stop' | 'restart' | 'status') {
+    const res = await fetch(`${BASE_URL}/v1/control/nodes/${encodeURIComponent(nodeId)}/actions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => null);
+      throw new Error(detail?.detail?.message || detail?.detail || `${action} failed`);
+    }
+    return await res.json();
+  },
+
+  /**
+   * GET /v1/control/nodes/:id/updates
+   * Check OS and iHomeNerd updates for a managed node.
+   */
+  async getNodeUpdates(nodeId: string) {
+    const res = await fetch(`${BASE_URL}/v1/control/nodes/${encodeURIComponent(nodeId)}/updates`);
+    if (!res.ok) {
+      const detail = await res.json().catch(() => null);
+      throw new Error(detail?.detail?.message || detail?.detail || 'Update check failed');
+    }
+    return await res.json();
+  },
+
+  /**
    * GET /sessions
    * List active sessions.
    */

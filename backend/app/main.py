@@ -21,6 +21,7 @@ from .config import settings
 from .domains.language import router as language_router
 from .domains.docs import router as docs_router
 from .domains.investigate import router as investigate_router, get_environment
+from .domains.control_plane import router as control_plane_router
 from .domains.agents import router as agents_router
 from .domains.builder import router as builder_router
 from .domains.rules_router import router as rules_router
@@ -30,6 +31,7 @@ from .plugins.pronunco import router as pronunco_router
 from .plugins.pronunco_persistence import router as pronunco_persistence_router
 from .plugins import pronunco_persistence
 from . import ollama
+from . import nodes as managed_nodes_registry
 from .discovery import advertise_start, advertise_stop, get_brain_info, browse_peers
 
 app = FastAPI(
@@ -72,6 +74,7 @@ app.add_middleware(
 app.include_router(language_router)
 app.include_router(docs_router)
 app.include_router(investigate_router)
+app.include_router(control_plane_router)
 app.include_router(agents_router)
 app.include_router(builder_router)
 app.include_router(rules_router)
@@ -321,11 +324,43 @@ async def _probe_cluster_node(peer_ip: str) -> dict | None:
     return None
 
 
+def _managed_summary(node: managed_nodes_registry.ManagedNode) -> dict:
+    return {
+        "id": node.id,
+        "state": node.state,
+        "managed": node.managed,
+        "runtimeKind": node.runtime_kind,
+        "controlHost": node.control_host,
+        "sshUser": node.ssh_user,
+        "sshPort": node.ssh_port,
+        "installPath": node.install_path,
+        "installSupported": node.install_supported,
+        "lastSeen": node.last_seen,
+        "metadata": node.metadata or {},
+    }
+
+
+def _attach_managed_metadata(payload: dict, registry_by_ip: dict[str, managed_nodes_registry.ManagedNode], registry_by_host: dict[str, managed_nodes_registry.ManagedNode]) -> dict:
+    enriched = dict(payload)
+    match = None
+    if payload.get("ip"):
+        match = registry_by_ip.get(payload["ip"])
+    if not match and payload.get("hostname"):
+        match = registry_by_host.get(payload["hostname"])
+    if match:
+        enriched["managedNode"] = _managed_summary(match)
+    return enriched
+
+
 @app.get("/cluster/nodes")
 async def cluster_nodes():
     """Return a lightweight inventory of known iHomeNerd nodes."""
     local_node = await discover()
-    nodes = [local_node]
+    managed_registry = managed_nodes_registry.list_nodes()
+    registry_by_ip = {node.ip: node for node in managed_registry if node.ip}
+    registry_by_host = {node.hostname: node for node in managed_registry if node.hostname}
+
+    cluster = [_attach_managed_metadata(local_node, registry_by_ip, registry_by_host)]
     local_ip = local_node.get("ip")
     seen = {local_ip, "127.0.0.1", None}
 
@@ -336,7 +371,32 @@ async def cluster_nodes():
         seen.add(peer_ip)
         payload = await _probe_cluster_node(peer_ip)
         if payload:
-            nodes.append(payload)
+            cluster.append(_attach_managed_metadata(payload, registry_by_ip, registry_by_host))
+
+    for managed in managed_registry:
+        candidate_ip = managed.ip or managed.control_host
+        if not candidate_ip or candidate_ip in seen:
+            continue
+        seen.add(candidate_ip)
+        cluster.append({
+            "product": "iHomeNerd",
+            "version": "0.1.0",
+            "role": "brain",
+            "hostname": managed.hostname or managed.control_host or managed.id,
+            "ip": candidate_ip,
+            "port": settings.port,
+            "protocol": "https",
+            "os": managed.platform,
+            "arch": managed.arch,
+            "gpu": None,
+            "ram_bytes": None,
+            "suggested_roles": (managed.metadata or {}).get("recommendedRoles", []),
+            "strengths": (managed.metadata or {}).get("recommendedStrengths", []),
+            "models": (managed.metadata or {}).get("recommendedModels", []),
+            "ollama": False,
+            "offline": managed.state not in {"managed"},
+            "managedNode": _managed_summary(managed),
+        })
 
     return {
         "product": "iHomeNerd",
@@ -345,7 +405,7 @@ async def cluster_nodes():
             "ip": local_node.get("ip"),
             "url": f"https://{local_node.get('ip')}:{local_node.get('port', 17777)}" if local_node.get("ip") else "",
         },
-        "nodes": nodes,
+        "nodes": cluster,
     }
 
 
