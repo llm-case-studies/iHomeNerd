@@ -158,7 +158,7 @@ export default function LandingPage() {
               title="Today"
               label="Docker + AI guide"
               tone="ready"
-              description="Doable for early adopters, especially on a spare mini-PC or other sandbox machine, if you are comfortable letting GPT, Claude, Gemini, Grok, or DeepSeek explain each Docker step."
+              description="Doable for early adopters, especially on a spare mini-PC or other wipeable sandbox machine, if you are comfortable letting GPT, Claude, Gemini, Grok, or DeepSeek explain each Docker step."
             />
             <TimelineCard
               title="Next"
@@ -179,7 +179,8 @@ export default function LandingPage() {
             <p className="text-text-secondary leading-relaxed">
               If you want to try something now, Docker is the path; the safest place to do that is
               a spare mini-PC, spare PC, or VM/sandbox you are willing to wipe. Use a trusted AI and
-              avoid copy-pasting commands you do not understand. If you want the smoother first
+              avoid copy-pasting commands you do not understand. Docker still changes the host
+              machine, so do not treat it as risk-free isolation. If you want the smoother first
               experience, wait for the guided VM path. If you want a bootable spare-PC experience,
               expect the live image to take longer unless you are comfortable building pieces yourself.
             </p>
@@ -216,7 +217,7 @@ export default function LandingPage() {
             <PathCard
               icon={<Package size={24} />}
               title="Docker: Try Now on a Sandbox"
-              description="This is the practical path today for early adopters. Use a spare machine or VM if you have one, and let a trusted AI help you understand each step before you run it."
+              description="This is the practical path today for early adopters. Use a spare machine or VM if you have one, and let a trusted AI help you understand each step before you run it. Do not use your main machine first."
               color="text-cyan-400"
               bg="bg-cyan-400/10"
               action={
@@ -269,6 +270,10 @@ export default function LandingPage() {
             <p className="text-base text-text-secondary leading-relaxed">
               Already have iHomeNerd running somewhere on your network? Open the path guide and
               connect directly to that machine instead of starting from scratch.
+            </p>
+            <p className="mt-3 text-sm text-text-secondary/80 leading-relaxed">
+              The compatibility check evaluates the device running this browser. To check a mini-PC,
+              open this page on that mini-PC or describe its specs to your trusted AI.
             </p>
           </div>
         </div>
