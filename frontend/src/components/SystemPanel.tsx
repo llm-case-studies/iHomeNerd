@@ -420,6 +420,9 @@ export function SystemPanel() {
               <p className="text-sm text-text-secondary">
                 Use this for a Linux box or Mac you can already reach over SSH. Linux uses the Docker path; macOS installs a user-level launchd service and reuses Ollama if the app is already present.
               </p>
+              <p className="text-xs text-text-secondary/80">
+                The gateway uses its own SSH identity. If this Home node cannot already SSH into the target, preflight and promotion will fail even if your laptop can reach it.
+              </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <label className="text-sm text-text-secondary">
