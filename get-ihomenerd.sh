@@ -213,6 +213,22 @@ curl -fsSL "$ARCHIVE_URL" | tar -xz --strip-components=1 -C "$INSTALL_DIR"
 
 ok "iHomeNerd files saved to ${INSTALL_DIR}/"
 
+LAN_IP=$(hostname -I | awk '{print $1}')
+HOST_SHORT=$(hostname -s 2>/dev/null || hostname)
+HOST_FQDN=$(hostname -f 2>/dev/null || true)
+HOSTNAME_LIST="$HOST_SHORT"
+if [[ -n "$HOST_FQDN" && "$HOST_FQDN" != "$HOST_SHORT" ]]; then
+    HOSTNAME_LIST="${HOSTNAME_LIST},${HOST_FQDN}"
+fi
+if [[ -n "$HOST_SHORT" && "$HOST_SHORT" != *.local ]]; then
+    HOSTNAME_LIST="${HOSTNAME_LIST},${HOST_SHORT}.local"
+fi
+cat > "${INSTALL_DIR}/.env" <<EOF
+IHN_CERT_LAN_IP=${LAN_IP}
+IHN_CERT_HOSTNAMES=${HOSTNAME_LIST}
+EOF
+ok "TLS identity prepared for ${LAN_IP} (${HOSTNAME_LIST})"
+
 COMPOSE_FILES=(-f docker-compose.yml)
 if [[ -n "$GPU_NAME" ]]; then
     COMPOSE_FILES+=(-f docker-compose.gpu.yml)
@@ -272,9 +288,6 @@ else
     warn "Brain started but Ollama may still be loading models."
     warn "Give it a minute, then check https://localhost:17777"
 fi
-
-# Get the LAN IP
-LAN_IP=$(hostname -I | awk '{print $1}')
 
 echo ""
 echo -e "${BOLD}${GREEN}╔══════════════════════════════════════════════════════╗${NC}"

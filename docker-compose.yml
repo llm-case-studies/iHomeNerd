@@ -41,6 +41,8 @@ services:
       - IHN_LAN_MODE=true
       - IHN_OLLAMA_URL=http://127.0.0.1:11434
       - IHN_DATA_DIR=/data
+      - IHN_CERT_LAN_IP=${IHN_CERT_LAN_IP:-}
+      - IHN_CERT_HOSTNAMES=${IHN_CERT_HOSTNAMES:-}
 
 volumes:
   ollama_data:

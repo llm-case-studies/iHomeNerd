@@ -15,6 +15,7 @@ device (auto-detects OS/browser, shows only relevant instructions).
 
 import datetime
 import logging
+import os
 import socket
 import subprocess
 from pathlib import Path
@@ -29,12 +30,32 @@ SERVER_SUBJECT = "/CN=iHomeNerd"
 
 def _get_lan_ip() -> str | None:
     """Best-effort LAN IP discovery (no external calls)."""
+    env_ip = os.environ.get("IHN_CERT_LAN_IP", "").strip()
+    if env_ip:
+        return env_ip
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.connect(("10.255.255.255", 1))
             return s.getsockname()[0]
     except Exception:
         return None
+
+
+def _get_hostnames() -> set[str]:
+    """Hostnames that should appear in the server certificate."""
+    names = {"localhost", "ihomenerd.local"}
+
+    hostname = socket.gethostname().strip()
+    if hostname:
+        names.add(hostname)
+
+    env_names = os.environ.get("IHN_CERT_HOSTNAMES", "")
+    for name in env_names.split(","):
+        name = name.strip()
+        if name:
+            names.add(name)
+
+    return names
 
 
 def _read_san_from_cert(cert_path: Path) -> set[str]:
@@ -175,11 +196,11 @@ def ensure_certs(certs_dir: Path) -> tuple[Path, Path] | None:
     server_cert = certs_dir / "server.crt"
     server_key = certs_dir / "server.key"
 
-    hostname = socket.gethostname()
     lan_ip = _get_lan_ip()
 
     # Build the SANs we need
-    needed_sans = {"DNS:localhost", "DNS:ihomenerd.local", f"DNS:{hostname}", "IP:127.0.0.1"}
+    needed_sans = {f"DNS:{name}" for name in _get_hostnames()}
+    needed_sans.add("IP:127.0.0.1")
     if lan_ip:
         needed_sans.add(f"IP:{lan_ip}")
 
