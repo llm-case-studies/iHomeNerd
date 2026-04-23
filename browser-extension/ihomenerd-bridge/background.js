@@ -274,7 +274,7 @@ async function guessSubnets() {
 /**
  * Probe a single IP for an iHomeNerd brain.
  * Tries multiple port/protocol/endpoint combinations in parallel:
- *   - HTTP :17778 /discover, /setup/test  (no cert needed)
+ *   - HTTP :17778 /discover, /health      (no cert needed)
  *   - HTTPS :17777 /discover, /health     (needs trusted cert)
  * Uses Promise.any — first successful response wins.
  * Returns brain info or null.
@@ -287,7 +287,7 @@ async function probeBrain(ip) {
     { protocol: 'https', port: DEFAULT_PORT, path: '/health' },
   ] : [
     { protocol: 'http',  port: SETUP_PORT,  path: '/discover' },
-    { protocol: 'http',  port: SETUP_PORT,  path: '/setup/test' },
+    { protocol: 'http',  port: SETUP_PORT,  path: '/health' },
     { protocol: 'https', port: DEFAULT_PORT, path: '/discover' },
     { protocol: 'https', port: DEFAULT_PORT, path: '/health' },
   ]
@@ -311,6 +311,11 @@ async function probeBrain(ip) {
 
   try {
     const data = await Promise.any(probePromises)
+    const models = Array.isArray(data.models)
+      ? data.models
+      : data.models && typeof data.models === 'object'
+        ? Object.keys(data.models)
+        : []
     return {
       url: `https://${ip}:${DEFAULT_PORT}`,
       hostname: data.hostname || ip,
@@ -319,7 +324,7 @@ async function probeBrain(ip) {
       protocol: 'https',
       version: data.version || 'unknown',
       gpu: data.gpu || null,
-      models: data.models || [],
+      models,
       ollama: data.ollama || false,
       role: data.role || 'brain',
       discoveredAt: Date.now(),
@@ -463,6 +468,34 @@ async function discoverBrains() {
             // Probe each peer — use hostname.local which has permanent permission
             const peerHost = peer.hostname || peer.ip
             const result = await probeBrain(peerHost).catch(() => null)
+            addBrain(result)
+          }
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  // --- Phase 2b: Ask any reachable brain for its Local Radar device list ---
+  if (brains.length > 0) {
+    for (const brain of [...brains]) {
+      try {
+        let envData = null
+        for (const baseUrl of [brain.url, `http://${brain.ip}:${SETUP_PORT}`]) {
+          try {
+            const controller = new AbortController()
+            const tid = setTimeout(() => controller.abort(), 4000)
+            const r = await fetch(`${baseUrl}/v1/investigate/environment`, {
+              signal: controller.signal,
+              headers: { 'Accept': 'application/json' },
+            })
+            clearTimeout(tid)
+            if (r.ok) { envData = await r.json(); break }
+          } catch { /* try next */ }
+        }
+        if (envData && Array.isArray(envData.devices)) {
+          for (const device of envData.devices) {
+            if (!device || !device.ip || device.ip === brain.ip) continue
+            const result = await probeBrain(device.ip).catch(() => null)
             addBrain(result)
           }
         }

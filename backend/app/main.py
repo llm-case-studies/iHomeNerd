@@ -18,7 +18,7 @@ from .capabilities import capabilities_response
 from .config import settings
 from .domains.language import router as language_router
 from .domains.docs import router as docs_router
-from .domains.investigate import router as investigate_router
+from .domains.investigate import router as investigate_router, get_environment
 from .domains.agents import router as agents_router
 from .domains.builder import router as builder_router
 from .domains.rules_router import router as rules_router
@@ -430,6 +430,10 @@ def _build_setup_app():
     @setup_app.get("/health")
     async def setup_health():
         return await health()
+
+    @setup_app.get("/v1/investigate/environment")
+    async def setup_investigate_environment():
+        return await get_environment()
 
     return setup_app
 
