@@ -153,7 +153,8 @@ export default function LandingPage() {
             <p className="text-base text-text-secondary leading-relaxed mb-5">
               iHomeNerd itself is meant to be public and free as a local brain. Privacy here means
               your household data stays on your hardware, not that the repo is closed. Apps that use
-              iHomeNerd can stay free or add paid layers on top.
+              iHomeNerd can stay free or add paid layers on top. This staging URL is the current
+              public preview page, not a private admin console, signup wall, or billing flow.
             </p>
             <a
               href={githubUrl}
@@ -184,7 +185,9 @@ export default function LandingPage() {
               the apps that connect to it. Docker is the practical early-adopter path today if you
               can run it on a spare or sandbox machine, especially a headless Linux box you already
               reach over SSH, and use a trusted AI as your guide. A guided VM path should become
-              the smoother default soon, and the live image is the longer-term spare-PC path.
+              the smoother default soon, and the live image is the longer-term spare-PC path. You
+              do not need an account, email signup, or payment to read this page and decide whether
+              the current path fits you.
             </p>
           </div>
 
