@@ -264,11 +264,11 @@
 <body>
 
 <h1>iHomeNerd Bridge</h1>
-<p class="subtitle">Connect web apps to your local AI brain</p>
+<p class="subtitle">Connect web apps to your local AI home gateway</p>
 
 <!-- Selected brain -->
 <div class="section">
-  <div class="section-title">Active Brain</div>
+  <div class="section-title">Connected Home</div>
   <div id="active-brain-display"></div>
   <div class="btn-row">
     <button class="btn btn-primary" id="btn-test">Test Connection</button>
@@ -278,10 +278,10 @@
 
 <!-- Discovery -->
 <div class="section">
-  <div class="section-title">Brains on Your Network</div>
+  <div class="section-title">Nodes on Your Network</div>
   <div id="brain-list-container">
     <div class="empty-state" id="empty-state">
-      Click <strong>Scan LAN</strong> to find iHomeNerd brains on your network.
+      Click <strong>Scan LAN</strong> to find iHomeNerd nodes on your network.
     </div>
     <ul class="brain-list hidden" id="brain-list"></ul>
     <div class="scanning hidden" id="scanning-indicator">
@@ -299,8 +299,8 @@
   </div>
   <button class="toggle-manual" id="toggle-manual">Enter address manually...</button>
   <div class="manual-input hidden" id="manual-section">
-    <input type="text" id="manual-url" placeholder="https://your-brain.local:17777" />
-    <button class="btn btn-secondary" id="btn-manual-save" style="flex:none;padding:8px 14px;">Use</button>
+    <input type="text" id="manual-url" placeholder="https://your-gateway.local:17777" />
+    <button class="btn btn-secondary" id="btn-manual-save" style="flex:none;padding:8px 14px;">Use as Gateway</button>
   </div>
 </div>
 

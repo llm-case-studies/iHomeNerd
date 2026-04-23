@@ -142,7 +142,7 @@ function updateBadge(brain) {
   } else {
     chrome.action.setBadgeBackgroundColor({ color: '#9ca3af' })
     chrome.action.setBadgeText({ text: '?' })
-    chrome.action.setTitle({ title: 'iHomeNerd Bridge — no brain selected' })
+    chrome.action.setTitle({ title: 'iHomeNerd Bridge — no gateway selected' })
   }
 }
 
@@ -336,6 +336,9 @@ async function probeBrain(ip) {
       protocol: 'https',
       version: data.version || 'unknown',
       gpu: data.gpu || null,
+      accelerators: Array.isArray(data.accelerators) ? data.accelerators : [],
+      suggestedRoles: Array.isArray(data.suggested_roles) ? data.suggested_roles : [],
+      strengths: Array.isArray(data.strengths) ? data.strengths : [],
       models,
       ollama: data.ollama || false,
       role: data.role || 'brain',
@@ -660,7 +663,7 @@ async function handleIHomeNerdMessage(message) {
   if (kind === 'ihomenerd-bridge/request') {
     const requestedUrl = normalizeBaseUrl(message.baseUrl || (await getSelectedBrainUrl()))
     if (!requestedUrl) {
-      const error = new Error('No brain selected. Open the iHomeNerd Bridge popup to configure or discover a brain.')
+      const error = new Error('No gateway selected. Open the iHomeNerd Bridge popup to configure or discover a home gateway.')
       error.code = 'no_brain_selected'
       throw error
     }
@@ -691,7 +694,7 @@ async function handleIHomeNerdMessage(message) {
   if (kind === 'ihomenerd-bridge/probe') {
     const baseUrl = normalizeBaseUrl(message.baseUrl || (await getSelectedBrainUrl()))
     if (!baseUrl) {
-      const error = new Error('No brain selected')
+      const error = new Error('No gateway selected')
       error.code = 'no_brain_selected'
       throw error
     }
@@ -764,7 +767,7 @@ async function handlePronunCoLegacyMessage(message) {
   if (kind === 'pronunco-local-bridge/request') {
     const requestedUrl = normalizeBaseUrl(message.baseUrl || (await getSelectedBrainUrl()))
     if (!requestedUrl) {
-      const error = new Error('No brain configured. Open the iHomeNerd Bridge popup to set up.')
+      const error = new Error('No gateway configured. Open the iHomeNerd Bridge popup to set up a home gateway.')
       error.code = 'no_brain_selected'
       throw error
     }
@@ -789,7 +792,7 @@ async function handlePronunCoLegacyMessage(message) {
   if (kind === 'pronunco-local-bridge/probe') {
     const baseUrl = normalizeBaseUrl(message.baseUrl || (await getSelectedBrainUrl()))
     if (!baseUrl) {
-      const error = new Error('No brain configured')
+      const error = new Error('No gateway configured')
       error.code = 'no_brain_selected'
       throw error
     }

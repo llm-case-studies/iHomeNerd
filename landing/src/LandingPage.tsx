@@ -230,6 +230,38 @@ export default function LandingPage() {
 
           <div className="mb-8 rounded-2xl border border-border-color bg-bg-primary/70 p-6">
             <div className="max-w-3xl">
+              <h3 className="text-xl font-display font-bold mb-3">One home, many specialists.</h3>
+              <p className="text-text-secondary leading-relaxed">
+                iHomeNerd is not meant to be one giant model on one giant box. The better shape is
+                a small always-on gateway that stays responsive, discovers hardware, and routes work
+                to the right local specialist: GPU nodes for larger chat and vision workloads, Coral
+                or edge accelerators for camera-heavy loops, and CPU-friendly nodes for docs,
+                automation, voice plumbing, OCR, indexing, and tools. In many tasks, a smaller
+                focused model is not just cheaper and faster than a large general model, but actually
+                the better fit.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6 mt-6">
+              <NodeRoleCard
+                icon={<Server size={22} />}
+                title="Gateway / Controller"
+                guidance="Best as an always-up, low-drama node. It does discovery, routing, permissions, cert trust, and cluster coordination. It does not need to be the biggest machine."
+              />
+              <NodeRoleCard
+                icon={<Zap size={22} />}
+                title="GPU Worker"
+                guidance="Best for larger local reasoning, multimodal chat, image analysis, and any workload where VRAM materially changes the experience."
+              />
+              <NodeRoleCard
+                icon={<Mic size={22} />}
+                title="Edge / CPU Specialists"
+                guidance="Good for wake-word, speech pipelines, OCR, document indexing, network tools, automations, and other tasks where small specialized models can win on speed and reliability."
+              />
+            </div>
+          </div>
+
+          <div className="mb-8 rounded-2xl border border-border-color bg-bg-primary/70 p-6">
+            <div className="max-w-3xl">
               <h3 className="text-xl font-display font-bold mb-3">Common hardware situations</h3>
               <p className="text-text-secondary leading-relaxed">
                 Use these as the first branch in your decision tree. The goal is not to force every
@@ -584,6 +616,26 @@ function PathCard({
 }
 
 function ScenarioCard({
+  icon,
+  title,
+  guidance,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  guidance: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 h-full">
+      <div className="w-11 h-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-4">
+        {icon}
+      </div>
+      <h3 className="text-lg font-display font-bold mb-2">{title}</h3>
+      <p className="text-sm text-text-secondary leading-relaxed">{guidance}</p>
+    </div>
+  );
+}
+
+function NodeRoleCard({
   icon,
   title,
   guidance,

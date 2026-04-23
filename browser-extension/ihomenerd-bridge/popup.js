@@ -1,7 +1,7 @@
 /**
  * iHomeNerd Bridge — Popup UI
  *
- * Shows active brain, discovery results, manual config, diagnostics.
+ * Shows connected gateway, discovered nodes, manual config, diagnostics.
  */
 
 // ---------------------------------------------------------------------------
@@ -63,7 +63,7 @@ function renderActiveBrain(brain) {
   if (!brain || !brain.url) {
     activeBrainDisplay.innerHTML = `
       <div class="empty-state" style="padding:6px 0;">
-        No brain selected yet. Scan your LAN or enter an address below.
+        No gateway selected yet. Scan your LAN or enter an address below.
       </div>`
     btnTest.disabled = true
     return
@@ -71,6 +71,9 @@ function renderActiveBrain(brain) {
 
   btnTest.disabled = false
   const gpu = brain.gpu ? `${brain.gpu.name} (${Math.round(brain.gpu.vram_mb / 1024)}GB)` : ''
+  const roles = Array.isArray(brain.suggestedRoles) && brain.suggestedRoles.length > 0
+    ? brain.suggestedRoles.join(', ')
+    : ''
   const models = Array.isArray(brain.models) && brain.models.length > 0
     ? brain.models.join(', ')
     : ''
@@ -79,9 +82,9 @@ function renderActiveBrain(brain) {
     <div class="brain-item selected" style="cursor:default;margin:0;">
       <div class="brain-dot online"></div>
       <div class="brain-info">
-        <div class="brain-name">${escapeHtml(brain.hostname || 'Brain')}</div>
+        <div class="brain-name">${escapeHtml(brain.hostname || 'Gateway')}</div>
         <div class="brain-url">${escapeHtml(brain.url)}</div>
-        ${gpu || models ? `<div class="brain-meta">${escapeHtml([gpu, models].filter(Boolean).join(' — '))}</div>` : ''}
+        ${gpu || roles || models ? `<div class="brain-meta">${escapeHtml([roles, gpu, models].filter(Boolean).join(' — '))}</div>` : ''}
       </div>
     </div>`
 }
@@ -108,19 +111,22 @@ function renderBrainList() {
     const li = document.createElement('li')
 
     const gpu = brain.gpu ? `${brain.gpu.name}` : ''
+    const roles = Array.isArray(brain.suggestedRoles) && brain.suggestedRoles.length > 0
+      ? brain.suggestedRoles.join(', ')
+      : ''
     const ollamaStatus = brain.ollama ? 'Ollama ready' : 'Ollama offline'
     const modelCount = Array.isArray(brain.models) ? `${brain.models.length} models` : ''
-    const meta = [gpu, ollamaStatus, modelCount].filter(Boolean).join(' · ')
+    const meta = [roles, gpu, ollamaStatus, modelCount].filter(Boolean).join(' · ')
 
     li.innerHTML = `
       <div class="brain-item${isSelected ? ' selected' : ''}" data-url="${escapeAttr(brain.url)}">
         <div class="brain-dot ${brain.ollama ? 'online' : 'unknown'}"></div>
         <div class="brain-info">
-          <div class="brain-name">${escapeHtml(brain.hostname || brain.ip || 'Brain')}</div>
+          <div class="brain-name">${escapeHtml(brain.hostname || brain.ip || 'Node')}</div>
           <div class="brain-url">${escapeHtml(brain.url)}</div>
           <div class="brain-meta">${escapeHtml(meta)}</div>
         </div>
-        <button class="brain-select-btn ${isSelected ? 'active' : ''}">${isSelected ? 'Active' : 'Use'}</button>
+        <button class="brain-select-btn ${isSelected ? 'active' : ''}">${isSelected ? 'Gateway' : 'Use as Gateway'}</button>
       </div>`
 
     const selectBtn = li.querySelector('.brain-select-btn')
@@ -161,7 +167,7 @@ async function selectBrain(brain) {
     const selected = await sendBridge({ kind: 'ihomenerd-bridge/get-config' })
     renderActiveBrain(selected.selectedBrain)
     renderBrainList()
-    showDiag('ok', `Connected to ${brain.hostname || url}`)
+    showDiag('ok', `Gateway set to ${brain.hostname || url}`)
   } catch (err) {
     showDiag('err', err.message)
   }
@@ -189,7 +195,7 @@ function startProgressPoll() {
         const pct = progress.total > 0 ? Math.round((progress.scanned / progress.total) * 100) : 0
         if (progressFill) progressFill.style.width = `${pct}%`
         if (progress.found > 0) {
-          scanningText.textContent = `Found ${progress.found} brain${progress.found > 1 ? 's' : ''}! Finishing scan... (${pct}%)`
+          scanningText.textContent = `Found ${progress.found} node${progress.found > 1 ? 's' : ''}! Finishing scan... (${pct}%)`
         } else {
           scanningText.textContent = `Scanning your network... ${progress.scanned}/${progress.total} IPs (${pct}%)`
         }
@@ -224,7 +230,7 @@ async function scanLAN() {
     })
     if (!granted) {
       scanningIndicator.classList.add('hidden')
-      showDiag('warn', 'Network access denied. The extension needs permission to scan your LAN for iHomeNerd brains.')
+      showDiag('warn', 'Network access denied. The extension needs permission to scan your LAN for iHomeNerd nodes.')
       isScanning = false
       btnScan.disabled = false
       return
@@ -280,8 +286,8 @@ async function scanLAN() {
       scanningIndicator.classList.add('hidden')
       emptyState.classList.remove('hidden')
       emptyState.innerHTML = `
-        No iHomeNerd brains found on your network.<br><br>
-        <strong>Try entering the address manually below.</strong><br>
+        No iHomeNerd nodes found on your network.<br><br>
+        <strong>Try entering the gateway address manually below.</strong><br>
         <span style="font-size:11px;color:#6b7280;">
           Example: https://msi-raider-linux.local:17777<br>
           or: https://192.168.0.206:17777
@@ -429,7 +435,7 @@ async function init() {
 
     // Show permission state in diagnostics if no brain
     if (!selectedBrainUrl) {
-      showDiag('info', 'No brain configured. Click "Scan LAN" to find your iHomeNerd.')
+      showDiag('info', 'No gateway configured. Click "Scan LAN" to find your iHomeNerd home.')
     } else if (!config.permissionGranted) {
       showDiag('warn', `Permission not granted for ${selectedBrainUrl}. Click "Test Connection" to grant access.`)
     }

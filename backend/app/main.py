@@ -8,11 +8,13 @@ Auto-generates TLS certs on first boot for LAN mic/camera access.
 import logging
 import time
 from pathlib import Path
+import ipaddress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
+import httpx
 
 from .capabilities import capabilities_response
 from .config import settings
@@ -275,12 +277,76 @@ async def discover():
 
     Scouts probe this endpoint to find and evaluate Brains on the LAN.
     """
-    info = get_brain_info()
+    caps_data = await capabilities_response()
+    info = get_brain_info(caps_data["capabilities"])
     # Add live model info
     ollama_health = await ollama.check_health()
     info["ollama"] = ollama_health["ok"]
     info["models"] = ollama_health.get("models", [])
     return info
+
+
+def _same_home_subnet(local_ip: str | None, peer_ip: str) -> bool:
+    """Keep cluster hints focused on likely home-LAN peers."""
+    if not local_ip:
+        return True
+    try:
+        local_addr = ipaddress.ip_address(local_ip)
+        peer_addr = ipaddress.ip_address(peer_ip)
+    except ValueError:
+        return False
+
+    if local_addr.version != 4 or peer_addr.version != 4:
+        return False
+    if peer_addr.is_loopback or peer_addr.is_link_local:
+        return False
+    return str(local_addr).rsplit(".", 1)[0] == str(peer_addr).rsplit(".", 1)[0]
+
+
+async def _probe_cluster_node(peer_ip: str) -> dict | None:
+    """Fetch a peer node's discovery payload over setup or main port."""
+    for base_url, verify in (
+        (f"http://{peer_ip}:17778", True),
+        (f"https://{peer_ip}:17777", False),
+    ):
+        try:
+            async with httpx.AsyncClient(timeout=1.5, verify=verify) as client:
+                response = await client.get(f"{base_url}/discover", headers={"Accept": "application/json"})
+            if response.is_success:
+                payload = response.json()
+                if payload.get("product") == "iHomeNerd":
+                    return payload
+        except Exception:
+            continue
+    return None
+
+
+@app.get("/cluster/nodes")
+async def cluster_nodes():
+    """Return a lightweight inventory of known iHomeNerd nodes."""
+    local_node = await discover()
+    nodes = [local_node]
+    local_ip = local_node.get("ip")
+    seen = {local_ip, "127.0.0.1", None}
+
+    for peer in browse_peers():
+        peer_ip = peer.get("ip")
+        if not peer_ip or peer_ip in seen or not _same_home_subnet(local_ip, peer_ip):
+            continue
+        seen.add(peer_ip)
+        payload = await _probe_cluster_node(peer_ip)
+        if payload:
+            nodes.append(payload)
+
+    return {
+        "product": "iHomeNerd",
+        "gateway": {
+            "hostname": local_node.get("hostname"),
+            "ip": local_node.get("ip"),
+            "url": f"https://{local_node.get('ip')}:{local_node.get('port', 17777)}" if local_node.get("ip") else "",
+        },
+        "nodes": nodes,
+    }
 
 
 @app.get("/discover/peers")
@@ -434,6 +500,10 @@ def _build_setup_app():
     @setup_app.get("/v1/investigate/environment")
     async def setup_investigate_environment():
         return await get_environment()
+
+    @setup_app.get("/cluster/nodes")
+    async def setup_cluster_nodes():
+        return await cluster_nodes()
 
     return setup_app
 
