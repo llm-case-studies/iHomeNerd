@@ -215,7 +215,8 @@ export default function LandingPage() {
               If you want to try something now, Docker is the path; the safest place to do that is
               a spare mini-PC, spare PC, or headless Linux box you can already reach over SSH. Use
               a trusted AI and avoid copy-pasting commands you do not understand. Docker still
-              changes the host machine, so do not treat it as risk-free isolation. If the target
+              changes the host machine, so do not treat it as risk-free isolation. The current
+              Docker path is repo-based, not a polished one-line Docker image. If the target
               machine is a mystery box with no remote access, wait for the guided VM path or the
               live image instead of improvising on unfamiliar hardware.
             </p>
@@ -288,6 +289,7 @@ export default function LandingPage() {
                       <p>Is this ready for me to try today, or should I wait?</p>
                       <p>I have a busy laptop and a headless Linux box on my LAN with SSH. Is Docker the right path?</p>
                       <p>I have a kid's gaming rig in an unknown state. Should I wait for the live image instead?</p>
+                      <p>Is there an official one-line docker run image yet, or is the current Docker path still repo-based?</p>
                       <p>Is this a public/free local brain, and where would paid layers actually live?</p>
                       <p>What should I avoid if I am not comfortable debugging Docker?</p>
                     </div>
@@ -299,7 +301,7 @@ export default function LandingPage() {
             <PathCard
               icon={<Package size={24} />}
               title="Docker: Try Now on a Sandbox"
-              description="This is the practical path today for early adopters. The best current case is a spare Linux machine or headless GPU box you can already reach over SSH. Let a trusted AI help you understand each step before you run it. Do not use your main machine first."
+              description="This is the practical path today for early adopters. The best current case is a spare Linux machine or headless GPU box you can already reach over SSH. The current path is repo-based, not a polished Docker Hub image. Let a trusted AI help you understand each step before you run it. Do not use your main machine first."
               color="text-cyan-400"
               bg="bg-cyan-400/10"
               action={
