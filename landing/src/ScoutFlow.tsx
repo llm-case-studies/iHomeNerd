@@ -42,15 +42,15 @@ function detectPlatform(): Platform {
 
 function getVmSummary(platform: Platform): string {
   if (platform === 'windows') {
-    return 'Best default for most Windows visitors. Start in a VM if you want the easiest first trial without BIOS changes or touching your main install.';
+    return 'Best default recommendation for most Windows visitors. Start with the VM path if you want the easiest first trial without BIOS changes or touching your main install. The guided VM artifact is still being finalized.';
   }
   if (platform === 'macos') {
-    return 'Best default for most Mac visitors. A VM is the cleanest low-risk trial when you want to evaluate iHomeNerd before changing another machine.';
+    return 'Best default recommendation for most Mac visitors. A VM is the cleanest low-risk trial when you want to evaluate iHomeNerd before changing another machine. The guided VM artifact is still being finalized.';
   }
   if (platform === 'linux') {
-    return 'Good choice if you want a disposable trial without changing your current Linux setup. It is still simpler than boot media for many users.';
+    return 'Good planning path if you want a disposable trial without changing your current Linux setup. It is still simpler than boot media for many users, but the guided VM artifact is still being finalized.';
   }
-  return 'For most first-time visitors, a VM is the safest place to start before trying bare metal.';
+  return 'For most first-time visitors, a VM is still the safest place to start before trying bare metal, but the guided VM artifact is still being finalized.';
 }
 
 function getDockerSummary(platform: Platform): string {
@@ -178,9 +178,9 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
               <div className="rounded-2xl border border-accent/20 bg-accent/10 p-5">
                 <p className="text-lg font-semibold mb-2">Start with the path that adds the least friction.</p>
                 <p className="text-sm text-text-secondary leading-relaxed">
-                  For most first-time visitors, a VM is the easiest test. If you have a spare PC or
-                  mini-PC, the live image path is a better trial. Use Docker only when containers
-                  already make sense to you.
+                  This chooser explains the recommended paths and can connect to an already-running
+                  Brain. Public VM and live-image trial artifacts, polished installers, and a fuller
+                  guided setup flow are still being finalized.
                 </p>
               </div>
 
@@ -188,7 +188,7 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                 <ChooserCard
                   icon={<Brain size={22} />}
                   title="Ask Your Trusted AI"
-                  description="Share this page with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you have and whether you want the quickest trial, a spare-machine test, or a permanent install."
+                  description="Share this page with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you have and ask it to compare the paths described here instead of inventing a path that is not on this page."
                   action={
                     <button
                       onClick={() => copyToClipboard(shareUrl, 'page-link')}
@@ -206,14 +206,14 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
 
                 <ChooserCard
                   icon={<Monitor size={22} />}
-                  title="Try in a VM"
+                  title="VM-First Guidance"
                   description={getVmSummary(platform)}
                 />
 
                 <ChooserCard
                   icon={<Server size={22} />}
-                  title="Boot a Spare PC"
-                  description="Best when you have an unused PC or mini-PC. The live image does not need to host the AI models yet. It can scout your network and help you decide where a permanent Brain should live."
+                  title="Spare-PC Guidance"
+                  description="Best when you have an unused PC or mini-PC. This is still the right bare-metal direction, but the public live-image download flow is still being finalized."
                 />
 
                 <ChooserCard
