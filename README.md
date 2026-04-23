@@ -4,6 +4,10 @@
 
 Runs on your hardware. Localhost by default. Open core.
 
+The current public preview page is `https://staging.ihomenerd.com/`. Despite
+the hostname, that page is meant to be a public preview, not a private admin
+console, signup wall, or billing flow.
+
 ## Quick start
 
 ```bash
