@@ -41,7 +41,7 @@ const resources = {
       "hero_badge": "Early access: choose the right path first",
       "hero_title1": "Your Home.",
       "hero_title2": "Your Data. Your AI.",
-      "hero_desc": "Use this page to compare the safest ways to try iHomeNerd, check compatibility, and ask your trusted AI which path fits your hardware. Keep your data at home and your setup under your control.",
+      "hero_desc": "Use this page to compare the safest ways to try iHomeNerd now or soon: Docker with trusted-AI help today, a guided VM path next, and a live image when the bootable flow is ready.",
       "hero_btn_launch": "See Current Paths",
       "hero_btn_explore": "See Setup Paths",
       "sec_private_title": "100% Private",

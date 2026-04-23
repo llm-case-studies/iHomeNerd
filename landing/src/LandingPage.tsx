@@ -146,42 +146,42 @@ export default function LandingPage() {
               Choose the clearest next step.
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
-              This staging page is the canonical summary of the current trial paths. Use it to
-              compare options, check compatibility, and ask your trusted AI which direction fits
-              your hardware and comfort level.
+              This staging page is the canonical summary of the current trial paths. Docker is the
+              practical early-adopter path today if you use a trusted AI as your guide. A guided VM
+              path should become the smoother default soon, and the live image is the longer-term
+              spare-PC path.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <StatusCard
-              title="What You Can Do Today"
+          <div className="grid lg:grid-cols-3 gap-6 mb-8">
+            <TimelineCard
+              title="Today"
+              label="Docker + AI guide"
               tone="ready"
-              items={[
-                'Compare VM-first, spare-PC, and Docker paths.',
-                'Run the compatibility check on this device.',
-                'Share this page with GPT, Claude, Gemini, Grok, or DeepSeek.',
-                'Connect directly if you already have a Brain running on your LAN.',
-              ]}
+              description="Doable for early adopters if you are comfortable letting GPT, Claude, Gemini, Grok, or DeepSeek walk you through the Docker path and explain each step."
             />
-            <StatusCard
-              title="Still Being Finalized"
-              tone="in-progress"
-              items={[
-                'Guided VM trial artifacts.',
-                'Public live-image download flow.',
-                'Polished permanent installer paths.',
-                'A cleaner step-by-step setup experience on the public site.',
-              ]}
+            <TimelineCard
+              title="Next"
+              label="Guided VM"
+              tone="soon"
+              description="Expected to be the lower-friction Windows and Mac path. If you want a safer, cleaner trial, wait for the VM artifact and use your trusted AI to sanity-check the steps."
+            />
+            <TimelineCard
+              title="Later"
+              label="Live image"
+              tone="later"
+              description="Best for spare PCs and mini-PCs once the bootable image flow is ready. DIY builders can experiment earlier, but most visitors should wait for the public image."
             />
           </div>
 
           <div className="mb-8 rounded-2xl border border-warning/30 bg-warning/5 p-6">
-            <h3 className="text-xl font-display font-bold mb-3">No public trial image is linked here yet.</h3>
+            <h3 className="text-xl font-display font-bold mb-3">Choose based on patience and comfort.</h3>
             <p className="text-text-secondary leading-relaxed">
-              This staging page is for understanding the product direction, checking compatibility,
-              comparing the safest setup paths, and deciding whether to follow the project or test
-              with an already-running Brain. There are no public VM images, live-image downloads,
-              polished installers, or one-click setup scripts linked from this page yet.
+              If you want to try something now, Docker is the path, but use a trusted AI and avoid
+              copy-pasting commands you do not understand. If you want the smoother first
+              experience, wait for the guided VM path. If you want a bootable spare-PC experience,
+              expect the live image to take longer unless you are comfortable building pieces
+              yourself.
             </p>
           </div>
 
@@ -189,7 +189,7 @@ export default function LandingPage() {
             <PathCard
               icon={<Brain size={24} />}
               title="Use Your Trusted AI"
-              description="Share this page with the AI you already trust, tell it what hardware you have, and ask it to compare the paths described here. For extra confidence, compare two answers."
+              description="Share this page with the AI you already trust, tell it what hardware you have, and ask it whether Docker now, VM soon, or live image later is the right move for you."
               color="text-purple-400"
               bg="bg-purple-500/10"
               action={
@@ -205,8 +205,8 @@ export default function LandingPage() {
                     <p className="text-sm font-semibold mb-3">Natural questions to ask:</p>
                     <div className="space-y-2 text-sm text-text-secondary leading-relaxed">
                       <p>Is this ready for me to try today, or should I wait?</p>
-                      <p>I have a Windows PC, Mac, or spare mini-PC. Which path should I watch first?</p>
-                      <p>What should I avoid until public VM or live-image artifacts are ready?</p>
+                      <p>I have a Windows PC, Mac, or spare mini-PC. Should I use Docker now or wait for the VM?</p>
+                      <p>What should I avoid if I am not comfortable debugging Docker?</p>
                     </div>
                   </div>
                 </div>
@@ -214,26 +214,43 @@ export default function LandingPage() {
             />
 
             <PathCard
-              icon={<Monitor size={24} />}
-              title="VM-First Guidance"
-              description="For most Windows and Mac visitors, VM remains the safest default recommendation. Treat it as the preferred trial direction even though the guided VM artifact is still being finalized."
-              color="text-blue-400"
-              bg="bg-blue-400/10"
+              icon={<Package size={24} />}
+              title="Docker: Try Now With Help"
+              description="This is the practical path today for early adopters. It is not the low-friction default, but a trusted AI can help you understand each step and decide whether your machine is a fit."
+              color="text-cyan-400"
+              bg="bg-cyan-400/10"
               action={
                 <button
                   onClick={() => setIsScoutFlowOpen(true)}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent hover:bg-accent-hover transition-colors text-sm font-medium text-white"
                 >
-                  Open Path Guide
+                  See Docker Caveats
                   <ArrowRight size={16} />
                 </button>
               }
             />
 
             <PathCard
+              icon={<Monitor size={24} />}
+              title="VM: Wait for the Easier Trial"
+              description="This should become the smoother first experience for most Windows and Mac visitors. If you do not want Docker friction, wait for the guided VM artifact."
+              color="text-blue-400"
+              bg="bg-blue-400/10"
+              action={
+                <button
+                  onClick={() => setIsScoutFlowOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-bg-input hover:bg-bg-primary border border-border-color transition-colors text-sm font-medium"
+                >
+                  Open Path Guide
+                  <ArrowRight size={16} className="text-accent" />
+                </button>
+              }
+            />
+
+            <PathCard
               icon={<Server size={24} />}
-              title="Spare-PC Guidance"
-              description="If you have an unused PC or mini-PC, this is still the best bare-metal trial story. Treat it as the right direction, not as a finished public download flow yet."
+              title="Live Image: Spare-PC Path"
+              description="This is the best eventual story for unused PCs and mini-PCs, but the public live-image download flow is longer-term. DIY builders can experiment earlier."
               color="text-emerald-400"
               bg="bg-emerald-400/10"
               action={
@@ -242,23 +259,6 @@ export default function LandingPage() {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-bg-input hover:bg-bg-primary border border-border-color transition-colors text-sm font-medium"
                 >
                   Compare Paths
-                  <ArrowRight size={16} className="text-accent" />
-                </button>
-              }
-            />
-
-            <PathCard
-              icon={<Package size={24} />}
-              title="Advanced Docker"
-              description="Keep Docker as the self-hoster path, not the default first experience. It fits people who already understand containers and want more control than convenience."
-              color="text-cyan-400"
-              bg="bg-cyan-400/10"
-              action={
-                <button
-                  onClick={() => setIsScoutFlowOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-bg-input hover:bg-bg-primary border border-border-color transition-colors text-sm font-medium"
-                >
-                  See When Docker Fits
                   <ArrowRight size={16} className="text-accent" />
                 </button>
               }
@@ -464,34 +464,36 @@ function PathCard({
   );
 }
 
-function StatusCard({
+function TimelineCard({
   title,
-  items,
+  label,
+  description,
   tone,
 }: {
   title: string;
-  items: string[];
-  tone: 'ready' | 'in-progress';
+  label: string;
+  description: string;
+  tone: 'ready' | 'soon' | 'later';
 }) {
-  const toneClasses =
-    tone === 'ready'
-      ? 'border-success/30 bg-success/5'
-      : 'border-warning/30 bg-warning/5';
-  const dotClasses = tone === 'ready' ? 'bg-success' : 'bg-warning';
+  const toneClasses = {
+    ready: 'border-success/30 bg-success/5',
+    soon: 'border-accent/30 bg-accent/5',
+    later: 'border-warning/30 bg-warning/5',
+  }[tone];
+  const dotClasses = {
+    ready: 'bg-success',
+    soon: 'bg-accent',
+    later: 'bg-warning',
+  }[tone];
 
   return (
     <div className={`rounded-2xl border p-6 ${toneClasses}`}>
       <div className="flex items-center gap-3 mb-4">
         <span className={`h-2.5 w-2.5 rounded-full ${dotClasses}`} />
-        <h3 className="text-xl font-display font-bold">{title}</h3>
+        <p className="text-sm font-medium uppercase tracking-[0.2em] text-text-secondary">{title}</p>
       </div>
-      <div className="space-y-3">
-        {items.map((item) => (
-          <p key={item} className="text-text-secondary leading-relaxed">
-            {item}
-          </p>
-        ))}
-      </div>
+      <h3 className="text-2xl font-display font-bold mb-3">{label}</h3>
+      <p className="text-text-secondary leading-relaxed">{description}</p>
     </div>
   );
 }
