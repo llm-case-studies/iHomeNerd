@@ -68,6 +68,10 @@ def _configured_network() -> dict | None:
     subnet = os.environ.get("IHN_LAN_SUBNET", "").strip()
     if not subnet:
         return None
+    try:
+        subnet = str(ipaddress.ip_network(subnet, strict=False))
+    except ValueError:
+        pass
     iface = os.environ.get("IHN_LAN_IFACE", "").strip() or "lan0"
     return {
         "id": iface,
@@ -75,6 +79,20 @@ def _configured_network() -> dict | None:
         "type": "primary",
         "subnet": subnet,
     }
+
+
+def _decode_service_name(name: str) -> str:
+    """Decode Avahi/Bonjour-style octal escapes like '\\032'."""
+    if not name:
+        return name
+
+    def replace_octal(match: re.Match[str]) -> str:
+        try:
+            return chr(int(match.group(1), 8))
+        except ValueError:
+            return match.group(0)
+
+    return re.sub(r"\\([0-7]{3})", replace_octal, name)
 
 
 def _discover_networks() -> list[dict]:
@@ -228,7 +246,7 @@ def _discover_devices(networks: list[dict]) -> tuple[list[dict], set[str], int]:
                 for dev in devices:
                     if dev["ip"] == mdns_ip and "this machine" not in dev["name"]:
                         if mdns_name and mdns_name != dev["ip"]:
-                            dev["name"] = mdns_name
+                            dev["name"] = _decode_service_name(mdns_name)
                         break
 
     return devices, seen_ips, device_id
@@ -254,13 +272,13 @@ def _resolve_hostname(ip: str) -> str | None:
     """Attempt reverse DNS lookup."""
     try:
         name, _, _ = socket.gethostbyaddr(ip)
-        return name
+        return _decode_service_name(name)
     except (socket.herror, socket.gaierror, OSError):
         avahi_name = _run(["avahi-resolve-address", ip], timeout=2)
         if avahi_name:
             parts = avahi_name.split()
             if len(parts) >= 2:
-                return parts[-1]
+                return _decode_service_name(parts[-1])
         return None
 
 
@@ -374,6 +392,24 @@ async def _discover_subnet_hosts(networks: list[dict], seen_ips: set[str]) -> li
             seen_ips.add(result["ip"])
 
     return hosts
+
+
+def _merge_discovered_device(devices: list[dict], discovered: dict, next_id: int) -> int:
+    """Update an existing row or append a newly found device."""
+    for device in devices:
+        if device["ip"] != discovered["ip"]:
+            continue
+        if discovered.get("type") == "server":
+            device["name"] = discovered["name"]
+            device["type"] = discovered["type"]
+            device["os"] = discovered["os"]
+            device["status"] = discovered["status"]
+            device["networkId"] = discovered["networkId"]
+        return next_id
+
+    discovered["id"] = f"d{next_id}"
+    devices.append(discovered)
+    return next_id + 1
 
 
 # ---------------------------------------------------------------------------
@@ -586,11 +622,9 @@ async def _llm_analyze(prompt: str, logs: list[str]) -> list[dict]:
 async def get_environment():
     """Auto-discover local networks and devices."""
     networks = _discover_networks()
-    devices, seen_ips, next_id = _discover_devices(networks)
-    for discovered in await _discover_subnet_hosts(networks, seen_ips):
-        discovered["id"] = f"d{next_id}"
-        next_id += 1
-        devices.append(discovered)
+    devices, _, next_id = _discover_devices(networks)
+    for discovered in await _discover_subnet_hosts(networks, set()):
+        next_id = _merge_discovered_device(devices, discovered, next_id)
     return {"networks": networks, "devices": devices}
 
 

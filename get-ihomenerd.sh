@@ -284,7 +284,10 @@ fi
 LAN_IFACE=$(printf '%s\n' "$LAN_ROUTE" | awk '{for (i=1; i<=NF; i++) if ($i == "dev") { print $(i+1); exit }}')
 LAN_SUBNET=""
 if [[ -n "$LAN_IFACE" ]]; then
-    LAN_SUBNET=$(ip -o -f inet addr show dev "$LAN_IFACE" 2>/dev/null | awk '{print $4; exit}')
+    LAN_SUBNET=$(ip route show dev "$LAN_IFACE" scope link 2>/dev/null | awk '$1 ~ /\// {print $1; exit}')
+    if [[ -z "$LAN_SUBNET" ]]; then
+        LAN_SUBNET=$(ip -o -f inet addr show dev "$LAN_IFACE" 2>/dev/null | awk '{print $4; exit}')
+    fi
 fi
 HOST_SHORT=$(hostname -s 2>/dev/null || hostname)
 HOST_FQDN=$(hostname -f 2>/dev/null || true)
