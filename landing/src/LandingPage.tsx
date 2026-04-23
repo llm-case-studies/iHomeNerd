@@ -143,21 +143,43 @@ export default function LandingPage() {
               Start Without Lock-In
             </p>
             <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">
-              Choose the lowest-friction path.
+              Choose the clearest next step.
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
-              Most first-time visitors should start in a VM. If you have a spare PC or mini-PC,
-              the live image path makes more sense. If you already trust GPT, Claude, Gemini,
-              Grok, or DeepSeek, share this page and ask which path fits your hardware and comfort
-              level.
+              This staging page is the canonical summary of the current trial paths. Use it to
+              compare options, check compatibility, and ask your trusted AI which direction fits
+              your hardware and comfort level.
             </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <StatusCard
+              title="What You Can Do Today"
+              tone="ready"
+              items={[
+                'Compare VM-first, spare-PC, and Docker paths.',
+                'Run the compatibility check on this device.',
+                'Share this page with GPT, Claude, Gemini, Grok, or DeepSeek.',
+                'Connect directly if you already have a Brain running on your LAN.',
+              ]}
+            />
+            <StatusCard
+              title="Still Being Finalized"
+              tone="in-progress"
+              items={[
+                'Guided VM trial artifacts.',
+                'Public live-image download flow.',
+                'Polished permanent installer paths.',
+                'A cleaner step-by-step setup experience on the public site.',
+              ]}
+            />
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             <PathCard
               icon={<Brain size={24} />}
               title="Use Your Trusted AI"
-              description="Share this page with the AI you already trust, tell it what hardware you have, and ask for the easiest way to try iHomeNerd. For extra confidence, compare two answers."
+              description="Share this page with the AI you already trust, tell it what hardware you have, and ask it to compare the paths described here. For extra confidence, compare two answers."
               color="text-purple-400"
               bg="bg-purple-500/10"
               action={
@@ -173,8 +195,8 @@ export default function LandingPage() {
 
             <PathCard
               icon={<Monitor size={24} />}
-              title="Try in a VM"
-              description="Best default for most Windows and Mac visitors. It is the safest way to see iHomeNerd working without BIOS changes, USB booting, or touching your main install."
+              title="VM-First Guidance"
+              description="For most Windows and Mac visitors, VM remains the safest default recommendation. Treat it as the preferred trial direction even though the guided VM artifact is still being finalized."
               color="text-blue-400"
               bg="bg-blue-400/10"
               action={
@@ -190,8 +212,8 @@ export default function LandingPage() {
 
             <PathCard
               icon={<Server size={24} />}
-              title="Boot a Spare PC"
-              description="Best if you have an unused PC or mini-PC. The live image does not need to host the AI models yet. It can scout your network and help you choose the right permanent home."
+              title="Spare-PC Guidance"
+              description="If you have an unused PC or mini-PC, this is still the best bare-metal trial story. Treat it as the right direction, not as a finished public download flow yet."
               color="text-emerald-400"
               bg="bg-emerald-400/10"
               action={
@@ -208,7 +230,7 @@ export default function LandingPage() {
             <PathCard
               icon={<Package size={24} />}
               title="Advanced Docker"
-              description="Keep Docker as the self-hoster path, not the default first experience. It is appropriate when containers already make sense to you and you want more control than convenience."
+              description="Keep Docker as the self-hoster path, not the default first experience. It fits people who already understand containers and want more control than convenience."
               color="text-cyan-400"
               bg="bg-cyan-400/10"
               action={
@@ -332,9 +354,10 @@ export default function LandingPage() {
             Ask the AI you already trust.
           </h2>
           <p className="text-xl text-text-secondary mb-10 leading-relaxed">
-            Share this page with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you
-            already have and ask for the lowest-friction way to try iHomeNerd. If the answers
-            differ, compare two of them before you commit.
+            Share this page with GPT, Claude, Gemini, Grok, or DeepSeek and ask it to compare the
+            paths described here. This page is the canonical summary; guided trial artifacts and
+            polished installers are still being finalized. If the answers differ, compare two of
+            them before you commit.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
@@ -417,6 +440,38 @@ function PathCard({
       <h3 className="text-2xl font-display font-bold mb-3">{title}</h3>
       <p className="text-text-secondary leading-relaxed mb-6">{description}</p>
       {action}
+    </div>
+  );
+}
+
+function StatusCard({
+  title,
+  items,
+  tone,
+}: {
+  title: string;
+  items: string[];
+  tone: 'ready' | 'in-progress';
+}) {
+  const toneClasses =
+    tone === 'ready'
+      ? 'border-success/30 bg-success/5'
+      : 'border-warning/30 bg-warning/5';
+  const dotClasses = tone === 'ready' ? 'bg-success' : 'bg-warning';
+
+  return (
+    <div className={`rounded-2xl border p-6 ${toneClasses}`}>
+      <div className="flex items-center gap-3 mb-4">
+        <span className={`h-2.5 w-2.5 rounded-full ${dotClasses}`} />
+        <h3 className="text-xl font-display font-bold">{title}</h3>
+      </div>
+      <div className="space-y-3">
+        {items.map((item) => (
+          <p key={item} className="text-text-secondary leading-relaxed">
+            {item}
+          </p>
+        ))}
+      </div>
     </div>
   );
 }
