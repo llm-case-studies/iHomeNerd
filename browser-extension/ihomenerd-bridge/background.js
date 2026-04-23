@@ -39,10 +39,18 @@ function normalizeBaseUrl(value) {
   return trimmed.replace(/\/$/, '')
 }
 
+function isLoopbackHost(host) {
+  const normalized = String(host || '').trim().toLowerCase()
+  if (!normalized) return false
+  if (normalized === 'localhost') return true
+  const parts = normalized.split('.')
+  return parts.length === 4 && parts.every(p => /^\d+$/.test(p)) && parseInt(parts[0], 10) === 127
+}
+
 function isLoopbackUrl(baseUrl) {
   try {
     const url = new URL(baseUrl)
-    return url.hostname === '127.0.0.1' || url.hostname === 'localhost'
+    return isLoopbackHost(url.hostname)
   } catch {
     return false
   }
@@ -51,14 +59,14 @@ function isLoopbackUrl(baseUrl) {
 function isLoopbackBrain(brain) {
   if (!brain) return false
   if (brain.url && isLoopbackUrl(brain.url)) return true
-  return brain.ip === '127.0.0.1' || brain.hostname === 'localhost'
+  return isLoopbackHost(brain.ip) || isLoopbackHost(brain.hostname)
 }
 
 function isPrivateNetworkUrl(baseUrl) {
   try {
     const url = new URL(baseUrl)
     const h = url.hostname
-    if (h === '127.0.0.1' || h === 'localhost') return true
+    if (isLoopbackHost(h)) return true
     if (h.endsWith('.local')) return true
     // RFC 1918
     const parts = h.split('.')
@@ -241,9 +249,11 @@ async function guessSubnets() {
   if (brain && brain.url) {
     try {
       const url = new URL(brain.url)
-      const parts = url.hostname.split('.')
-      if (parts.length === 4 && parts.every(p => /^\d+$/.test(p))) {
-        prefixes.add(`${parts[0]}.${parts[1]}.${parts[2]}.`)
+      if (!isLoopbackHost(url.hostname)) {
+        const parts = url.hostname.split('.')
+        if (parts.length === 4 && parts.every(p => /^\d+$/.test(p))) {
+          prefixes.add(`${parts[0]}.${parts[1]}.${parts[2]}.`)
+        }
       }
     } catch { /* ignore */ }
   }
@@ -253,6 +263,7 @@ async function guessSubnets() {
   for (const b of discovered) {
     try {
       const url = new URL(b.url)
+      if (isLoopbackHost(url.hostname)) continue
       const parts = url.hostname.split('.')
       if (parts.length === 4 && parts.every(p => /^\d+$/.test(p))) {
         prefixes.add(`${parts[0]}.${parts[1]}.${parts[2]}.`)
@@ -280,6 +291,7 @@ async function guessSubnets() {
  * Returns brain info or null.
  */
 async function probeBrain(ip) {
+  const targetIp = isLoopbackHost(ip) ? '127.0.0.1' : ip
   // Firefox CSP upgrades all HTTP→HTTPS, which breaks HTTP:17778 probes.
   // On Firefox, only probe the HTTPS endpoints.
   const probes = IS_FIREFOX ? [
@@ -293,7 +305,7 @@ async function probeBrain(ip) {
   ]
 
   const probePromises = probes.map(async ({ protocol, port, path }) => {
-    const url = `${protocol}://${ip}:${port}${path}`
+    const url = `${protocol}://${targetIp}:${port}${path}`
     const controller = new AbortController()
     const tid = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS)
     try {
@@ -317,9 +329,9 @@ async function probeBrain(ip) {
         ? Object.keys(data.models)
         : []
     return {
-      url: `https://${ip}:${DEFAULT_PORT}`,
-      hostname: data.hostname || ip,
-      ip: ip,
+      url: `https://${targetIp}:${DEFAULT_PORT}`,
+      hostname: data.hostname || targetIp,
+      ip: targetIp,
       port: DEFAULT_PORT,
       protocol: 'https',
       version: data.version || 'unknown',
@@ -387,7 +399,7 @@ async function discoverBrains() {
 
   function addBrain(brain) {
     if (!brain) return
-    const key = brain.ip || brain.hostname
+    const key = isLoopbackBrain(brain) ? 'loopback' : (brain.ip || brain.hostname)
     if (seenIps.has(key)) return
     seenIps.add(key)
     brains.push(brain)
@@ -467,6 +479,7 @@ async function discoverBrains() {
           for (const peer of peersData.peers) {
             // Probe each peer — use hostname.local which has permanent permission
             const peerHost = peer.hostname || peer.ip
+            if (!peerHost || isLoopbackHost(peerHost)) continue
             const result = await probeBrain(peerHost).catch(() => null)
             addBrain(result)
           }
@@ -494,7 +507,7 @@ async function discoverBrains() {
         }
         if (envData && Array.isArray(envData.devices)) {
           for (const device of envData.devices) {
-            if (!device || !device.ip || device.ip === brain.ip) continue
+            if (!device || !device.ip || device.ip === brain.ip || isLoopbackHost(device.ip)) continue
             const result = await probeBrain(device.ip).catch(() => null)
             addBrain(result)
           }
