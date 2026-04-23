@@ -175,6 +175,16 @@ export default function LandingPage() {
             />
           </div>
 
+          <div className="mb-8 rounded-2xl border border-warning/30 bg-warning/5 p-6">
+            <h3 className="text-xl font-display font-bold mb-3">No public trial image is linked here yet.</h3>
+            <p className="text-text-secondary leading-relaxed">
+              This staging page is for understanding the product direction, checking compatibility,
+              comparing the safest setup paths, and deciding whether to follow the project or test
+              with an already-running Brain. There are no public VM images, live-image downloads,
+              polished installers, or one-click setup scripts linked from this page yet.
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-6">
             <PathCard
               icon={<Brain size={24} />}
@@ -183,13 +193,23 @@ export default function LandingPage() {
               color="text-purple-400"
               bg="bg-purple-500/10"
               action={
-                <button
-                  onClick={handleCopyPageLink}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
-                >
-                  {copiedPageLink ? <CheckCircle2 size={16} className="text-success" /> : <Copy size={16} className="text-accent" />}
-                  {copiedPageLink ? 'Link Copied' : 'Copy This Page Link'}
-                </button>
+                <div className="space-y-4">
+                  <button
+                    onClick={handleCopyPageLink}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
+                  >
+                    {copiedPageLink ? <CheckCircle2 size={16} className="text-success" /> : <Copy size={16} className="text-accent" />}
+                    {copiedPageLink ? 'Link Copied' : 'Copy This Page Link'}
+                  </button>
+                  <div className="rounded-xl border border-border-color bg-bg-input/40 p-4">
+                    <p className="text-sm font-semibold mb-3">Natural questions to ask:</p>
+                    <div className="space-y-2 text-sm text-text-secondary leading-relaxed">
+                      <p>Is this ready for me to try today, or should I wait?</p>
+                      <p>I have a Windows PC, Mac, or spare mini-PC. Which path should I watch first?</p>
+                      <p>What should I avoid until public VM or live-image artifacts are ready?</p>
+                    </div>
+                  </div>
+                </div>
               }
             />
 

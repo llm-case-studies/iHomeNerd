@@ -180,7 +180,9 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                 <p className="text-sm text-text-secondary leading-relaxed">
                   This chooser explains the recommended paths and can connect to an already-running
                   Brain. Public VM and live-image trial artifacts, polished installers, and a fuller
-                  guided setup flow are still being finalized.
+                  guided setup flow are still being finalized. There are no public VM images,
+                  live-image downloads, polished installers, or one-click setup scripts linked from
+                  this page yet.
                 </p>
               </div>
 
@@ -188,7 +190,7 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                 <ChooserCard
                   icon={<Brain size={22} />}
                   title="Ask Your Trusted AI"
-                  description="Share this page with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you have and ask it to compare the paths described here instead of inventing a path that is not on this page."
+                  description="Share this page with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you have and ask whether this is ready for you today, which path to watch first, and what to avoid until public trial artifacts are linked."
                   action={
                     <button
                       onClick={() => copyToClipboard(shareUrl, 'page-link')}
