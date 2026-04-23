@@ -46,6 +46,8 @@ services:
       - IHN_CA_KEY_PATH=${IHN_CA_KEY_PATH:-}
       - IHN_CERT_LAN_IP=${IHN_CERT_LAN_IP:-}
       - IHN_CERT_HOSTNAMES=${IHN_CERT_HOSTNAMES:-}
+      - IHN_LAN_IFACE=${IHN_LAN_IFACE:-}
+      - IHN_LAN_SUBNET=${IHN_LAN_SUBNET:-}
 
 volumes:
   ollama_data:

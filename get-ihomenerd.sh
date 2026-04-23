@@ -276,7 +276,16 @@ else
     generate_home_ca "$HOME_CA_DIR"
 fi
 
-LAN_IP=$(hostname -I | awk '{print $1}')
+LAN_ROUTE=$(ip route get 1.1.1.1 2>/dev/null || true)
+LAN_IP=$(printf '%s\n' "$LAN_ROUTE" | awk '{for (i=1; i<=NF; i++) if ($i == "src") { print $(i+1); exit }}')
+if [[ -z "$LAN_IP" ]]; then
+    LAN_IP=$(hostname -I | awk '{print $1}')
+fi
+LAN_IFACE=$(printf '%s\n' "$LAN_ROUTE" | awk '{for (i=1; i<=NF; i++) if ($i == "dev") { print $(i+1); exit }}')
+LAN_SUBNET=""
+if [[ -n "$LAN_IFACE" ]]; then
+    LAN_SUBNET=$(ip -o -f inet addr show dev "$LAN_IFACE" 2>/dev/null | awk '{print $4; exit}')
+fi
 HOST_SHORT=$(hostname -s 2>/dev/null || hostname)
 HOST_FQDN=$(hostname -f 2>/dev/null || true)
 HOSTNAME_LIST="$HOST_SHORT"
@@ -291,6 +300,8 @@ IHN_CA_CERT_PATH=/authority/ca.crt
 IHN_CA_KEY_PATH=/authority/ca.key
 IHN_CERT_LAN_IP=${LAN_IP}
 IHN_CERT_HOSTNAMES=${HOSTNAME_LIST}
+IHN_LAN_IFACE=${LAN_IFACE}
+IHN_LAN_SUBNET=${LAN_SUBNET}
 EOF
 ok "TLS identity prepared for ${LAN_IP} (${HOSTNAME_LIST})"
 

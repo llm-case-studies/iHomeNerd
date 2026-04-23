@@ -9,13 +9,16 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 import socket
 import subprocess
 from pathlib import Path
+import ipaddress
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+import httpx
 
 from .. import ollama
 
@@ -37,9 +40,50 @@ def _run(cmd: list[str], timeout: int = 10) -> str:
         return ""
 
 
+def _preferred_hostname() -> str:
+    env_names = os.environ.get("IHN_CERT_HOSTNAMES", "")
+    for name in env_names.split(","):
+        name = name.strip()
+        if name:
+            return name
+    return socket.gethostname()
+
+
+def _get_local_ip() -> str | None:
+    """Get the primary LAN IP address."""
+    env_ip = os.environ.get("IHN_CERT_LAN_IP", "").strip()
+    if env_ip:
+        return env_ip
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 53))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except OSError:
+        return None
+
+
+def _configured_network() -> dict | None:
+    subnet = os.environ.get("IHN_LAN_SUBNET", "").strip()
+    if not subnet:
+        return None
+    iface = os.environ.get("IHN_LAN_IFACE", "").strip() or "lan0"
+    return {
+        "id": iface,
+        "name": iface,
+        "type": "primary",
+        "subnet": subnet,
+    }
+
+
 def _discover_networks() -> list[dict]:
     """Discover local networks from ip route."""
     networks = []
+    configured = _configured_network()
+    if configured:
+        networks.append(configured)
+
     raw = _run(["ip", "-j", "route"])
     if not raw:
         # Fallback: parse text output
@@ -49,12 +93,15 @@ def _discover_networks() -> list[dict]:
             m = re.match(r"(\d+\.\d+\.\d+\.\d+/\d+)\s+dev\s+(\S+)", line)
             if m and "default" not in line:
                 subnet, iface = m.groups()
-                networks.append({
+                net = {
                     "id": iface,
                     "name": iface,
                     "type": "primary" if len(networks) == 0 else "secondary",
                     "subnet": subnet,
-                })
+                }
+                if configured and net["subnet"] == configured["subnet"]:
+                    continue
+                networks.append(net)
         return networks
 
     try:
@@ -69,40 +116,72 @@ def _discover_networks() -> list[dict]:
             if "/" not in dst:
                 dst = dst + "/32"
             seen_subnets.add(dst)
-            networks.append({
+            net = {
                 "id": dev,
                 "name": dev,
                 "type": "primary" if len(networks) == 0 else "secondary",
                 "subnet": dst,
-            })
+            }
+            if configured and net["subnet"] == configured["subnet"]:
+                continue
+            networks.append(net)
     except (json.JSONDecodeError, KeyError):
         pass
 
     return networks
 
 
-def _discover_devices(networks: list[dict]) -> list[dict]:
+def _add_device(
+    devices: list[dict],
+    seen_ips: set[str],
+    device_id: int,
+    *,
+    name: str,
+    dev_type: str,
+    dev_os: str,
+    ip: str,
+    network_id: str,
+    warning: str | None = None,
+) -> int:
+    if not ip or ip in seen_ips:
+        return device_id
+    device = {
+        "id": f"d{device_id}",
+        "name": name,
+        "type": dev_type,
+        "os": dev_os,
+        "ip": ip,
+        "networkId": network_id,
+        "status": "online",
+    }
+    if warning:
+        device["warning"] = warning
+    devices.append(device)
+    seen_ips.add(ip)
+    return device_id + 1
+
+
+def _discover_devices(networks: list[dict]) -> tuple[list[dict], set[str], int]:
     """Discover devices from ARP table and mDNS."""
     devices = []
     seen_ips = set()
     device_id = 0
 
     # Add this machine first
-    hostname = socket.gethostname()
+    hostname = _preferred_hostname()
     local_ip = _get_local_ip()
     if local_ip:
         net_id = _match_network(local_ip, networks)
-        devices.append({
-            "id": f"d{device_id}",
-            "name": f"{hostname} (this machine)",
-            "type": "server",
-            "os": "linux",
-            "ip": local_ip,
-            "networkId": net_id,
-            "status": "online",
-        })
-        seen_ips.add(local_ip)
-        device_id += 1
+        device_id = _add_device(
+            devices,
+            seen_ips,
+            device_id,
+            name=f"{hostname} (this machine)",
+            dev_type="server",
+            dev_os="linux",
+            ip=local_ip,
+            network_id=net_id,
+        )
 
     # ARP table
     raw = _run(["ip", "-j", "neighbor"])
@@ -123,17 +202,16 @@ def _discover_devices(networks: list[dict]) -> list[dict]:
                 net_id = _match_network(ip, networks)
                 dev_type, dev_os = _guess_device_type(mac, ip)
                 name = _resolve_hostname(ip) or f"Device ({ip})"
-                devices.append({
-                    "id": f"d{device_id}",
-                    "name": name,
-                    "type": dev_type,
-                    "os": dev_os,
-                    "ip": ip,
-                    "networkId": net_id,
-                    "status": "online",
-                })
-                seen_ips.add(ip)
-                device_id += 1
+                device_id = _add_device(
+                    devices,
+                    seen_ips,
+                    device_id,
+                    name=name,
+                    dev_type=dev_type,
+                    dev_os=dev_os,
+                    ip=ip,
+                    network_id=net_id,
+                )
         except (json.JSONDecodeError, KeyError):
             pass
 
@@ -153,19 +231,7 @@ def _discover_devices(networks: list[dict]) -> list[dict]:
                             dev["name"] = mdns_name
                         break
 
-    return devices
-
-
-def _get_local_ip() -> str | None:
-    """Get the primary LAN IP address."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 53))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except OSError:
-        return None
+    return devices, seen_ips, device_id
 
 
 def _match_network(ip: str, networks: list[dict]) -> str:
@@ -190,6 +256,11 @@ def _resolve_hostname(ip: str) -> str | None:
         name, _, _ = socket.gethostbyaddr(ip)
         return name
     except (socket.herror, socket.gaierror, OSError):
+        avahi_name = _run(["avahi-resolve-address", ip], timeout=2)
+        if avahi_name:
+            parts = avahi_name.split()
+            if len(parts) >= 2:
+                return parts[-1]
         return None
 
 
@@ -212,6 +283,97 @@ def _guess_device_type(mac: str, ip: str) -> tuple[str, str]:
         return ("iot", "rtos")
 
     return ("computer", "unknown")
+
+
+async def _probe_ihomenerd(ip: str) -> dict | None:
+    """Check whether a host is running iHomeNerd."""
+    for url, verify in (
+        (f"http://{ip}:17778/discover", True),
+        (f"https://{ip}:17777/discover", False),
+    ):
+        try:
+            async with httpx.AsyncClient(timeout=0.35, verify=verify) as client:
+                r = await client.get(url, headers={"Accept": "application/json"})
+            if not r.is_success:
+                continue
+            data = r.json()
+            if data.get("product") != "iHomeNerd":
+                continue
+            return data
+        except Exception:
+            continue
+    return None
+
+
+async def _ping_host(ip: str) -> bool:
+    """Best-effort host liveness probe for Linux containers."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "ping", "-c", "1", "-W", "1", ip,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        return await proc.wait() == 0
+    except (FileNotFoundError, OSError):
+        return False
+
+
+async def _discover_subnet_hosts(networks: list[dict], seen_ips: set[str]) -> list[dict]:
+    """Active subnet discovery for Docker deployments where ARP is blind."""
+    hosts: list[dict] = []
+    subnets = []
+    for net in networks:
+        try:
+            subnet = ipaddress.ip_network(net["subnet"], strict=False)
+        except ValueError:
+            continue
+        # Keep this bounded to realistic home-lab ranges.
+        if subnet.version != 4 or subnet.num_addresses > 256:
+            continue
+        subnets.append((net["id"], subnet))
+
+    if not subnets:
+        return hosts
+
+    sem = asyncio.Semaphore(64)
+
+    async def inspect_ip(network_id: str, ip: str) -> dict | None:
+        async with sem:
+            info = await _probe_ihomenerd(ip)
+            if info:
+                return {
+                    "name": info.get("hostname") or f"iHomeNerd ({ip})",
+                    "type": "server",
+                    "os": info.get("os", "linux"),
+                    "ip": ip,
+                    "networkId": network_id,
+                    "status": "online",
+                }
+            if await _ping_host(ip):
+                return {
+                    "name": _resolve_hostname(ip) or f"Device ({ip})",
+                    "type": "computer",
+                    "os": "unknown",
+                    "ip": ip,
+                    "networkId": network_id,
+                    "status": "online",
+                }
+            return None
+
+    tasks = []
+    for network_id, subnet in subnets:
+        for addr in subnet.hosts():
+            ip = str(addr)
+            if ip in seen_ips:
+                continue
+            tasks.append(inspect_ip(network_id, ip))
+
+    for result in await asyncio.gather(*tasks):
+        if result:
+            hosts.append(result)
+            seen_ips.add(result["ip"])
+
+    return hosts
 
 
 # ---------------------------------------------------------------------------
@@ -424,7 +586,11 @@ async def _llm_analyze(prompt: str, logs: list[str]) -> list[dict]:
 async def get_environment():
     """Auto-discover local networks and devices."""
     networks = _discover_networks()
-    devices = _discover_devices(networks)
+    devices, seen_ips, next_id = _discover_devices(networks)
+    for discovered in await _discover_subnet_hosts(networks, seen_ips):
+        discovered["id"] = f"d{next_id}"
+        next_id += 1
+        devices.append(discovered)
     return {"networks": networks, "devices": devices}
 
 

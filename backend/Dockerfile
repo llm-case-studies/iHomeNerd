@@ -18,9 +18,10 @@ RUN mkdir -p backend/app && cd frontend && npm run build
 
 FROM python:3.12-slim
 
-# avahi-utils for mDNS advertisement, openssl for TLS cert generation.
+# avahi-utils for mDNS advertisement, openssl for TLS cert generation,
+# iproute2/iputils-ping for the Investigate network tools.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends avahi-utils openssl && \
+    apt-get install -y --no-install-recommends avahi-utils openssl iproute2 iputils-ping && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
