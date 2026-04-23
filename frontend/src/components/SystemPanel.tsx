@@ -1,8 +1,29 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Activity, Clock, Cpu, HardDrive, Network, Server, ShieldCheck } from 'lucide-react';
+import { Activity, ArrowRightLeft, Clock, Cpu, HardDrive, Network, Power, RefreshCcw, Server, ShieldCheck } from 'lucide-react';
 import { api } from '../lib/api';
 import { useTranslation } from 'react-i18next';
+
+interface ClusterNode {
+  hostname: string;
+  ip: string;
+  os: string;
+  gpu?: { name: string; vram_mb?: number } | null;
+  ram_bytes?: number;
+  suggested_roles?: string[];
+  strengths?: string[];
+  models?: string[];
+  ollama?: boolean;
+}
+
+interface ClusterState {
+  gateway?: {
+    hostname: string;
+    ip: string;
+    url: string;
+  };
+  nodes?: ClusterNode[];
+}
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -19,24 +40,74 @@ function formatUptime(seconds: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+function formatRam(bytes?: number): string {
+  if (!bytes) return 'RAM unknown';
+  return `${Math.round(bytes / (1024 ** 3))} GB RAM`;
+}
+
+function prettifyRole(role: string): string {
+  return role
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function pickModels(models: string[] = [], preferred: string[]): string[] {
+  const found = preferred.filter(candidate => models.includes(candidate));
+  return found.length > 0 ? found : models.slice(0, 3);
+}
+
+function getNodeFit(node: ClusterNode) {
+  const roles = node.suggested_roles || [];
+  const models = node.models || [];
+
+  if (roles.includes('gateway')) {
+    return {
+      title: 'Gateway / Control Plane',
+      workloads: 'routing, trust, updates, docs, automations',
+      defaults: pickModels(models, ['gemma3:1b', 'llama3.2:1b', 'llama3.2:3b']),
+      avoid: 'larger interactive chat and code models as the default landing spot',
+    };
+  }
+
+  if (roles.includes('llm-worker') || !!node.gpu) {
+    return {
+      title: 'GPU Worker',
+      workloads: 'chat, code, multimodal, image-heavy tasks',
+      defaults: pickModels(models, ['gemma4:e4b', 'gemma3:12b', 'llama3:8b', 'codellama:13b']),
+      avoid: 'idle always-on gateway duty if another node can stay up instead',
+    };
+  }
+
+  return {
+    title: 'Light Specialist',
+    workloads: 'speech, OCR, translation, background tools',
+    defaults: pickModels(models, ['gemma3:1b', 'llama3.2:1b']),
+    avoid: 'large local reasoning workloads and heavy vision inference',
+  };
+}
+
 export function SystemPanel() {
   const { t } = useTranslation();
   const [health, setHealth] = useState<any>(null);
   const [capabilities, setCapabilities] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
+  const [cluster, setCluster] = useState<ClusterState | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [healthData, capsData, statsData] = await Promise.all([
+        const [healthData, capsData, statsData, clusterData] = await Promise.all([
           api.getHealth(),
           api.getCapabilities(),
           api.getSystemStats(),
+          api.getClusterNodes(),
         ]);
         setHealth(healthData);
         setCapabilities(capsData);
         setStats(statsData);
+        setCluster(clusterData);
       } catch (error) {
         console.error("Failed to load system data", error);
       } finally {
@@ -47,18 +118,20 @@ export function SystemPanel() {
     // Refresh stats every 30 seconds
     const interval = setInterval(async () => {
       try {
-        const [healthData, statsData] = await Promise.all([
+        const [healthData, statsData, clusterData] = await Promise.all([
           api.getHealth(),
           api.getSystemStats(),
+          api.getClusterNodes(),
         ]);
         setHealth(healthData);
         setStats(statsData);
+        setCluster(clusterData);
       } catch { /* ignore refresh errors */ }
     }, 30_000);
     return () => clearInterval(interval);
   }, []);
 
-  if (loading || !health || !capabilities) {
+  if (loading || !health || !capabilities || !cluster) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="animate-pulse flex flex-col items-center">
@@ -92,6 +165,65 @@ export function SystemPanel() {
           <span>Uptime: {formatUptime(stats.uptime_seconds)}</span>
         </div>
       )}
+
+      {/* Cluster Inventory */}
+      <div className="bg-bg-surface border border-border-color rounded-2xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-border-color flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
+              <Server size={20} className="text-accent" />
+              {t('sys_nodes_title', 'Home Nodes')}
+            </h3>
+            <p className="text-sm text-text-secondary mt-1">
+              {cluster.gateway?.hostname
+                ? `Gateway: ${cluster.gateway.hostname} (${cluster.gateway.ip})`
+                : 'The gateway is the control plane for node routing, trust, and managed actions.'}
+            </p>
+          </div>
+          <span className="px-3 py-1 bg-bg-input text-text-secondary text-xs rounded-full border border-border-color">
+            {cluster.nodes?.length ?? 0} node{(cluster.nodes?.length ?? 0) === 1 ? '' : 's'}
+          </span>
+        </div>
+        <div className="p-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {(cluster.nodes || []).map((node) => (
+            <NodeCard
+              key={node.ip}
+              node={node}
+              isGateway={node.ip === cluster.gateway?.ip}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Control Plane Direction */}
+      <div className="bg-bg-surface border border-border-color rounded-2xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-border-color">
+          <h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
+            <ArrowRightLeft size={20} className="text-accent" />
+            {t('sys_control_plane_title', 'Control Plane Direction')}
+          </h3>
+          <p className="text-sm text-text-secondary mt-1">
+            The gateway should grow into a home control plane: not just routing requests, but managing updates, installs, and node lifecycle safely.
+          </p>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <RoadmapCard
+            icon={RefreshCcw}
+            title="Updates"
+            body="Check OS updates and iHomeNerd updates separately, show changelog and reboot risk, and make apply explicit."
+          />
+          <RoadmapCard
+            icon={ArrowRightLeft}
+            title="Promote by SSH"
+            body="Turn a discovered Linux box into a managed node from the UI: preflight, copy Home CA, install runtime, and register it back."
+          />
+          <RoadmapCard
+            icon={Power}
+            title="Managed Start / Stop"
+            body="Let the gateway start and stop node services over SSH or systemd. Full power-on should depend on Wake-on-LAN or other out-of-band support."
+          />
+        </div>
+      </div>
 
       {/* Capabilities Table */}
       <div className="bg-bg-surface border border-border-color rounded-2xl overflow-hidden">
@@ -212,6 +344,92 @@ function AppCard({ name, status, lastSeen, inactive = false }: any) {
         <span className={inactive ? 'text-text-secondary' : 'text-success'}>{status}</span>
         <span className="text-text-secondary font-mono">{lastSeen}</span>
       </div>
+    </div>
+  );
+}
+
+function NodeCard({ node, isGateway }: { node: ClusterNode; isGateway: boolean }) {
+  const fit = getNodeFit(node);
+  const gpuLabel = node.gpu
+    ? `${node.gpu.name}${node.gpu.vram_mb ? ` (${Math.round(node.gpu.vram_mb / 1024)} GB VRAM)` : ''}`
+    : 'CPU / integrated only';
+  const modelSummary = (node.models || []).slice(0, 4).join(', ');
+
+  return (
+    <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="text-base font-medium text-text-primary">{node.hostname}</div>
+            {isGateway && (
+              <span className="px-2 py-0.5 rounded-full text-xs bg-success/10 text-success border border-success/20">
+                Gateway
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-text-secondary font-mono mt-1">{node.ip}</div>
+        </div>
+        <div className="text-right text-xs text-text-secondary">
+          <div>{formatRam(node.ram_bytes)}</div>
+          <div className="mt-1">{gpuLabel}</div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {(node.suggested_roles || []).map((role) => (
+          <span
+            key={role}
+            className="px-2 py-1 rounded-full text-xs bg-bg-surface border border-border-color text-text-secondary"
+          >
+            {prettifyRole(role)}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div>
+          <div className="text-text-secondary mb-1">Best fit</div>
+          <div className="font-medium text-text-primary">{fit.title}</div>
+          <div className="text-text-secondary mt-1">{fit.workloads}</div>
+        </div>
+        <div>
+          <div className="text-text-secondary mb-1">Recommended default models</div>
+          <div className="font-medium text-text-primary">
+            {fit.defaults.length > 0 ? fit.defaults.join(', ') : 'No model pack selected yet'}
+          </div>
+          <div className="text-text-secondary mt-1">Avoid by default: {fit.avoid}</div>
+        </div>
+      </div>
+
+      {node.strengths && node.strengths.length > 0 && (
+        <div>
+          <div className="text-xs text-text-secondary mb-2">Strengths</div>
+          <div className="flex flex-wrap gap-2">
+            {node.strengths.map((strength) => (
+              <span key={strength} className="px-2 py-1 rounded-lg text-xs bg-accent/5 border border-accent/20 text-text-secondary">
+                {strength}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="pt-3 border-t border-border-color text-xs text-text-secondary">
+        <div>Ollama: {node.ollama ? 'ready' : 'offline'}</div>
+        <div className="mt-1">Installed models: {modelSummary || 'none yet'}</div>
+      </div>
+    </div>
+  );
+}
+
+function RoadmapCard({ icon: Icon, title, body }: { icon: any; title: string; body: string }) {
+  return (
+    <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5">
+      <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-3">
+        <Icon size={18} />
+      </div>
+      <div className="font-medium text-text-primary mb-2">{title}</div>
+      <div className="text-sm text-text-secondary leading-relaxed">{body}</div>
     </div>
   );
 }

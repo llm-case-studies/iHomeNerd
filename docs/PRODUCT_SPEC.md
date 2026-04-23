@@ -81,6 +81,17 @@ iHomeNerd and iOfficeNerd share the same codebase with different defaults, onboa
 └─────────────────────────────────────────┘
 ```
 
+### 3.1.1 Gateway -> control plane
+
+The long-term shape should be:
+- one stable **gateway / control plane**
+- multiple optional **worker nodes**
+- capability-based routing across the home cluster
+
+The gateway does not need to be the biggest machine. It should be the machine that is most reliable as the control surface for trust, discovery, updates, install flows, and managed node actions.
+
+See also: `docs/NODES_CONTROL_PLANE_SPEC_2026-04-23.md`
+
 ### 3.2 Capability registry
 
 The Nerd thinks in **capabilities**, not vendor names. Each capability maps to a model tier and an endpoint.

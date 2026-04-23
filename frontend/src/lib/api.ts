@@ -227,6 +227,66 @@ export const api = {
   },
 
   /**
+   * GET /cluster/nodes
+   * Lightweight inventory of the current home cluster.
+   */
+  async getClusterNodes() {
+    try {
+      const res = await fetch(`${BASE_URL}/cluster/nodes`);
+      if (!res.ok) throw new Error('Network response was not ok');
+      return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable, using mock cluster data', e);
+      return {
+        product: 'iHomeNerd',
+        gateway: {
+          hostname: 'home-gateway.local',
+          ip: '192.168.0.10',
+          url: 'https://192.168.0.10:17777',
+        },
+        nodes: [
+          {
+            product: 'iHomeNerd',
+            version: '0.1.0',
+            role: 'brain',
+            hostname: 'home-gateway.local',
+            ip: '192.168.0.10',
+            port: 17777,
+            protocol: 'https',
+            os: 'linux',
+            arch: 'x86_64',
+            gpu: null,
+            ram_bytes: 17179869184,
+            suggested_roles: ['gateway', 'automation', 'docs', 'radar'],
+            strengths: ['always-on routing and orchestration', 'document ingestion and background tools'],
+            accelerators: [],
+            ollama: true,
+            models: ['gemma3:1b'],
+          },
+          {
+            product: 'iHomeNerd',
+            version: '0.1.0',
+            role: 'brain',
+            hostname: 'gpu-worker.local',
+            ip: '192.168.0.42',
+            port: 17777,
+            protocol: 'https',
+            os: 'linux',
+            arch: 'x86_64',
+            gpu: { name: 'NVIDIA RTX 4070', vram_mb: 12288 },
+            ram_bytes: 34359738368,
+            suggested_roles: ['llm-worker', 'vision-worker', 'voice-worker'],
+            strengths: ['larger local reasoning models', 'multimodal and image-heavy workloads', 'speech and audio tasks'],
+            accelerators: [{ kind: 'gpu', name: 'NVIDIA RTX 4070', vram_mb: 12288 }],
+            ollama: true,
+            models: ['gemma4:e4b', 'gemma3:12b', 'llama3:8b', 'codellama:13b'],
+          },
+        ],
+      };
+    }
+  },
+
+  /**
    * GET /sessions
    * List active sessions.
    */
@@ -572,7 +632,13 @@ export const api = {
         body: JSON.stringify({ target, type })
       });
       if (!res.ok) throw new Error('Network response was not ok');
-      return await res.json();
+      const data = await res.json();
+      if (data.logs) {
+        for (const log of data.logs) {
+          onLog(log);
+        }
+      }
+      return data;
     } catch (e) {
       console.warn('Backend unavailable, using mock scan response', e);
       
