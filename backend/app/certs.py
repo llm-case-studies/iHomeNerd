@@ -1,8 +1,8 @@
-"""TLS certificate management — local CA + signed server certs.
+"""TLS certificate management — home CA + signed server certs.
 
-On first boot, generates a local Certificate Authority (CA):
+On first boot, generates or reuses a home Certificate Authority (CA):
   - ca.crt  — the trust anchor users install on their devices (once)
-  - ca.key  — stays on the box, never shared
+  - ca.key  — can be shared explicitly for a whole-home trust setup
 
 Then uses the CA to sign a server certificate covering localhost,
 ihomenerd.local, the hostname, and the current LAN IP.  When the
@@ -24,8 +24,21 @@ log = logging.getLogger(__name__)
 
 CA_DAYS = 3650       # 10 years — CA should outlive the hardware
 SERVER_DAYS = 825    # ~2 years — max macOS trusts without extra flags
-CA_SUBJECT = "/CN=iHomeNerd Local CA/O=iHomeNerd"
+CA_SUBJECT = "/CN=iHomeNerd Home CA/O=iHomeNerd"
 SERVER_SUBJECT = "/CN=iHomeNerd"
+
+
+def _configured_path(key: str) -> Path | None:
+    value = os.environ.get(key, "").strip()
+    return Path(value) if value else None
+
+
+def _get_ca_paths(certs_dir: Path) -> tuple[Path, Path]:
+    """CA material can live in a shared host directory or locally in /data."""
+    return (
+        _configured_path("IHN_CA_CERT_PATH") or (certs_dir / "ca.crt"),
+        _configured_path("IHN_CA_KEY_PATH") or (certs_dir / "ca.key"),
+    )
 
 
 def _get_lan_ip() -> str | None:
@@ -75,11 +88,11 @@ def _read_san_from_cert(cert_path: Path) -> set[str]:
 
 
 def _generate_ca(certs_dir: Path) -> tuple[Path, Path] | None:
-    """Generate a local CA key + cert. Returns (ca_cert, ca_key) or None."""
+    """Generate a home CA key + cert. Returns (ca_cert, ca_key) or None."""
     ca_key = certs_dir / "ca.key"
     ca_cert = certs_dir / "ca.crt"
 
-    log.info("Generating iHomeNerd local CA (valid %d days)", CA_DAYS)
+    log.info("Generating iHomeNerd home CA (valid %d days)", CA_DAYS)
     try:
         # Generate CA private key
         subprocess.check_call([
@@ -104,7 +117,7 @@ def _generate_ca(certs_dir: Path) -> tuple[Path, Path] | None:
         log.warning("CA generation failed: %s", e)
         return None
 
-    log.info("Local CA generated: %s", ca_cert)
+    log.info("Home CA generated: %s", ca_cert)
     return ca_cert, ca_key
 
 
@@ -175,7 +188,7 @@ def _generate_server_cert(
 
 def get_ca_cert_path(certs_dir: Path) -> Path | None:
     """Return the CA cert path if it exists."""
-    ca_cert = certs_dir / "ca.crt"
+    ca_cert, _ = _get_ca_paths(certs_dir)
     return ca_cert if ca_cert.exists() else None
 
 
@@ -186,13 +199,12 @@ def ensure_certs(certs_dir: Path) -> tuple[Path, Path] | None:
     if openssl is unavailable.
 
     Certificate structure:
-      ca.crt / ca.key     — local CA (generated once, user installs ca.crt)
+      ca.crt / ca.key         — home CA (generated once or explicitly reused)
       server.crt / server.key — signed by CA (regenerated when IP changes)
     """
     certs_dir.mkdir(parents=True, exist_ok=True)
 
-    ca_cert = certs_dir / "ca.crt"
-    ca_key = certs_dir / "ca.key"
+    ca_cert, ca_key = _get_ca_paths(certs_dir)
     server_cert = certs_dir / "server.crt"
     server_key = certs_dir / "server.key"
 
@@ -204,11 +216,10 @@ def ensure_certs(certs_dir: Path) -> tuple[Path, Path] | None:
     if lan_ip:
         needed_sans.add(f"IP:{lan_ip}")
 
-    # Step 1: Ensure CA exists (generate once, keep forever)
-    if not ca_cert.exists() or not ca_key.exists():
-        result = _generate_ca(certs_dir)
-        if not result:
-            return None
+    # Step 1: If a valid server cert is already present and chains to the CA,
+    # we can operate without needing the CA private key on this node.
+    ca_exists = ca_cert.exists()
+    ca_key_exists = ca_key.exists()
 
     # Step 2: Check if server cert needs (re)generation
     needs_server_cert = False
@@ -223,6 +234,8 @@ def ensure_certs(certs_dir: Path) -> tuple[Path, Path] | None:
         else:
             # Verify it's signed by our CA (not an old self-signed cert)
             try:
+                if not ca_exists:
+                    raise FileNotFoundError("CA certificate missing")
                 subprocess.check_call([
                     "openssl", "verify", "-CAfile", str(ca_cert), str(server_cert),
                 ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -230,7 +243,22 @@ def ensure_certs(certs_dir: Path) -> tuple[Path, Path] | None:
                 needs_server_cert = True
                 log.info("Server cert not signed by current CA — regenerating")
 
+    # Step 3: Ensure CA exists if we need to sign locally on this node.
+    if needs_server_cert and not ca_exists:
+        if _configured_path("IHN_CA_CERT_PATH") or _configured_path("IHN_CA_KEY_PATH"):
+            log.warning("Configured home CA missing: cert=%s key=%s", ca_cert, ca_key)
+            return None
+        result = _generate_ca(certs_dir)
+        if not result:
+            return None
+        ca_cert, ca_key = result
+        ca_exists = True
+        ca_key_exists = True
+
     if needs_server_cert:
+        if not ca_key_exists:
+            log.warning("CA key missing — cannot sign a server cert on this node")
+            return None
         san_string = ",".join(sorted(needed_sans))
         result = _generate_server_cert(certs_dir, ca_cert, ca_key, san_string)
         if not result:

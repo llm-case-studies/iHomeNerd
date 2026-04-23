@@ -37,10 +37,13 @@ services:
       - ollama
     volumes:
       - brain_data:/data
+      - ./home-ca:/authority:ro
     environment:
       - IHN_LAN_MODE=true
       - IHN_OLLAMA_URL=http://127.0.0.1:11434
       - IHN_DATA_DIR=/data
+      - IHN_CA_CERT_PATH=${IHN_CA_CERT_PATH:-}
+      - IHN_CA_KEY_PATH=${IHN_CA_KEY_PATH:-}
       - IHN_CERT_LAN_IP=${IHN_CERT_LAN_IP:-}
       - IHN_CERT_HOSTNAMES=${IHN_CERT_HOSTNAMES:-}
 

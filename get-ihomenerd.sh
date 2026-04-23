@@ -45,6 +45,53 @@ warn() { echo -e "  ${YELLOW}${WARN}  $1${NC}"; }
 fail() { echo -e "  ${RED}✘  $1${NC}"; exit 1; }
 step() { echo -e "\n${CYAN}${BOLD}── $1 ──${NC}"; }
 
+copy_ca_file_from_ssh() {
+    local ssh_host="$1"
+    local remote_command="$2"
+    local dest_path="$3"
+    ssh "$ssh_host" "$remote_command" > "$dest_path"
+}
+
+import_home_ca_from_ssh() {
+    local ssh_host="$1"
+    local ca_dir="$2"
+
+    say "Importing Home CA from ${ssh_host}..."
+    mkdir -p "$ca_dir"
+
+    if ssh "$ssh_host" 'test -f ~/.ihomenerd/home-ca/ca.crt && test -f ~/.ihomenerd/home-ca/ca.key'; then
+        copy_ca_file_from_ssh "$ssh_host" 'cat "$HOME/.ihomenerd/home-ca/ca.crt"' "${ca_dir}/ca.crt"
+        copy_ca_file_from_ssh "$ssh_host" 'cat "$HOME/.ihomenerd/home-ca/ca.key"' "${ca_dir}/ca.key"
+    else
+        ssh "$ssh_host" 'cd ~/.ihomenerd && docker compose exec -T brain sh -lc "cat /data/certs/ca.crt"' > "${ca_dir}/ca.crt"
+        ssh "$ssh_host" 'cd ~/.ihomenerd && docker compose exec -T brain sh -lc "cat /data/certs/ca.key"' > "${ca_dir}/ca.key"
+    fi
+
+    chmod 600 "${ca_dir}/ca.key"
+    ok "Imported shared Home CA"
+}
+
+generate_home_ca() {
+    local ca_dir="$1"
+    local subject="${IHN_HOME_CA_SUBJECT:-/CN=iHomeNerd Home CA/O=iHomeNerd}"
+
+    command -v openssl &>/dev/null || fail "OpenSSL is required to generate a Home CA."
+    mkdir -p "$ca_dir"
+    umask 077
+
+    say "Generating a new Home CA for this iHomeNerd household..."
+    openssl genrsa -out "${ca_dir}/ca.key" 4096 >/dev/null 2>&1
+    openssl req -x509 -new -nodes \
+        -key "${ca_dir}/ca.key" \
+        -sha256 \
+        -days 3650 \
+        -subj "$subject" \
+        -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
+        -addext "keyUsage=critical,keyCertSign,cRLSign" \
+        -out "${ca_dir}/ca.crt" >/dev/null 2>&1
+    ok "Created Home CA"
+}
+
 # --- Banner ---
 echo ""
 echo -e "${BOLD}${CYAN}"
@@ -205,6 +252,7 @@ step "${HOUSE} Setting up the Nerd Cave..."
 INSTALL_DIR="${HOME}/.ihomenerd"
 REPO_REF="${IHN_REPO_REF:-main}"
 ARCHIVE_URL="https://github.com/llm-case-studies/iHomeNerd/archive/refs/heads/${REPO_REF}.tar.gz"
+HOME_CA_DIR="${INSTALL_DIR}/home-ca"
 mkdir -p "$INSTALL_DIR"
 
 # Download the repo archive so Docker has the real build context.
@@ -212,6 +260,21 @@ say "Downloading iHomeNerd ${REPO_REF}..."
 curl -fsSL "$ARCHIVE_URL" | tar -xz --strip-components=1 -C "$INSTALL_DIR"
 
 ok "iHomeNerd files saved to ${INSTALL_DIR}/"
+
+if [[ -n "${IHN_HOME_CA_SOURCE_DIR:-}" ]]; then
+    say "Reusing Home CA from ${IHN_HOME_CA_SOURCE_DIR}..."
+    mkdir -p "$HOME_CA_DIR"
+    cp "${IHN_HOME_CA_SOURCE_DIR}/ca.crt" "${HOME_CA_DIR}/ca.crt"
+    cp "${IHN_HOME_CA_SOURCE_DIR}/ca.key" "${HOME_CA_DIR}/ca.key"
+    chmod 600 "${HOME_CA_DIR}/ca.key"
+    ok "Reused Home CA from local directory"
+elif [[ -n "${IHN_HOME_CA_SOURCE_SSH:-}" ]]; then
+    import_home_ca_from_ssh "${IHN_HOME_CA_SOURCE_SSH}" "$HOME_CA_DIR"
+elif [[ -f "${HOME_CA_DIR}/ca.crt" && -f "${HOME_CA_DIR}/ca.key" ]]; then
+    ok "Reusing existing Home CA from ${HOME_CA_DIR}"
+else
+    generate_home_ca "$HOME_CA_DIR"
+fi
 
 LAN_IP=$(hostname -I | awk '{print $1}')
 HOST_SHORT=$(hostname -s 2>/dev/null || hostname)
@@ -224,6 +287,8 @@ if [[ -n "$HOST_SHORT" && "$HOST_SHORT" != *.local ]]; then
     HOSTNAME_LIST="${HOSTNAME_LIST},${HOST_SHORT}.local"
 fi
 cat > "${INSTALL_DIR}/.env" <<EOF
+IHN_CA_CERT_PATH=/authority/ca.crt
+IHN_CA_KEY_PATH=/authority/ca.key
 IHN_CERT_LAN_IP=${LAN_IP}
 IHN_CERT_HOSTNAMES=${HOSTNAME_LIST}
 EOF
