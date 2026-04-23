@@ -163,7 +163,7 @@ def _generate_server_cert(
             "-in", str(csr_path),
             "-CA", str(ca_cert),
             "-CAkey", str(ca_key),
-            "-CAcreateserial",
+            "-set_serial", str(int.from_bytes(os.urandom(16), "big")),
             "-out", str(server_cert),
             "-days", str(SERVER_DAYS),
             "-sha256",
@@ -173,7 +173,6 @@ def _generate_server_cert(
         # Clean up temp files
         csr_path.unlink(missing_ok=True)
         ext_path.unlink(missing_ok=True)
-        (certs_dir / "ca.srl").unlink(missing_ok=True)
 
     except FileNotFoundError:
         log.warning("openssl not found — cannot generate server cert")
