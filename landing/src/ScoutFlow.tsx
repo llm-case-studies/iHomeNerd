@@ -42,28 +42,28 @@ function detectPlatform(): Platform {
 
 function getVmSummary(platform: Platform): string {
   if (platform === 'windows') {
-    return 'Best default recommendation for most Windows visitors. Start with the VM path if you want the easiest first trial without BIOS changes or touching your main install. The guided VM artifact is still being finalized.';
+    return 'Best near-term recommendation for most Windows visitors. Wait for the guided VM artifact if you want the easiest first trial without Docker friction, BIOS changes, or touching your main install.';
   }
   if (platform === 'macos') {
-    return 'Best default recommendation for most Mac visitors. A VM is the cleanest low-risk trial when you want to evaluate iHomeNerd before changing another machine. The guided VM artifact is still being finalized.';
+    return 'Best near-term recommendation for most Mac visitors. Wait for the guided VM artifact if you want the cleanest low-risk trial before changing another machine.';
   }
   if (platform === 'linux') {
-    return 'Good planning path if you want a disposable trial without changing your current Linux setup. It is still simpler than boot media for many users, but the guided VM artifact is still being finalized.';
+    return 'Good near-term path if you want a disposable trial without changing your current Linux setup. For now, Docker is the more practical early-adopter route.';
   }
-  return 'For most first-time visitors, a VM is still the safest place to start before trying bare metal, but the guided VM artifact is still being finalized.';
+  return 'For most first-time visitors, the guided VM path should become the safest place to start before trying bare metal.';
 }
 
 function getDockerSummary(platform: Platform): string {
   if (platform === 'windows') {
-    return 'Treat Docker as the advanced Windows path. It usually means Docker Desktop, WSL2, and more moving parts than a VM-first trial.';
+    return 'Docker is the practical path today if you are willing to use a trusted AI as your guide. On Windows, expect Docker Desktop, WSL2, and more moving parts than the upcoming VM path.';
   }
   if (platform === 'macos') {
-    return 'Use Docker on macOS only if containers already make sense to you. It is more self-hoster-oriented than a first-time evaluation path.';
+    return 'Docker is the practical path today if containers already make sense to you. Use a trusted AI to walk through the tradeoffs before you run commands.';
   }
   if (platform === 'linux') {
-    return 'Docker is appropriate when you already self-host and want container control. It should not be the first recommendation for a cold visitor.';
+    return 'Docker is the practical early-adopter path on Linux if you already self-host or are comfortable getting AI-guided help.';
   }
-  return 'Docker is the advanced self-hosting lane, not the default path for a first visit.';
+  return 'Docker is the practical early-adopter path today, but it is not the low-friction default for a cold visitor.';
 }
 
 export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
@@ -176,13 +176,11 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
           {step === 'chooser' && (
             <div className="space-y-6">
               <div className="rounded-2xl border border-accent/20 bg-accent/10 p-5">
-                <p className="text-lg font-semibold mb-2">Start with the path that adds the least friction.</p>
+                <p className="text-lg font-semibold mb-2">Pick the path that matches your patience.</p>
                 <p className="text-sm text-text-secondary leading-relaxed">
-                  This chooser explains the recommended paths and can connect to an already-running
-                  Brain. Public VM and live-image trial artifacts, polished installers, and a fuller
-                  guided setup flow are still being finalized. There are no public VM images,
-                  live-image downloads, polished installers, or one-click setup scripts linked from
-                  this page yet.
+                  Docker is the practical early-adopter path today if you use a trusted AI to guide
+                  you. The guided VM path should be easier soon. The live image is the longer-term
+                  spare-PC path unless you are comfortable building pieces yourself.
                 </p>
               </div>
 
@@ -190,7 +188,7 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                 <ChooserCard
                   icon={<Brain size={22} />}
                   title="Ask Your Trusted AI"
-                  description="Share this page with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you have and ask whether this is ready for you today, which path to watch first, and what to avoid until public trial artifacts are linked."
+                  description="Share this page with GPT, Claude, Gemini, Grok, or DeepSeek. Tell it what hardware you have and ask whether Docker now, VM soon, or live image later fits your patience and skill level."
                   action={
                     <button
                       onClick={() => copyToClipboard(shareUrl, 'page-link')}
@@ -207,21 +205,21 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                 />
 
                 <ChooserCard
+                  icon={<Package size={22} />}
+                  title="Docker: Try Now With Help"
+                  description={getDockerSummary(platform)}
+                />
+
+                <ChooserCard
                   icon={<Monitor size={22} />}
-                  title="VM-First Guidance"
+                  title="VM: Wait for the Easier Trial"
                   description={getVmSummary(platform)}
                 />
 
                 <ChooserCard
                   icon={<Server size={22} />}
-                  title="Spare-PC Guidance"
-                  description="Best when you have an unused PC or mini-PC. This is still the right bare-metal direction, but the public live-image download flow is still being finalized."
-                />
-
-                <ChooserCard
-                  icon={<Package size={22} />}
-                  title="Advanced Docker"
-                  description={getDockerSummary(platform)}
+                  title="Live Image: Spare-PC Path"
+                  description="Best eventual path when you have an unused PC or mini-PC. Public live-image download flow is longer-term; DIY builders can experiment earlier."
                 />
               </div>
 
