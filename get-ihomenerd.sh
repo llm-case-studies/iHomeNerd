@@ -128,7 +128,7 @@ step "${EYES} Checking what we're working with..."
 OS="$(uname -s)"
 if [[ "$OS" != "Linux" ]]; then
     warn "You're on ${OS}. This installer is for Linux."
-    warn "macOS support: brew install ihomenerd (coming soon)"
+    warn "macOS support: use install-ihomenerd-macos.sh or the gateway Promote flow"
     warn "Windows support: see https://ihomenerd.com/windows"
     exit 1
 fi

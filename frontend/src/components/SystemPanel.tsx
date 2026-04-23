@@ -418,7 +418,7 @@ export function SystemPanel() {
                 Promote a Node by SSH
               </div>
               <p className="text-sm text-text-secondary">
-                Use this for a Linux box you can already reach over SSH. macOS preflight and managed actions are viable, but automatic install is still Linux-only.
+                Use this for a Linux box or Mac you can already reach over SSH. Linux uses the Docker path; macOS installs a user-level launchd service and reuses Ollama if the app is already present.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

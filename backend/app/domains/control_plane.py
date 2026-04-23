@@ -119,6 +119,11 @@ DOCKER_VERSION=""
 DOCKER_READY="false"
 CURL_READY="false"
 SUDO_NOPASS="false"
+PYTHON3_READY="false"
+PYTHON_VENV_READY="false"
+PYTHON_VENV_ERROR=""
+OLLAMA_CLI=""
+OLLAMA_READY="false"
 GPU_NAME=""
 GPU_VRAM_MB=""
 RUNTIME_KIND=""
@@ -138,11 +143,34 @@ fi
 if command -v curl >/dev/null 2>&1; then
   CURL_READY="true"
 fi
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON3_READY="true"
+  PYTHON_VENV_OUTPUT="$(python3 - <<'PY' 2>&1 || true
+import venv
+print("ok")
+PY
+)"
+  if printf '%s' "$PYTHON_VENV_OUTPUT" | grep -q '^ok$'; then
+    PYTHON_VENV_READY="true"
+  else
+    PYTHON_VENV_ERROR="$(printf '%s' "$PYTHON_VENV_OUTPUT" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
+  fi
+fi
 if command -v docker >/dev/null 2>&1; then
   DOCKER_VERSION="$(docker --version 2>/dev/null | sed 's/Docker version //; s/,.*//')"
   if docker info >/dev/null 2>&1; then
     DOCKER_READY="true"
   fi
+fi
+if command -v ollama >/dev/null 2>&1; then
+  OLLAMA_CLI="$(command -v ollama)"
+elif [ -x /Applications/Ollama.app/Contents/Resources/ollama ]; then
+  OLLAMA_CLI="/Applications/Ollama.app/Contents/Resources/ollama"
+elif [ -x "$HOME/Applications/Ollama.app/Contents/Resources/ollama" ]; then
+  OLLAMA_CLI="$HOME/Applications/Ollama.app/Contents/Resources/ollama"
+fi
+if [ -n "$OLLAMA_CLI" ] && curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+  OLLAMA_READY="true"
 fi
 if sudo -n true >/dev/null 2>&1; then
   SUDO_NOPASS="true"
@@ -174,6 +202,11 @@ printf 'DOCKER_VERSION=%s\n' "$DOCKER_VERSION"
 printf 'DOCKER_READY=%s\n' "$DOCKER_READY"
 printf 'CURL_READY=%s\n' "$CURL_READY"
 printf 'SUDO_NOPASS=%s\n' "$SUDO_NOPASS"
+printf 'PYTHON3_READY=%s\n' "$PYTHON3_READY"
+printf 'PYTHON_VENV_READY=%s\n' "$PYTHON_VENV_READY"
+printf 'PYTHON_VENV_ERROR=%s\n' "$PYTHON_VENV_ERROR"
+printf 'OLLAMA_CLI=%s\n' "$OLLAMA_CLI"
+printf 'OLLAMA_READY=%s\n' "$OLLAMA_READY"
 printf 'GPU_NAME=%s\n' "$GPU_NAME"
 printf 'GPU_VRAM_MB=%s\n' "$GPU_VRAM_MB"
 printf 'RUNTIME_KIND=%s\n' "$RUNTIME_KIND"
@@ -184,10 +217,10 @@ printf 'IHN_RUNNING=%s\n' "$IHN_RUNNING"
 def _runtime_guess(os_name: str, docker_ready: bool, runtime_kind: str) -> str:
     if runtime_kind:
         return runtime_kind
-    if docker_ready:
-        return "docker_compose"
     if os_name == "darwin":
         return "launchd"
+    if docker_ready:
+        return "docker_compose"
     return "host_process"
 
 
@@ -254,6 +287,10 @@ def _run_preflight(req: PreflightRequest) -> dict[str, Any]:
     docker_ready = kv.get("DOCKER_READY") == "true"
     curl_ready = kv.get("CURL_READY") == "true"
     sudo_nopass = kv.get("SUDO_NOPASS") == "true"
+    python3_ready = kv.get("PYTHON3_READY") == "true"
+    python_venv_ready = kv.get("PYTHON_VENV_READY") == "true"
+    python_venv_error = kv.get("PYTHON_VENV_ERROR", "")
+    ollama_ready = kv.get("OLLAMA_READY") == "true"
     runtime_kind = _runtime_guess(os_name, docker_ready, kv.get("RUNTIME_KIND", ""))
 
     blockers: list[str] = []
@@ -267,7 +304,17 @@ def _run_preflight(req: PreflightRequest) -> dict[str, Any]:
         if not blockers:
             promote_supported = True
     elif os_name == "darwin":
-        blockers.append("automatic install is not enabled for macOS yet; add a macOS runtime adapter first")
+        if not curl_ready:
+            blockers.append("curl is not available on the target")
+        if not python3_ready:
+            blockers.append("python3 is not available on the target")
+        if not python_venv_ready:
+            if "invalid active developer path" in python_venv_error.lower():
+                blockers.append("Xcode Command Line Tools are missing or broken on the target")
+            else:
+                blockers.append("python3 venv support is not available on the target")
+        if not blockers:
+            promote_supported = True
     else:
         blockers.append(f"unsupported target platform: {os_name or 'unknown'}")
 
@@ -291,6 +338,11 @@ def _run_preflight(req: PreflightRequest) -> dict[str, Any]:
         },
         "sudoNoPass": sudo_nopass,
         "curlReady": curl_ready,
+        "python3Ready": python3_ready,
+        "pythonVenvReady": python_venv_ready,
+        "pythonVenvError": python_venv_error,
+        "ollamaCli": kv.get("OLLAMA_CLI", ""),
+        "ollamaReady": ollama_ready,
         "gpu": {"name": gpu_name, "vramMb": gpu_vram_mb} if gpu_name else None,
         "runtimeKind": runtime_kind,
         "ihnRunning": kv.get("IHN_RUNNING") == "true",
@@ -348,11 +400,32 @@ def _service_command(node: nodes.ManagedNode, action: str) -> str:
         }[action]
     if node.runtime_kind == "launchd":
         service = shlex.quote(node.service_name or "com.ihomenerd.brain")
+        plist_script = (
+            f'SERVICE={service}\n'
+            'PLIST="$HOME/Library/LaunchAgents/$SERVICE.plist"\n'
+        )
         return {
-            "start": f"launchctl kickstart -k gui/$(id -u)/{service}",
-            "stop": f"launchctl bootout gui/$(id -u) {service}",
-            "restart": f"launchctl bootout gui/$(id -u) {service} >/dev/null 2>&1 || true; launchctl kickstart -k gui/$(id -u)/{service}",
-            "status": f"launchctl print gui/$(id -u)/{service}",
+            "start": plist_script + (
+                'if launchctl print "gui/$(id -u)/$SERVICE" >/dev/null 2>&1; then\n'
+                '  launchctl kickstart -k "gui/$(id -u)/$SERVICE"\n'
+                'elif launchctl print "user/$(id -u)/$SERVICE" >/dev/null 2>&1; then\n'
+                '  launchctl kickstart -k "user/$(id -u)/$SERVICE"\n'
+                'else\n'
+                '  launchctl bootstrap "gui/$(id -u)" "$PLIST" >/dev/null 2>&1 || launchctl bootstrap "user/$(id -u)" "$PLIST"\n'
+                'fi'
+            ),
+            "stop": plist_script + (
+                'launchctl bootout "gui/$(id -u)/$SERVICE" >/dev/null 2>&1 || '
+                'launchctl bootout "user/$(id -u)/$SERVICE" >/dev/null 2>&1 || true'
+            ),
+            "restart": plist_script + (
+                'launchctl bootout "gui/$(id -u)/$SERVICE" >/dev/null 2>&1 || '
+                'launchctl bootout "user/$(id -u)/$SERVICE" >/dev/null 2>&1 || true\n'
+                'launchctl bootstrap "gui/$(id -u)" "$PLIST" >/dev/null 2>&1 || launchctl bootstrap "user/$(id -u)" "$PLIST"'
+            ),
+            "status": plist_script + (
+                'launchctl print "gui/$(id -u)/$SERVICE" 2>/dev/null || launchctl print "user/$(id -u)/$SERVICE"'
+            ),
         }[action]
     if node.runtime_kind == "host_process":
         path_bootstrap = _remote_path_bootstrap("INSTALL_PATH", node.install_path or "~/Projects/iHomeNerd")
@@ -509,13 +582,14 @@ async def promote(req: PromoteRequest):
         if copy.returncode != 0:
             raise HTTPException(status_code=400, detail=copy.stderr.strip() or f"Failed to copy {remote_name}")
 
+    script_name = "install-ihomenerd-macos.sh" if preflight["os"] == "darwin" else "get-ihomenerd.sh"
     install_script = (
         _remote_path_bootstrap("REMOTE_CA_DIR", remote_ca_dir)
         + f"""
 set -e
-curl -fsSL https://raw.githubusercontent.com/llm-case-studies/iHomeNerd/main/get-ihomenerd.sh -o /tmp/get-ihomenerd.sh
-chmod +x /tmp/get-ihomenerd.sh
-IHN_AUTO_YES=1 IHN_SKIP_OPEN=1 IHN_INSTALL_DIR={shlex.quote(req.installPath)} IHN_HOME_CA_SOURCE_DIR="$REMOTE_CA_DIR" IHN_REPO_REF=main bash /tmp/get-ihomenerd.sh
+curl -fsSL https://raw.githubusercontent.com/llm-case-studies/iHomeNerd/main/{script_name} -o /tmp/{script_name}
+chmod +x /tmp/{script_name}
+IHN_AUTO_YES=1 IHN_SKIP_OPEN=1 IHN_INSTALL_DIR={shlex.quote(req.installPath)} IHN_HOME_CA_SOURCE_DIR="$REMOTE_CA_DIR" IHN_REPO_REF=main bash /tmp/{script_name}
 """
     )
     try:
@@ -558,7 +632,7 @@ IHN_AUTO_YES=1 IHN_SKIP_OPEN=1 IHN_INSTALL_DIR={shlex.quote(req.installPath)} IH
             "state": "managed",
             "managed": True,
             "install_path": req.installPath,
-            "runtime_kind": requested_runtime or "docker_compose",
+            "runtime_kind": requested_runtime or ("launchd" if preflight["os"] == "darwin" else "docker_compose"),
             "last_seen": nodes.now_iso(),
             "metadata": {
                 **(node_record.metadata or {}),
