@@ -4,40 +4,42 @@
 # Stop:   docker compose down
 # Logs:   docker compose logs -f
 #
-# GPU access requires nvidia-container-toolkit:
+# CPU is the default so Docker also works in VMs and on small spare boxes.
+#
+# GPU access requires docker-compose.gpu.yml plus nvidia-container-toolkit:
 #   sudo apt install nvidia-container-toolkit
 #   sudo systemctl restart docker
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
 
 services:
   ollama:
     image: ollama/ollama:latest
     container_name: ihomenerd-ollama
     restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
-  brain:
-    build: ./backend
-    container_name: ihomenerd-brain
-    restart: unless-stopped
-    depends_on:
-      - ollama
+    # Brain shares this network namespace, so publish the Brain ports here.
+    # Ollama itself remains private on 11434 inside the shared namespace.
     ports:
       - "17777:17777"
+      - "17778:17778"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    volumes:
+      - ollama_data:/root/.ollama
+
+  brain:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ihomenerd-brain
+    restart: unless-stopped
+    network_mode: "service:ollama"
+    depends_on:
+      - ollama
     volumes:
       - brain_data:/data
     environment:
       - IHN_LAN_MODE=true
-      - IHN_OLLAMA_URL=http://ollama:11434
+      - IHN_OLLAMA_URL=http://127.0.0.1:11434
       - IHN_DATA_DIR=/data
 
 volumes:

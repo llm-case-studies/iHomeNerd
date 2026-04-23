@@ -7,10 +7,9 @@ Sits alongside Ollama (LLM) as a separate capability backend.
 from __future__ import annotations
 
 import io
+import importlib.util
 import logging
 from pathlib import Path
-
-import soundfile as sf
 
 from .config import settings
 
@@ -77,6 +76,8 @@ class KokoroEngine:
 
         Returns (wav_bytes, sample_rate).
         """
+        import soundfile as sf
+
         samples, sample_rate = self.kokoro.create(text, voice=voice, speed=speed, lang=lang)
         buf = io.BytesIO()
         sf.write(buf, samples, sample_rate, format="WAV", subtype="PCM_16")
@@ -144,4 +145,8 @@ def is_available() -> bool:
     """Check if TTS is available without fully loading the engine."""
     if _engine is not None:
         return True
-    return _find_model_files() is not None
+    return (
+        _find_model_files() is not None
+        and importlib.util.find_spec("kokoro_onnx") is not None
+        and importlib.util.find_spec("soundfile") is not None
+    )

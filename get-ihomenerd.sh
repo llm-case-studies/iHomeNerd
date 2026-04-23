@@ -9,9 +9,10 @@
 #    1. Checks your hardware (GPU, RAM, disk)
 #    2. Installs Docker if needed
 #    3. Installs nvidia-container-toolkit if you have an NVIDIA GPU
-#    4. Pulls and starts iHomeNerd + Ollama
-#    5. Downloads the right AI models for your GPU
-#    6. Opens the Command Center in your browser
+#    4. Downloads the iHomeNerd repo archive
+#    5. Builds and starts iHomeNerd + Ollama
+#    6. Downloads the right AI models for your GPU
+#    7. Opens the Command Center in your browser
 # ============================================================================
 
 set -euo pipefail
@@ -119,7 +120,59 @@ if [[ -z "$GPU_NAME" ]]; then
 fi
 
 # ============================================================================
-# Step 2: Model selection based on VRAM
+# Step 2: Docker
+# ============================================================================
+step "${PLUG} Checking Docker..."
+
+if ! command -v docker &>/dev/null; then
+    say "Docker not found. Let me install it for you..."
+    say "(This is how all the cool AI projects run these days)"
+    echo ""
+    curl -fsSL https://get.docker.com | sh
+    sudo usermod -aG docker "$USER"
+    ok "Docker installed"
+    warn "You may need to log out and back in for Docker access."
+else
+    ok "Docker is ready"
+fi
+
+if ! docker info &>/dev/null; then
+    fail "Docker is installed but this shell cannot use it yet. Log out and back in, or run Docker with the right permissions, then re-run this installer."
+fi
+
+# Check Docker Compose
+if ! docker compose version &>/dev/null; then
+    fail "Docker Compose not available. Please update Docker."
+fi
+ok "Docker Compose is ready"
+
+# nvidia-container-toolkit
+if [[ -n "$GPU_NAME" ]]; then
+    if ! command -v dpkg &>/dev/null || ! command -v apt-get &>/dev/null; then
+        warn "NVIDIA GPU detected, but this installer only auto-configures GPU Docker support on Debian/Ubuntu."
+        warn "Install nvidia-container-toolkit for your distro, then re-run with GPU support."
+        GPU_NAME=""
+        GPU_VRAM_MB=0
+    elif ! dpkg -l nvidia-container-toolkit &>/dev/null 2>&1; then
+        say "Installing NVIDIA container toolkit so Docker can use your GPU..."
+        # Add NVIDIA container toolkit repo
+        curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+            sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+        curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+            sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+            sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list > /dev/null
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq nvidia-container-toolkit
+        sudo nvidia-ctk runtime configure --runtime=docker
+        sudo systemctl restart docker
+        ok "NVIDIA container toolkit installed"
+    else
+        ok "NVIDIA container toolkit ready"
+    fi
+fi
+
+# ============================================================================
+# Step 3: Model selection based on usable Docker acceleration
 # ============================================================================
 step "${GEAR} Choosing the right brain size..."
 
@@ -145,78 +198,37 @@ fi
 ok "Selected: ${MODEL_DESC}"
 
 # ============================================================================
-# Step 3: Docker
-# ============================================================================
-step "${PLUG} Checking Docker..."
-
-if ! command -v docker &>/dev/null; then
-    say "Docker not found. Let me install it for you..."
-    say "(This is how all the cool AI projects run these days)"
-    echo ""
-    curl -fsSL https://get.docker.com | sh
-    sudo usermod -aG docker "$USER"
-    ok "Docker installed"
-    warn "You may need to log out and back in for Docker access."
-else
-    ok "Docker is ready"
-fi
-
-# Check Docker Compose
-if ! docker compose version &>/dev/null; then
-    fail "Docker Compose not available. Please update Docker."
-fi
-ok "Docker Compose is ready"
-
-# nvidia-container-toolkit
-if [[ -n "$GPU_NAME" ]]; then
-    if ! dpkg -l nvidia-container-toolkit &>/dev/null 2>&1; then
-        say "Installing NVIDIA container toolkit so Docker can use your GPU..."
-        # Add NVIDIA container toolkit repo
-        curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
-            sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-        curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-            sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-            sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list > /dev/null
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq nvidia-container-toolkit
-        sudo nvidia-ctk runtime configure --runtime=docker
-        sudo systemctl restart docker
-        ok "NVIDIA container toolkit installed"
-    else
-        ok "NVIDIA container toolkit ready"
-    fi
-fi
-
-# ============================================================================
-# Step 4: Pull and start iHomeNerd
+# Step 4: Download and start iHomeNerd
 # ============================================================================
 step "${HOUSE} Setting up the Nerd Cave..."
 
 INSTALL_DIR="${HOME}/.ihomenerd"
+REPO_REF="${IHN_REPO_REF:-main}"
+ARCHIVE_URL="https://github.com/llm-case-studies/iHomeNerd/archive/refs/heads/${REPO_REF}.tar.gz"
 mkdir -p "$INSTALL_DIR"
 
-# Download docker-compose.yml
-say "Downloading configuration..."
-curl -fsSL "https://raw.githubusercontent.com/llm-case-studies/iHomeNerd/main/docker-compose.yml" \
-    -o "${INSTALL_DIR}/docker-compose.yml"
+# Download the repo archive so Docker has the real build context.
+say "Downloading iHomeNerd ${REPO_REF}..."
+curl -fsSL "$ARCHIVE_URL" | tar -xz --strip-components=1 -C "$INSTALL_DIR"
 
-# If no GPU, patch out the GPU reservation
-if [[ -z "$GPU_NAME" ]]; then
-    say "Configuring for CPU mode..."
-    # Remove the deploy/resources/reservations block for ollama
-    sed -i '/deploy:/,/capabilities:/d' "${INSTALL_DIR}/docker-compose.yml"
+ok "iHomeNerd files saved to ${INSTALL_DIR}/"
+
+COMPOSE_FILES=(-f docker-compose.yml)
+if [[ -n "$GPU_NAME" ]]; then
+    COMPOSE_FILES+=(-f docker-compose.gpu.yml)
+    ok "GPU compose profile enabled"
+else
+    ok "CPU compose profile enabled"
 fi
 
-ok "Configuration saved to ${INSTALL_DIR}/"
-
 # Start services
-say "Starting Ollama and iHomeNerd..."
+say "Building and starting Ollama and iHomeNerd..."
 say "${COFFEE} This is a good time for a coffee. First pull takes a few minutes."
 echo ""
 
 cd "$INSTALL_DIR"
-docker compose pull
-docker compose up -d
+docker compose "${COMPOSE_FILES[@]}" pull ollama
+docker compose "${COMPOSE_FILES[@]}" up -d --build
 
 ok "Containers are running!"
 
@@ -282,10 +294,15 @@ echo -e "${BOLD}${GREEN}║                                                     
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${NC}"
 echo ""
 say "Commands:"
-echo -e "  ${DIM}Start:${NC}   cd ~/.ihomenerd && docker compose up -d"
-echo -e "  ${DIM}Stop:${NC}    cd ~/.ihomenerd && docker compose down"
-echo -e "  ${DIM}Logs:${NC}    cd ~/.ihomenerd && docker compose logs -f"
-echo -e "  ${DIM}Update:${NC}  cd ~/.ihomenerd && docker compose pull && docker compose up -d"
+if [[ -n "$GPU_NAME" ]]; then
+    COMPOSE_CMD="docker compose -f docker-compose.yml -f docker-compose.gpu.yml"
+else
+    COMPOSE_CMD="docker compose"
+fi
+echo -e "  ${DIM}Start:${NC}   cd ~/.ihomenerd && ${COMPOSE_CMD} up -d"
+echo -e "  ${DIM}Stop:${NC}    cd ~/.ihomenerd && ${COMPOSE_CMD} down"
+echo -e "  ${DIM}Logs:${NC}    cd ~/.ihomenerd && ${COMPOSE_CMD} logs -f"
+echo -e "  ${DIM}Update:${NC}  cd ~/.ihomenerd && bash get-ihomenerd.sh"
 echo ""
 
 # Try to open browser

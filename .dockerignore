@@ -1,0 +1,12 @@
+.git
+.github
+.codex
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules
+**/dist
+backend/app/static
+landing/dist
+*.log
+*.tmp
