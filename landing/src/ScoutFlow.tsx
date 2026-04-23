@@ -244,7 +244,10 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
                 <p className="text-sm text-text-secondary leading-relaxed">
                   Today&apos;s Docker path uses the public repo plus its compose and installer files.
                   If an AI invents a `docker run some-image:latest` command without pointing to the
-                  exact repo files or installer script, it is guessing.
+                  exact repo files or installer script, it is guessing. The public target-machine
+                  installer today is <code>bash get-ihomenerd.sh</code>. Expect the Command Center at
+                  <code>https://&lt;box&gt;:17777</code> and the setup/bootstrap page at
+                  <code>http://&lt;box&gt;:17778/setup</code>.
                 </p>
               </div>
 

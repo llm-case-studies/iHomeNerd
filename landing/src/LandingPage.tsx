@@ -219,9 +219,12 @@ export default function LandingPage() {
               a spare mini-PC, spare PC, or headless Linux box you can already reach over SSH. Use
               a trusted AI and avoid copy-pasting commands you do not understand. Docker still
               changes the host machine, so do not treat it as risk-free isolation. The current
-              Docker path is repo-based, not a polished one-line Docker image. If the target
-              machine is a mystery box with no remote access, wait for the guided VM path or the
-              live image instead of improvising on unfamiliar hardware.
+              Docker path is repo-based, not a polished one-line Docker image. The public target
+              machine installer today is <code>bash get-ihomenerd.sh</code>; after install, open
+              <code>https://&lt;box&gt;:17777</code> from another device, or use
+              <code>http://&lt;box&gt;:17778/setup</code> for setup/bootstrap. If the target machine
+              is a mystery box with no remote access, wait for the guided VM path or the live image
+              instead of improvising on unfamiliar hardware.
             </p>
           </div>
 
@@ -293,6 +296,7 @@ export default function LandingPage() {
                       <p>I have a busy laptop and a headless Linux box on my LAN with SSH. Is Docker the right path?</p>
                       <p>I have a kid's gaming rig in an unknown state. Should I wait for the live image instead?</p>
                       <p>Is there an official one-line docker run image yet, or is the current Docker path still repo-based?</p>
+                      <p>What exact command and ports are public today, without inventing Docker Hub images or placeholder URLs?</p>
                       <p>Is this a public/free local brain, and where would paid layers actually live?</p>
                       <p>What should I avoid if I am not comfortable debugging Docker?</p>
                     </div>
