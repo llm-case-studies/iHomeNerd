@@ -622,8 +622,8 @@ async def _llm_analyze(prompt: str, logs: list[str]) -> list[dict]:
 async def get_environment():
     """Auto-discover local networks and devices."""
     networks = _discover_networks()
-    devices, _, next_id = _discover_devices(networks)
-    for discovered in await _discover_subnet_hosts(networks, set()):
+    devices, seen_ips, next_id = _discover_devices(networks)
+    for discovered in await _discover_subnet_hosts(networks, set(seen_ips)):
         next_id = _merge_discovered_device(devices, discovered, next_id)
     return {"networks": networks, "devices": devices}
 
@@ -649,5 +649,6 @@ async def run_scan(req: ScanRequest):
     result = await scan_fn(req.target)
     return {
         "status": "complete",
+        "logs": result.get("logs", []),
         "findings": result.get("findings", []),
     }
