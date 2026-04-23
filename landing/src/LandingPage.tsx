@@ -17,6 +17,8 @@ import {
   Monitor,
   CheckCircle2,
   Copy,
+  Github,
+  ExternalLink,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HardwareChecker from './HardwareChecker';
@@ -27,6 +29,7 @@ export default function LandingPage() {
   const [isHwCheckerOpen, setIsHwCheckerOpen] = useState(false);
   const [isScoutFlowOpen, setIsScoutFlowOpen] = useState(false);
   const [copiedPageLink, setCopiedPageLink] = useState(false);
+  const githubUrl = 'https://github.com/llm-case-studies/iHomeNerd';
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     i18n.changeLanguage(e.target.value);
@@ -54,6 +57,15 @@ export default function LandingPage() {
           <div className="flex items-center gap-4 md:gap-6">
             <a href="#features" className="hidden sm:block text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">{t('nav_features')}</a>
             <a href="#security" className="hidden sm:block text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">{t('nav_security')}</a>
+            <a
+              href={githubUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="hidden sm:inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
+            >
+              <Github size={16} />
+              GitHub
+            </a>
             
             <div className="relative flex items-center">
               <GlobeIcon size={16} className="absolute left-3 text-text-secondary pointer-events-none" />
@@ -133,6 +145,27 @@ export default function LandingPage() {
               {t('hero_btn_check_hw')}
             </button>
           </div>
+
+          <div className="max-w-4xl mx-auto mt-8 rounded-2xl border border-border-color bg-bg-surface/70 p-6 text-left md:text-center">
+            <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent mb-3">
+              Public Repo, Private Data
+            </p>
+            <p className="text-base text-text-secondary leading-relaxed mb-5">
+              iHomeNerd itself is meant to be public and free as a local brain. Privacy here means
+              your household data stays on your hardware, not that the repo is closed. Apps that use
+              iHomeNerd can stay free or add paid layers on top.
+            </p>
+            <a
+              href={githubUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
+            >
+              <Github size={16} />
+              View GitHub Repo
+              <ExternalLink size={14} className="text-accent" />
+            </a>
+          </div>
         </div>
       </section>
 
@@ -146,10 +179,12 @@ export default function LandingPage() {
               Choose the clearest next step.
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
-              This staging page is the canonical summary of the current trial paths. Docker is the
-              practical early-adopter path today if you run it on a spare or sandbox machine and
-              use a trusted AI as your guide. A guided VM path should become the smoother default
-              soon, and the live image is the longer-term spare-PC path.
+              This staging page is the canonical summary of the current trial paths. iHomeNerd is
+              intended to stay public and free as a local brain; monetization, if any, belongs in
+              the apps that connect to it. Docker is the practical early-adopter path today if you
+              can run it on a spare or sandbox machine, especially a headless Linux box you already
+              reach over SSH, and use a trusted AI as your guide. A guided VM path should become
+              the smoother default soon, and the live image is the longer-term spare-PC path.
             </p>
           </div>
 
@@ -158,7 +193,7 @@ export default function LandingPage() {
               title="Today"
               label="Docker + AI guide"
               tone="ready"
-              description="Doable for early adopters, especially on a spare mini-PC or other wipeable sandbox machine, if you are comfortable letting GPT, Claude, Gemini, Grok, or DeepSeek explain each Docker step."
+              description="Doable for early adopters, especially on a spare mini-PC, wipeable Linux machine, or headless GPU box you can already SSH into, if you are comfortable letting GPT, Claude, Gemini, Grok, or DeepSeek explain each Docker step."
             />
             <TimelineCard
               title="Next"
@@ -178,35 +213,82 @@ export default function LandingPage() {
             <h3 className="text-xl font-display font-bold mb-3">Choose based on patience and comfort.</h3>
             <p className="text-text-secondary leading-relaxed">
               If you want to try something now, Docker is the path; the safest place to do that is
-              a spare mini-PC, spare PC, or VM/sandbox you are willing to wipe. Use a trusted AI and
-              avoid copy-pasting commands you do not understand. Docker still changes the host
-              machine, so do not treat it as risk-free isolation. If you want the smoother first
-              experience, wait for the guided VM path. If you want a bootable spare-PC experience,
-              expect the live image to take longer unless you are comfortable building pieces yourself.
+              a spare mini-PC, spare PC, or headless Linux box you can already reach over SSH. Use
+              a trusted AI and avoid copy-pasting commands you do not understand. Docker still
+              changes the host machine, so do not treat it as risk-free isolation. If the target
+              machine is a mystery box with no remote access, wait for the guided VM path or the
+              live image instead of improvising on unfamiliar hardware.
             </p>
+          </div>
+
+          <div className="mb-8 rounded-2xl border border-border-color bg-bg-primary/70 p-6">
+            <div className="max-w-3xl">
+              <h3 className="text-xl font-display font-bold mb-3">Common hardware situations</h3>
+              <p className="text-text-secondary leading-relaxed">
+                Use these as the first branch in your decision tree. The goal is not to force every
+                visitor into Docker right now; it is to give a low-drama next step that matches the
+                hardware they already have.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6 mt-6">
+              <ScenarioCard
+                icon={<Monitor size={22} />}
+                title="Busy Windows or Mac laptop"
+                guidance="Wait for the guided VM if you do not want to touch your daily machine. Do not start with Docker on the computer you need for work."
+              />
+              <ScenarioCard
+                icon={<Server size={22} />}
+                title="Headless Linux box on your LAN"
+                guidance="Best Docker-today case if SSH already works. Install on that box, then open the LAN URL from your laptop, phone, or tablet."
+              />
+              <ScenarioCard
+                icon={<Package size={22} />}
+                title="Spare mini-PC or wipeable Linux machine"
+                guidance="Good Docker-now candidate with trusted-AI help. Later, the live image should become the cleaner appliance-style path."
+              />
+              <ScenarioCard
+                icon={<Brain size={22} />}
+                title="Kid's gaming rig in unknown state"
+                guidance="Wait for the live image, or first make it a known wipeable target with SSH or peripherals. Do not improvise on mystery hardware."
+              />
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             <PathCard
               icon={<Brain size={24} />}
               title="Use Your Trusted AI"
-              description="Share this page with the AI you already trust, tell it what hardware you have, and ask it whether Docker now, VM soon, or live image later is the right move for you."
+              description="Share this page or the public GitHub repo with the AI you already trust, tell it what hardware you have, and ask it whether Docker now, VM soon, or live image later is the right move for you."
               color="text-purple-400"
               bg="bg-purple-500/10"
               action={
                 <div className="space-y-4">
-                  <button
-                    onClick={handleCopyPageLink}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
-                  >
-                    {copiedPageLink ? <CheckCircle2 size={16} className="text-success" /> : <Copy size={16} className="text-accent" />}
-                    {copiedPageLink ? 'Link Copied' : 'Copy This Page Link'}
-                  </button>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={handleCopyPageLink}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
+                    >
+                      {copiedPageLink ? <CheckCircle2 size={16} className="text-success" /> : <Copy size={16} className="text-accent" />}
+                      {copiedPageLink ? 'Link Copied' : 'Copy This Page Link'}
+                    </button>
+                    <a
+                      href={githubUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border-color bg-bg-input hover:bg-bg-primary transition-colors text-sm font-medium"
+                    >
+                      <Github size={16} />
+                      GitHub Repo
+                      <ExternalLink size={14} className="text-accent" />
+                    </a>
+                  </div>
                   <div className="rounded-xl border border-border-color bg-bg-input/40 p-4">
                     <p className="text-sm font-semibold mb-3">Natural questions to ask:</p>
                     <div className="space-y-2 text-sm text-text-secondary leading-relaxed">
                       <p>Is this ready for me to try today, or should I wait?</p>
-                      <p>I have a Windows PC, Mac, or spare mini-PC. Should I use Docker now or wait for the VM?</p>
+                      <p>I have a busy laptop and a headless Linux box on my LAN with SSH. Is Docker the right path?</p>
+                      <p>I have a kid's gaming rig in an unknown state. Should I wait for the live image instead?</p>
+                      <p>Is this a public/free local brain, and where would paid layers actually live?</p>
                       <p>What should I avoid if I am not comfortable debugging Docker?</p>
                     </div>
                   </div>
@@ -217,7 +299,7 @@ export default function LandingPage() {
             <PathCard
               icon={<Package size={24} />}
               title="Docker: Try Now on a Sandbox"
-              description="This is the practical path today for early adopters. Use a spare machine or VM if you have one, and let a trusted AI help you understand each step before you run it. Do not use your main machine first."
+              description="This is the practical path today for early adopters. The best current case is a spare Linux machine or headless GPU box you can already reach over SSH. Let a trusted AI help you understand each step before you run it. Do not use your main machine first."
               color="text-cyan-400"
               bg="bg-cyan-400/10"
               action={
@@ -273,7 +355,8 @@ export default function LandingPage() {
             </p>
             <p className="mt-3 text-sm text-text-secondary/80 leading-relaxed">
               The compatibility check evaluates the device running this browser. To check a mini-PC,
-              open this page on that mini-PC or describe its specs to your trusted AI.
+              open this page on that mini-PC, describe its specs to your trusted AI, or if it is a
+              headless Linux box, use SSH there and open the LAN URL from this browser after install.
             </p>
           </div>
         </div>
@@ -380,9 +463,10 @@ export default function LandingPage() {
           </h2>
           <p className="text-xl text-text-secondary mb-10 leading-relaxed">
             Share this page with GPT, Claude, Gemini, Grok, or DeepSeek and ask it to compare the
-            paths described here. This page is the canonical summary; guided trial artifacts and
-            polished installers are still being finalized. If the answers differ, compare two of
-            them before you commit.
+            paths described here. Include the GitHub repo if you want it to see that iHomeNerd is
+            meant to be public and free while your data stays local. This page is the canonical
+            summary; guided trial artifacts and polished installers are still being finalized. If
+            the answers differ, compare two of them before you commit.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
@@ -392,6 +476,16 @@ export default function LandingPage() {
               {copiedPageLink ? <CheckCircle2 size={20} /> : <Copy size={20} />}
               {copiedPageLink ? 'Link Copied' : 'Copy This Page Link'}
             </button>
+            <a
+              href={githubUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-bg-primary hover:bg-bg-input border border-border-color rounded-xl font-bold transition-colors"
+            >
+              <Github size={20} />
+              View GitHub Repo
+              <ExternalLink size={16} className="text-accent" />
+            </a>
             <button
               onClick={() => setIsScoutFlowOpen(true)}
               className="inline-flex items-center gap-2 px-8 py-4 bg-bg-primary hover:bg-bg-input border border-border-color rounded-xl font-bold transition-colors"
@@ -412,6 +506,17 @@ export default function LandingPage() {
         <p className="text-text-secondary text-sm">
           {t('footer_rights', { year: new Date().getFullYear() })} <br/>
           {t('footer_built')}
+        </p>
+        <p className="mt-3">
+          <a
+            href={githubUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <Github size={16} />
+            github.com/llm-case-studies/iHomeNerd
+          </a>
         </p>
       </footer>
 
@@ -465,6 +570,26 @@ function PathCard({
       <h3 className="text-2xl font-display font-bold mb-3">{title}</h3>
       <p className="text-text-secondary leading-relaxed mb-6">{description}</p>
       {action}
+    </div>
+  );
+}
+
+function ScenarioCard({
+  icon,
+  title,
+  guidance,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  guidance: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 h-full">
+      <div className="w-11 h-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-4">
+        {icon}
+      </div>
+      <h3 className="text-lg font-display font-bold mb-2">{title}</h3>
+      <p className="text-sm text-text-secondary leading-relaxed">{guidance}</p>
     </div>
   );
 }
