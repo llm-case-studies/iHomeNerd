@@ -81,6 +81,19 @@ def _configured_network() -> dict | None:
     }
 
 
+def _running_in_container() -> bool:
+    """Best-effort container detection so we can ignore Docker bridge routes."""
+    if Path("/.dockerenv").exists():
+        return True
+    cgroup = Path("/proc/1/cgroup")
+    if not cgroup.exists():
+        return False
+    try:
+        return "docker" in cgroup.read_text(errors="ignore")
+    except OSError:
+        return False
+
+
 def _decode_service_name(name: str) -> str:
     """Decode Avahi/Bonjour-style octal escapes like '\\032'."""
     if not name:
@@ -101,6 +114,11 @@ def _discover_networks() -> list[dict]:
     configured = _configured_network()
     if configured:
         networks.append(configured)
+        # In Docker/Compose deployments the live home LAN is passed in explicitly.
+        # The container's own eth0 route (for example 172.18.0.0/16) is not a real
+        # user-facing LAN and should not leak into Local Radar or candidate lists.
+        if _running_in_container():
+            return networks
 
     raw = _run(["ip", "-j", "route"])
     if not raw:
@@ -245,7 +263,7 @@ def _discover_devices(networks: list[dict]) -> tuple[list[dict], set[str], int]:
                 # Enrich existing device if IP matches
                 for dev in devices:
                     if dev["ip"] == mdns_ip and "this machine" not in dev["name"]:
-                        if mdns_name and mdns_name != dev["ip"]:
+                        if mdns_name and mdns_name != dev["ip"] and not mdns_name.startswith("_"):
                             dev["name"] = _decode_service_name(mdns_name)
                         break
 

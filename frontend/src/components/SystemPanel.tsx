@@ -104,8 +104,16 @@ interface EnvironmentDevice {
   id: string;
   name: string;
   ip: string;
+  networkId?: string;
   os?: string;
   status?: string;
+}
+
+interface EnvironmentNetwork {
+  id: string;
+  name: string;
+  type: string;
+  subnet: string;
 }
 
 function formatBytes(bytes: number): string {
@@ -185,7 +193,7 @@ export function SystemPanel() {
   const [stats, setStats] = useState<any>(null);
   const [cluster, setCluster] = useState<ClusterState | null>(null);
   const [managedNodes, setManagedNodes] = useState<ManagedNode[]>([]);
-  const [environment, setEnvironment] = useState<{ devices?: EnvironmentDevice[] } | null>(null);
+  const [environment, setEnvironment] = useState<{ networks?: EnvironmentNetwork[]; devices?: EnvironmentDevice[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ host: '', sshUser: 'alex', sshPort: 22, installPath: '~/.ihomenerd', nodeName: '' });
   const [preflight, setPreflight] = useState<ControlPreflight | null>(null);
@@ -247,10 +255,17 @@ export function SystemPanel() {
   }, []);
 
   const candidateDevices = useMemo(
-    () =>
-      (environment?.devices || [])
+    () => {
+      const primaryIds = new Set(
+        (environment?.networks || [])
+          .filter(network => network.type === 'primary')
+          .map(network => network.id)
+      );
+      return (environment?.devices || [])
         .filter(device => device.ip && device.status !== 'offline' && device.ip !== cluster?.gateway?.ip)
-        .slice(0, 8),
+        .filter(device => primaryIds.size === 0 || !device.networkId || primaryIds.has(device.networkId))
+        .slice(0, 8);
+    },
     [environment, cluster?.gateway?.ip]
   );
 
