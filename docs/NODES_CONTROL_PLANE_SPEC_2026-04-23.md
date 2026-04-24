@@ -17,6 +17,11 @@ In a real home, the better shape is:
 
 The gateway is still the stable entry point for apps and users, but it should also become the operational control surface for the home cluster.
 
+See also:
+- `docs/CURRENT_STATE_AND_NEXT_MOVES_2026-04-24.md`
+- `docs/HOST_ASSIST_VISION_2026-04-24.md`
+- `docs/MOBILE_STRATEGY_2026-04-24.md`
+
 ---
 
 ## 2. Terminology
@@ -133,6 +138,22 @@ Applying updates should always be explicit:
 
 Do not blur "system package updates" and "iHN app updates" into one button.
 
+### 5.4 Trust and CA health
+
+The control plane should also expose whole-home trust status.
+
+Per household / per node:
+- active Home CA fingerprint
+- whether the node cert chains to that Home CA
+- whether the node appears to have regenerated or drifted
+- last successful trust verification from a user device
+
+This matters because the intended trust model is:
+- trust once per household
+
+not:
+- click through browser warnings per node forever
+
 ---
 
 ## 6. Promote-to-Node flow
@@ -177,6 +198,21 @@ The new node should appear in **Home Nodes** with:
 - capabilities
 - recommended fit
 - managed state
+
+### 6.5 SSH Doctor
+
+The control plane should not stop at "preflight failed."
+
+It should diagnose and explain:
+- host unreachable
+- port closed
+- auth denied
+- host key mismatch
+- remote login disabled
+- missing SSH server
+- gateway key not installed
+
+And it should offer the shortest credible fix path per OS.
 
 ---
 
@@ -265,6 +301,12 @@ Every node should have one of these states:
 - scheduled worker sleep/wake
 - policy-based routing across nodes
 
+### Phase 5
+
+- host-assist for LAN naming and trust health
+- SSH Doctor and gateway key bootstrap
+- household CA visibility and trust-state reporting
+
 ---
 
 ## 10. Concrete examples from the current home
@@ -311,4 +353,3 @@ Not:
 - one giant model
 - one giant box
 - one mysterious helper process
-

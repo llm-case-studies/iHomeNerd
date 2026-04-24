@@ -91,6 +91,10 @@ The long-term shape should be:
 The gateway does not need to be the biggest machine. It should be the machine that is most reliable as the control surface for trust, discovery, updates, install flows, and managed node actions.
 
 See also: `docs/NODES_CONTROL_PLANE_SPEC_2026-04-23.md`
+See also:
+- `docs/CURRENT_STATE_AND_NEXT_MOVES_2026-04-24.md`
+- `docs/HOST_ASSIST_VISION_2026-04-24.md`
+- `docs/MOBILE_STRATEGY_2026-04-24.md`
 
 ### 3.2 Capability registry
 
@@ -557,8 +561,11 @@ Community can contribute packs via pull requests to a public repo. Packs contain
 - Replacing Ollama's model management (use Ollama)
 - Running models inside the browser (the Nerd IS the escape from browser inference)
 - Cloud hosting / SaaS version (the entire point is local)
-- Mobile app (web dashboard works on mobile browsers)
+- Running the primary brain on a phone in V1
 - Smart home device control (not competing with Home Assistant — complementing it)
+
+Native mobile can still be valuable as a later **scout / controller / trust helper** surface.
+See: `docs/MOBILE_STRATEGY_2026-04-24.md`
 
 ## 16. Tech stack
 
@@ -579,3 +586,5 @@ Community can contribute packs via pull requests to a public repo. Packs contain
 - **2026-04-10** — initial product spec. Consolidates Studio Companion design discussions, iHomeNerd-Core vision reboot (Dec 2025), Organi-Share infrastructure work, PronunCo provider abstraction spec, and BTP-core local companion spec into a unified product.
 - **2026-04-12** — clarified runtime strategy (`Ollama` + `Transformers` + `llama.cpp`), local voice path (`browser TTS`, `Kokoro`, `Chatterbox`), Gemma 4 tiering for PronunCo, and the Live Companion Image deployment concept.
 - **2026-04-10** — added home journal (Section 12), source packs (Section 13), `api_version` and `core` fields in capability response. Repo re-org: removed legacy sub-projects, scaffolded Phase 1 backend.
+- **2026-04-23** — added gateway / control-plane direction, managed-node concepts, Linux and macOS promote paths, and first cluster-oriented UI and backend APIs.
+- **2026-04-24** — documented current state, host-assist direction, whole-home trust gaps, and mobile strategy as a controller/scout track rather than a phone-hosted brain.
