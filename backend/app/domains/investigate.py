@@ -207,17 +207,18 @@ def _discover_devices(networks: list[dict]) -> tuple[list[dict], set[str], int]:
     hostname = _preferred_hostname()
     local_ip = _get_local_ip()
     if local_ip:
-        net_id = _match_network(local_ip, networks)
-        device_id = _add_device(
-            devices,
-            seen_ips,
-            device_id,
-            name=f"{hostname} (this machine)",
-            dev_type="server",
-            dev_os="linux",
-            ip=local_ip,
-            network_id=net_id,
-        )
+        net_id = _match_network(local_ip, networks) or (networks[0]["id"] if networks else None)
+        if net_id:
+            device_id = _add_device(
+                devices,
+                seen_ips,
+                device_id,
+                name=f"{hostname} (this machine)",
+                dev_type="server",
+                dev_os="linux",
+                ip=local_ip,
+                network_id=net_id,
+            )
 
     # ARP table
     raw = _run(["ip", "-j", "neighbor"])
@@ -236,6 +237,8 @@ def _discover_devices(networks: list[dict]) -> tuple[list[dict], set[str], int]:
                     continue
                 mac = n.get("lladdr", "")
                 net_id = _match_network(ip, networks)
+                if not net_id:
+                    continue
                 dev_type, dev_os = _guess_device_type(mac, ip)
                 name = _resolve_hostname(ip) or f"Device ({ip})"
                 device_id = _add_device(
@@ -270,9 +273,8 @@ def _discover_devices(networks: list[dict]) -> tuple[list[dict], set[str], int]:
     return devices, seen_ips, device_id
 
 
-def _match_network(ip: str, networks: list[dict]) -> str:
-    """Find which network an IP belongs to."""
-    import ipaddress
+def _match_network(ip: str, networks: list[dict]) -> str | None:
+    """Find which configured network an IP belongs to."""
     try:
         addr = ipaddress.ip_address(ip)
         for net in networks:
@@ -283,7 +285,7 @@ def _match_network(ip: str, networks: list[dict]) -> str:
                 continue
     except ValueError:
         pass
-    return networks[0]["id"] if networks else "unknown"
+    return None
 
 
 def _resolve_hostname(ip: str) -> str | None:
