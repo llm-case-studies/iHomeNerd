@@ -323,6 +323,159 @@ def _guess_device_type(mac: str, ip: str) -> tuple[str, str]:
     return ("computer", "unknown")
 
 
+def _target_aliases() -> set[str]:
+    aliases: set[str] = {"127.0.0.1", "localhost"}
+    local_ip = _get_local_ip()
+    if local_ip:
+        aliases.add(local_ip)
+
+    hostname = socket.gethostname()
+    if hostname:
+        aliases.add(hostname)
+        aliases.add(hostname.lower())
+        aliases.add(hostname.split(".")[0].lower())
+
+    preferred = _preferred_hostname()
+    if preferred:
+        aliases.add(preferred)
+        aliases.add(preferred.lower())
+        aliases.add(preferred.split(".")[0].lower())
+        if not preferred.endswith(".local"):
+            aliases.add(f"{preferred}.local".lower())
+
+    env_names = os.environ.get("IHN_CERT_HOSTNAMES", "")
+    for name in env_names.split(","):
+        name = name.strip()
+        if not name:
+            continue
+        aliases.add(name)
+        aliases.add(name.lower())
+        aliases.add(name.split(".")[0].lower())
+
+    return aliases
+
+
+def _normalize_target_ip(target: str) -> str:
+    candidate = target.strip()
+    if not candidate:
+        return candidate
+    try:
+        ipaddress.ip_address(candidate)
+        return candidate
+    except ValueError:
+        pass
+    try:
+        return socket.gethostbyname(candidate)
+    except OSError:
+        return candidate
+
+
+def _is_local_target(target: str) -> bool:
+    candidate = target.strip()
+    if not candidate:
+        return True
+    if candidate.lower() in {alias.lower() for alias in _target_aliases()}:
+        return True
+    resolved = _normalize_target_ip(candidate)
+    return resolved in _target_aliases()
+
+
+def _summarize_hardware_fit(*, hostname: str, os_name: str, arch: str, ram_bytes: int | None, gpu: dict | None) -> tuple[list[str], list[dict]]:
+    logs = [
+        f"[INFO] Evaluating hardware profile for {hostname}...",
+        f"[INFO] Platform: {os_name or 'unknown'} / {arch or 'unknown'}",
+    ]
+    findings: list[dict] = []
+
+    ram_gb = int((ram_bytes or 0) / (1024 ** 3))
+    vram_mb = int((gpu or {}).get("vram_mb") or 0)
+    gpu_name = (gpu or {}).get("name", "")
+
+    if ram_gb:
+        logs.append(f"[INFO] System RAM: {ram_gb}GB")
+    else:
+        logs.append("[WARN] System RAM is unknown")
+        findings.append({
+            "id": "ram-unknown",
+            "severity": "medium",
+            "title": "System RAM is unknown",
+            "details": "This node did not report memory size, so model-fit guidance is approximate.",
+        })
+
+    if gpu_name:
+        logs.append(f"[INFO] GPU: {gpu_name} ({vram_mb} MiB VRAM)")
+    else:
+        logs.append("[INFO] No GPU acceleration reported")
+
+    if gpu_name and vram_mb >= 16000:
+        findings.append({
+            "id": "gpu-strong",
+            "severity": "low",
+            "title": "Strong GPU worker candidate",
+            "details": f"{gpu_name} has {vram_mb // 1024}GB of VRAM, which is a good fit for larger chat, code, and multimodal models.",
+        })
+    elif gpu_name and vram_mb >= 8000:
+        findings.append({
+            "id": "gpu-mid",
+            "severity": "low",
+            "title": "Good fit for small-to-mid GPU workloads",
+            "details": f"{gpu_name} has about {vram_mb // 1024}GB of VRAM. That is suitable for 7B-class quantized models, lighter vision work, and local voice pipelines.",
+        })
+    elif gpu_name and vram_mb >= 4000:
+        findings.append({
+            "id": "gpu-light",
+            "severity": "medium",
+            "title": "Limited VRAM for larger models",
+            "details": f"{gpu_name} reports roughly {vram_mb // 1024}GB of VRAM. Use it for light chat, embeddings, TTS/ASR, OCR, or specialist tasks rather than larger interactive models.",
+        })
+    elif gpu_name:
+        findings.append({
+            "id": "gpu-tiny",
+            "severity": "medium",
+            "title": "GPU is present but very constrained",
+            "details": f"{gpu_name} reports less than 4GB of VRAM. Treat this node as a light specialist for small models and acceleration-sensitive tasks, not a main LLM worker.",
+        })
+    else:
+        findings.append({
+            "id": "gpu-none",
+            "severity": "medium",
+            "title": "No GPU acceleration detected",
+            "details": "This node is better suited for gateway duty, automation, documents, indexing, and lighter speech or retrieval workloads than for heavy local LLM inference.",
+        })
+
+    if ram_gb >= 32:
+        findings.append({
+            "id": "ram-strong",
+            "severity": "low",
+            "title": "Strong system RAM capacity",
+            "details": f"{ram_gb}GB of RAM is a good fit for large contexts, indexing, and offloading heavier workloads.",
+        })
+    elif ram_gb >= 16:
+        findings.append({
+            "id": "ram-mid",
+            "severity": "low",
+            "title": "Solid system RAM for everyday local AI",
+            "details": f"{ram_gb}GB of RAM is enough for a responsive gateway, document tools, and lighter local models.",
+        })
+    elif ram_gb >= 8:
+        findings.append({
+            "id": "ram-light",
+            "severity": "medium",
+            "title": "Usable but memory-constrained",
+            "details": f"{ram_gb}GB of RAM is workable for light specialist roles, but large models and concurrent workloads will be constrained.",
+        })
+    elif ram_gb > 0:
+        findings.append({
+            "id": "ram-low",
+            "severity": "high",
+            "title": "Low system RAM for local AI",
+            "details": f"Only {ram_gb}GB of RAM was reported. This node should not be a primary LLM worker.",
+        })
+
+    logs.append("[INFO] Hardware compatibility check complete.")
+    return logs, findings
+
+
 async def _probe_ihomenerd(ip: str) -> dict | None:
     """Check whether a host is running iHomeNerd."""
     for url, verify in (
@@ -482,7 +635,43 @@ async def _scan_device_health(target: str) -> dict:
 
 
 async def _scan_hardware_compat(target: str) -> dict:
-    """Check local hardware for AI model compatibility."""
+    """Check hardware for AI model compatibility.
+
+    Local machine: probe directly.
+    Remote iHomeNerd node: use its discovery payload.
+    Plain LAN device: explain that remote hardware inspection is not available yet.
+    """
+    if not _is_local_target(target):
+        target_ip = _normalize_target_ip(target)
+        remote = await _probe_ihomenerd(target_ip)
+        if remote:
+            hostname = remote.get("hostname") or target_ip
+            logs = [f"[INFO] Using remote iHomeNerd telemetry from {hostname} ({target_ip})..."]
+            remote_logs, findings = _summarize_hardware_fit(
+                hostname=hostname,
+                os_name=remote.get("os", "unknown"),
+                arch=remote.get("arch", "unknown"),
+                ram_bytes=remote.get("ram_bytes"),
+                gpu=remote.get("gpu"),
+            )
+            return {"logs": logs + remote_logs, "findings": findings}
+
+        return {
+            "logs": [
+                f"[WARN] Remote hardware inspection is not available for {target}.",
+                "[INFO] This scan can probe the local node directly or use telemetry from another node that is already running iHomeNerd.",
+                "[INFO] For plain LAN devices, use Gateway Control preflight or install iHomeNerd first.",
+            ],
+            "findings": [
+                {
+                    "id": "remote-hardware-unsupported",
+                    "severity": "medium",
+                    "title": "Remote hardware scan is not available for this device yet",
+                    "details": "This target is not the current node and is not reporting iHomeNerd hardware telemetry. The old behavior of showing local GPU data here was misleading, so the scan now stops and tells you that directly.",
+                }
+            ],
+        }
+
     logs = [f"[INFO] Probing hardware on this machine..."]
     info_parts = []
 

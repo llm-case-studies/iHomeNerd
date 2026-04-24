@@ -80,7 +80,7 @@ export function InvestigatePanel() {
     setFindings([]);
 
     try {
-      const result = await api.runScan(selectedDevice.name, scanType, (newLog) => {
+      const result = await api.runScan(selectedDevice.ip, scanType, (newLog) => {
         setLogs(prev => [...prev, newLog]);
       });
       
