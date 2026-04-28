@@ -36,3 +36,4 @@ This should become the reference implementation for:
 
 Recent handoff notes:
 - [docs/ANDROID_REAL_DEVICE_HANDOFF_2026-04-24.md](/media/alex/LargeStorage/Projects/iHomeNerd/docs/ANDROID_REAL_DEVICE_HANDOFF_2026-04-24.md)
+- [docs/ANDROID_BUILD_HOST_IMAC_MACOS_2026-04-28.md](/media/alex/LargeStorage/Projects/iHomeNerd/docs/ANDROID_BUILD_HOST_IMAC_MACOS_2026-04-28.md)
