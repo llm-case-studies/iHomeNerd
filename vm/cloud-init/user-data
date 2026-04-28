@@ -1,0 +1,47 @@
+#cloud-config
+package_update: true
+packages:
+  - ca-certificates
+  - curl
+  - tar
+
+write_files:
+  - path: /usr/local/sbin/ihomenerd-firstboot.sh
+    permissions: "0755"
+    owner: root:root
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      export DEBIAN_FRONTEND=noninteractive
+      REPO_REF="__IHN_REPO_REF__"
+      INSTALL_DIR="/opt/ihomenerd"
+      ARCHIVE_URL="https://github.com/llm-case-studies/iHomeNerd/archive/refs/heads/${REPO_REF}.tar.gz"
+
+      if ! command -v docker >/dev/null 2>&1; then
+        curl -fsSL https://get.docker.com | sh
+      fi
+
+      mkdir -p "$INSTALL_DIR"
+      curl -fsSL "$ARCHIVE_URL" | tar -xz --strip-components=1 -C "$INSTALL_DIR"
+
+      cd "$INSTALL_DIR"
+      docker compose up -d --build
+
+      cat >/etc/motd <<'MOTD'
+iHomeNerd trial VM is bootstrapping or running.
+
+Open from the VM host:
+  https://localhost:17777
+  http://localhost:17778/setup
+
+If using bridged networking, use this VM's LAN IP instead of localhost.
+Logs:
+  sudo cloud-init status --long
+  sudo docker compose -f /opt/ihomenerd/docker-compose.yml logs -f
+MOTD
+
+runcmd:
+  - /usr/local/sbin/ihomenerd-firstboot.sh
+
+final_message: "iHomeNerd trial VM first boot finished in $UPTIME seconds."

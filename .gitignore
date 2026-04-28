@@ -38,6 +38,10 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Local agent / workspace state
+.codex/
+.codex
+
 # Environment
 .env
 .env.local
@@ -52,3 +56,10 @@ node_modules/
 # Frontend build output (served by FastAPI, rebuilt from source)
 backend/app/static/assets/
 backend/app/static/index.html
+
+# Research / export artifacts kept locally unless explicitly curated
+docs/Ideas/*.pdf
+docs/Ideas/*.zip
+mobile/design/claude/**/raw/
+mobile/design/claude/**/ca*.crt
+mobile/design/claude/**/screenshots/extracted/

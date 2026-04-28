@@ -2,6 +2,7 @@
 android/.gradle/
 android/**/.gradle/
 android/toolchain/
+android/toolchain
 android/**/local.properties
 android/**/build/
 android/**/captures/
@@ -12,6 +13,7 @@ android/**/*.aab
 android/**/.idea/
 android/**/*.iml
 android/avd/
+android/avd
 
 # iOS local state
 ios/**/DerivedData/

@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-sans);font-size:13px}
+  .card{padding:22px;display:flex;flex-direction:column;gap:12px}
+  .node{background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .name{font-weight:600;font-size:15px}
+  .meta{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary)}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:500;border:1px solid;background:rgba(52,211,153,.10);border-color:rgba(52,211,153,.20);color:#34d399}
+  .dot{width:6px;height:6px;border-radius:999px;background:#34d399}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:12px}
+  .k{color:var(--text-secondary)}
+  .v{color:var(--text-primary)}
+  .roles{display:flex;gap:6px;flex-wrap:wrap}
+  .role{font-size:11px;padding:2px 8px;border-radius:6px;background:rgba(79,140,255,.10);color:#4f8cff;border:1px solid rgba(79,140,255,.20);font-weight:500}
+</style></head>
+<body><div class="card">
+  <div class="node">
+    <div class="head">
+      <div>
+        <div class="name">msi-raider-linux</div>
+        <div class="meta">192.168.0.147 · ubuntu 22.04</div>
+      </div>
+      <span class="chip"><span class="dot"></span>managed</span>
+    </div>
+    <div class="roles">
+      <span class="role">llm-worker</span>
+      <span class="role">vision-worker</span>
+    </div>
+    <div class="grid">
+      <span class="k">GPU</span><span class="v">RTX 4070 Laptop · 8 GB VRAM</span>
+      <span class="k">RAM</span><span class="v">32 GB</span>
+      <span class="k">Models</span><span class="v">gemma4:e4b · llama3:8b</span>
+      <span class="k">Uptime</span><span class="v">3d 4h</span>
+    </div>
+  </div>
+</div></body></html>

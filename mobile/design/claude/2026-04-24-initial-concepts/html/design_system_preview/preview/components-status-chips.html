@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-sans)}
+  .card{padding:22px;display:flex;flex-direction:column;gap:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:500;border:1px solid}
+  .dot{width:6px;height:6px;border-radius:999px}
+  .ok{background:rgba(52,211,153,.10);border-color:rgba(52,211,153,.20);color:#34d399}
+  .wa{background:rgba(251,191,36,.10);border-color:rgba(251,191,36,.20);color:#fbbf24}
+  .er{background:rgba(248,113,113,.10);border-color:rgba(248,113,113,.20);color:#f87171}
+  .nu{background:rgba(79,140,255,.10);border-color:rgba(79,140,255,.20);color:#4f8cff}
+  .ne{background:var(--bg-input);border-color:var(--border-color);color:var(--text-secondary)}
+  .lbl{font-size:11px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
+</style></head>
+<body><div class="card">
+  <div class="lbl">Node state</div>
+  <div class="row">
+    <span class="chip ne"><span class="dot" style="background:#8b8fa3"></span>discovered</span>
+    <span class="chip nu"><span class="dot" style="background:#4f8cff"></span>candidate</span>
+    <span class="chip ok"><span class="dot" style="background:#34d399"></span>managed</span>
+    <span class="chip wa"><span class="dot" style="background:#fbbf24"></span>degraded</span>
+    <span class="chip er"><span class="dot" style="background:#f87171"></span>offline</span>
+    <span class="chip ne"><span class="dot" style="background:#8b8fa3"></span>draining</span>
+    <span class="chip nu"><span class="dot" style="background:#4f8cff"></span>updating</span>
+  </div>
+  <div class="lbl">Trust</div>
+  <div class="row">
+    <span class="chip ok"><span class="dot" style="background:#34d399"></span>trusted</span>
+    <span class="chip wa"><span class="dot" style="background:#fbbf24"></span>needs install</span>
+    <span class="chip er"><span class="dot" style="background:#f87171"></span>mismatch</span>
+    <span class="chip ne"><span class="dot" style="background:#8b8fa3"></span>stale</span>
+  </div>
+</div></body></html>

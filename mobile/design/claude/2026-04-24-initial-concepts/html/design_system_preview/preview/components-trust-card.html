@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-sans);font-size:13px}
+  .card{padding:22px;display:flex;flex-direction:column;gap:12px}
+  .trust{background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+  .shield{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.20);color:#34d399;flex-shrink:0}
+  .shield svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2}
+  .t{font-weight:600;font-size:14px}
+  .d{color:var(--text-secondary);font-size:12px;margin-top:2px}
+  .fp{margin-top:10px;font-family:var(--font-mono);font-size:12px;color:var(--text-primary);background:var(--bg-input);border:1px solid var(--border-color);border-radius:6px;padding:8px 10px;letter-spacing:0.04em;display:flex;justify-content:space-between;align-items:center}
+  .copy{font-size:11px;color:var(--text-secondary);cursor:default}
+</style></head>
+<body><div class="card">
+  <div class="trust">
+    <div class="shield"><svg viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3z"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <div style="flex:1">
+      <div class="t">This phone trusts your Home CA</div>
+      <div class="d">Each node presents a cert signed by the same Home CA. Last verified 4 h ago on HP-Envy-Ubuntu.</div>
+      <div class="fp"><span>SHA256 4C:7E:3B:A9:18:DA:82:B4:…:A1:FF</span><span class="copy">copy</span></div>
+    </div>
+  </div>
+</div></body></html>

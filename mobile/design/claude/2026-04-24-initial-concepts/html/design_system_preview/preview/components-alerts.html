@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-sans);font-size:13px}
+  .card{padding:22px;display:flex;flex-direction:column;gap:10px}
+  .alert{display:flex;gap:12px;align-items:flex-start;border:1px solid;border-radius:12px;padding:14px}
+  .er{background:rgba(248,113,113,.06);border-color:rgba(248,113,113,.20)}
+  .wa{background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.20)}
+  .ok{background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.20)}
+  .ico{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;flex-shrink:0}
+  .ico svg{width:16px;height:16px;stroke-width:2;fill:none;stroke:currentColor}
+  .er .ico{background:rgba(248,113,113,.15);color:#f87171}
+  .wa .ico{background:rgba(251,191,36,.15);color:#fbbf24}
+  .ok .ico{background:rgba(52,211,153,.15);color:#34d399}
+  .t{font-weight:600;font-size:13px}
+  .d{color:var(--text-secondary);font-size:12px;margin-top:2px}
+  .ts{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-left:auto}
+</style></head>
+<body><div class="card">
+  <div class="alert er"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+    <div><div class="t">Trust mismatch on Acer-HL</div><div class="d">Cert chain no longer matches Home CA. Re-pair or reissue.</div></div>
+    <span class="ts">2m</span></div>
+  <div class="alert wa"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+    <div><div class="t">Update available</div><div class="d">iHN 0.4.2 → 0.4.3 · preview channel · no breaking changes</div></div>
+    <span class="ts">14m</span></div>
+  <div class="alert ok"><div class="ico"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <div><div class="t">Preflight passed · msi-raider-linux</div><div class="d">Docker ready · GPU detected · Home CA plan ok</div></div>
+    <span class="ts">1h</span></div>
+</div></body></html>

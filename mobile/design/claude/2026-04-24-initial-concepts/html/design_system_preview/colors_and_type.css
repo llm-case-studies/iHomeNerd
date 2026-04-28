@@ -1,0 +1,205 @@
+/*
+ * iHomeNerd Design System — Colors & Typography
+ *
+ * Lifted verbatim from the production tokens in:
+ *   - frontend/src/index.css (Command Center)
+ *   - landing/src/index.css (landing page)
+ *   - docs/UI_CONTRACT_2026-04-13.md section 5
+ *
+ * Dark theme is primary. Light theme is aspirational — present in
+ * briefs but not yet implemented in code. Values below marked
+ * /* LIGHT */ are derived to feel credible, not shipped.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  /* ── Brand / accent ─────────────────────────────────────────── */
+  --accent:            #4f8cff;   /* primary action, links, active tab underline */
+  --accent-hover:      #6ba0ff;   /* hover state */
+  --accent-soft-bg:    rgba(79, 140, 255, 0.10); /* tinted pills and badges */
+  --accent-soft-bd:    rgba(79, 140, 255, 0.20);
+
+  /* ── Surfaces (dark — default) ──────────────────────────────── */
+  --bg-primary:        #0f1117;   /* app canvas */
+  --bg-surface:        #1a1d27;   /* cards, header, nav */
+  --bg-input:          #252830;   /* inputs, hovered rows, code blocks */
+  --border-color:      #2e3140;   /* all hairlines */
+
+  /* ── Text ───────────────────────────────────────────────────── */
+  --text-primary:      #e4e6eb;
+  --text-secondary:    #8b8fa3;   /* descriptions, tab labels, meta */
+  --text-tertiary:     #5a5f72;   /* derived — disabled, faint labels */
+
+  /* ── Status / semantic ──────────────────────────────────────── */
+  --success:           #34d399;   /* trusted, online, ok */
+  --warning:           #fbbf24;   /* degraded, update available */
+  --error:             #f87171;   /* offline, trust mismatch, blocker */
+
+  --success-soft-bg:   rgba(52, 211, 153, 0.10);
+  --success-soft-bd:   rgba(52, 211, 153, 0.20);
+  --warning-soft-bg:   rgba(251, 191, 36, 0.10);
+  --warning-soft-bd:   rgba(251, 191, 36, 0.20);
+  --error-soft-bg:     rgba(248, 113, 113, 0.10);
+  --error-soft-bd:     rgba(248, 113, 113, 0.20);
+
+  /* ── Chat / conversation surfaces ───────────────────────────── */
+  --user-bubble:       #1e3a5f;
+  --agent-bubble:      #1a2332;
+
+  /* ── Typography ─────────────────────────────────────────────── */
+  --font-sans:    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, "Fira Code", Consolas, monospace;
+
+  --fs-xs:   12px;   /* meta, tags, fingerprint fragments */
+  --fs-sm:   13px;   /* tab labels, descriptions */
+  --fs-base: 15px;   /* body default */
+  --fs-md:   16px;
+  --fs-lg:   18px;   /* section heads inside panels */
+  --fs-xl:   20px;   /* panel title */
+  --fs-2xl:  28px;
+  --fs-3xl:  40px;   /* landing H2 */
+  --fs-4xl:  56px;   /* landing hero */
+  --fs-5xl:  72px;   /* landing hero desktop */
+
+  --lh-tight:  1.15;
+  --lh-snug:   1.3;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.65;
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  /* ── Radii ──────────────────────────────────────────────────── */
+  --radius-input:  6px;
+  --radius-button: 6px;
+  --radius-card:   8px;
+  --radius-lg:     12px;  /* pill buttons, inputs on landing */
+  --radius-xl:     16px;  /* big hero CTAs */
+  --radius-2xl:    24px;  /* primary panel containers */
+  --radius-full:   9999px;
+
+  /* ── Spacing (matches Tailwind 4 scale used in-code) ─────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Elevation / shadow ─────────────────────────────────────── */
+  /* The product is very restrained with shadow — borders do the work.
+     Only the landing hero uses a large blurred glow. */
+  --shadow-card:    0 1px 0 rgba(0, 0, 0, 0.2);
+  --shadow-pop:     0 8px 24px rgba(0, 0, 0, 0.35);
+  --glow-accent:    0 0 120px 40px rgba(79, 140, 255, 0.20);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Semantic type classes
+ * Apply directly; they compose the vars above.
+ * ───────────────────────────────────────────────────────────────── */
+.h-display {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-5xl);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.02em;
+}
+.h1 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-3xl);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+}
+.h2 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-snug);
+  letter-spacing: -0.01em;
+}
+.h3 {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-snug);
+}
+.panel-title {      /* e.g. "Investigate" header inside Command Center */
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-lg);
+  line-height: var(--lh-snug);
+}
+.p {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-base);
+  line-height: var(--lh-relaxed);
+  color: var(--text-primary);
+}
+.p-secondary {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-relaxed);
+  color: var(--text-secondary);
+}
+.label {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+.overline {          /* landing section eyebrow — "PUBLIC REPO, PRIVATE DATA" */
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.mono {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-sm);
+  letter-spacing: 0;
+}
+.code-block {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  color: var(--text-primary);
+}
+.fingerprint {        /* Home CA fingerprint display */
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+}
+.tab-label {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-sm);
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}

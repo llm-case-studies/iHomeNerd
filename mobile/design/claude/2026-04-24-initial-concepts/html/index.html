@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iHomeNerd Claude Design Exports</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2e3140;
+      --text: #e4e6eb;
+      --muted: #8b8fa3;
+      --accent: #4f8cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.5 Inter, system-ui, sans-serif;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font: 700 36px/1.1 "Space Grotesk", Inter, system-ui, sans-serif;
+      letter-spacing: -0.02em;
+    }
+    p {
+      margin: 0 0 24px;
+      color: var(--muted);
+      max-width: 760px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+    ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    .path {
+      margin-top: 12px;
+      color: var(--muted);
+      font: 12px/1.4 "JetBrains Mono", monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="eyebrow">Claude Design exports</div>
+  <h1>iHomeNerd design previews</h1>
+  <p>
+    This page links the extracted Claude Design kits so they can be opened
+    directly in a browser. These are design artifacts, not production source.
+  </p>
+
+  <div class="grid">
+    <section class="card">
+      <div class="eyebrow">Node-class mobile</div>
+      <h2>Android iHN node</h2>
+      <a href="ui_kits/ui_kits/android_node/index.html">Open current Android kit</a>
+      <ul>
+        <li>Portable node host</li>
+        <li>Hotspot, trust, runtime, handoff</li>
+        <li>Strongest seed for native build</li>
+      </ul>
+      <div class="path">html/ui_kits/ui_kits/android_node/index.html</div>
+    </section>
+
+    <section class="card">
+      <div class="eyebrow">Controller mobile</div>
+      <h2>iOS iHN home</h2>
+      <a href="ui_kits/ui_kits/ios_controller/index.html">Open current iOS kit</a>
+      <ul>
+        <li>Pairing, trust, alerts, quick actions</li>
+        <li>Controller-class direction only</li>
+      </ul>
+      <div class="path">html/ui_kits/ui_kits/ios_controller/index.html</div>
+    </section>
+
+    <section class="card">
+      <div class="eyebrow">Dense web ops</div>
+      <h2>Command Center</h2>
+      <a href="ui_kits/ui_kits/command_center/index.html">Open current Command Center kit</a>
+      <ul>
+        <li>Home, trust, nodes, models, investigate, travel</li>
+        <li>Larger-screen `:17777` concept</li>
+      </ul>
+      <div class="path">html/ui_kits/ui_kits/command_center/index.html</div>
+    </section>
+
+    <section class="card">
+      <div class="eyebrow">Design system</div>
+      <h2>Preview tokens</h2>
+      <a href="design_system_preview/preview/components-trust-card.html">Open preview cards</a>
+      <ul>
+        <li>Buttons, alerts, trust card, colors, type</li>
+        <li>Useful for implementation cross-check</li>
+      </ul>
+      <div class="path">html/design_system_preview/preview/</div>
+    </section>
+  </div>
+</body>
+</html>

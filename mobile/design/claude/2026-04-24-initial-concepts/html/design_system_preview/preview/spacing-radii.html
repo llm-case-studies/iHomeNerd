@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-sans);font-size:13px}
+  .card{padding:22px;display:flex;gap:22px;align-items:flex-start}
+  .block{flex:1;display:flex;flex-direction:column;gap:10px}
+  .title{font-size:11px;font-weight:500;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em}
+  .pad{background:var(--bg-surface);border:1px solid var(--border-color);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:4px}
+  .demo{display:flex;gap:4px;align-items:center;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary)}
+  .spaces{display:flex;gap:0;align-items:center}
+  .sp{background:rgba(79,140,255,.4);height:14px;border-radius:2px}
+  .radii{display:flex;gap:10px;align-items:center}
+  .rb{width:56px;height:44px;background:var(--bg-surface);border:1px solid var(--border-color)}
+  .lbl{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);text-align:center;margin-top:4px}
+</style></head>
+<body><div class="card">
+  <div class="block">
+    <div class="title">Spacing (px)</div>
+    <div class="pad"><div class="demo"><div class="sp" style="width:4px"></div>&nbsp;4</div></div>
+    <div class="pad"><div class="demo"><div class="sp" style="width:8px"></div>&nbsp;8</div></div>
+    <div class="pad"><div class="demo"><div class="sp" style="width:16px"></div>&nbsp;16</div></div>
+    <div class="pad"><div class="demo"><div class="sp" style="width:24px"></div>&nbsp;24</div></div>
+  </div>
+  <div class="block">
+    <div class="title">Radii</div>
+    <div class="radii">
+      <div><div class="rb" style="border-radius:6px"></div><div class="lbl">6 · input</div></div>
+      <div><div class="rb" style="border-radius:8px"></div><div class="lbl">8 · card</div></div>
+      <div><div class="rb" style="border-radius:12px"></div><div class="lbl">12 · pill</div></div>
+      <div><div class="rb" style="border-radius:24px"></div><div class="lbl">24 · panel</div></div>
+    </div>
+    <div class="title" style="margin-top:10px">Elevation</div>
+    <div class="radii">
+      <div><div class="rb" style="border-radius:8px;box-shadow:none"></div><div class="lbl">flat</div></div>
+      <div><div class="rb" style="border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35)"></div><div class="lbl">popover</div></div>
+      <div><div class="rb" style="border-radius:8px;background:radial-gradient(closest-side,rgba(79,140,255,.35),transparent)"></div><div class="lbl">hero glow</div></div>
+    </div>
+  </div>
+</div></body></html>

@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-sans);font-size:13px}
+  .card{padding:22px;display:flex;flex-direction:column;gap:10px}
+  .logos{display:flex;gap:22px;align-items:center}
+  .emoji{font-size:32px;display:inline-flex;align-items:center;gap:10px}
+  .wm{font-family:"Space Grotesk",system-ui,sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.01em}
+  .panel{background:var(--bg-surface);border:1px solid var(--border-color);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+  .ico{width:32px;height:32px;border-radius:8px;background:#1a1d27;border:1px solid #2e3140;position:relative}
+  .ico::before{content:"";position:absolute;inset:6px 6px 4px;border:1.5px solid #4f8cff;border-radius:2px;clip-path:polygon(0 50%,50% 10%,100% 50%,100% 100%,60% 100%,60% 65%,40% 65%,40% 100%,0 100%)}
+  .ico::after{content:"";position:absolute;top:10px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#34d399}
+  .lbl{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
+</style></head>
+<body><div class="card">
+  <div class="logos">
+    <div class="emoji">🏠 <span class="wm">iHomeNerd</span></div>
+  </div>
+  <div class="panel">
+    <div class="ico"></div>
+    <div>
+      <div class="wm">iHomeNerd</div>
+      <div class="lbl">fallback mark · for non-emoji contexts</div>
+    </div>
+  </div>
+</div></body></html>

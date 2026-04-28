@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font-sans);font-size:13px}
+  .card{padding:20px;display:flex;flex-direction:column;gap:14px}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .sw{flex:1 1 140px;display:flex;flex-direction:column;gap:8px}
+  .chip{height:68px;border-radius:8px;display:flex;align-items:flex-end;padding:10px;font-family:var(--font-mono);font-size:11px}
+  .name{font-weight:600;font-size:12px}
+  .role{font-size:11px;color:var(--text-secondary)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:500}
+  .dot{width:6px;height:6px;border-radius:999px}
+</style></head>
+<body><div class="card">
+  <div class="row">
+    <div class="sw">
+      <div class="chip" style="background:#4f8cff;color:#0f1117">#4f8cff</div>
+      <div class="name">accent</div>
+      <div class="role">primary action · active tab</div>
+    </div>
+    <div class="sw">
+      <div class="chip" style="background:#34d399;color:#0f1117">#34d399</div>
+      <div class="name">success</div>
+      <div class="pill" style="background:var(--success-soft-bg);border:1px solid var(--success-soft-bd);color:var(--success)"><span class="dot" style="background:var(--success)"></span>trusted</div>
+    </div>
+    <div class="sw">
+      <div class="chip" style="background:#fbbf24;color:#0f1117">#fbbf24</div>
+      <div class="name">warning</div>
+      <div class="pill" style="background:var(--warning-soft-bg);border:1px solid var(--warning-soft-bd);color:var(--warning)"><span class="dot" style="background:var(--warning)"></span>degraded</div>
+    </div>
+    <div class="sw">
+      <div class="chip" style="background:#f87171;color:#0f1117">#f87171</div>
+      <div class="name">error</div>
+      <div class="pill" style="background:var(--error-soft-bg);border:1px solid var(--error-soft-bd);color:var(--error)"><span class="dot" style="background:var(--error)"></span>mismatch</div>
+    </div>
+  </div>
+</div></body></html>
