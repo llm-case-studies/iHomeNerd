@@ -1,32 +1,40 @@
 # iHomeNerd Testing
 
-Top-level testing harnesses and reusable fixtures should live here.
+Top-level testing harnesses and reusable fixtures.
 
-This area is for:
-
-- browser/E2E harness code
-- declarative test cases
-- reusable audio/image fixtures
-- generated result artifacts when those are meant to be repo-visible
-
-Recommended structure:
+## Structure
 
 ```text
 testing/
-  README.md
-  web/
-  cases/
-  fixtures/
-  results/
+  README.md              — this file
+  web/                   — browser harness (isolated package.json, Playwright)
+  cases/                 — declarative test specs (smoke, E2E)
+  fixtures/              — reusable test artifacts (audio, images, HTML captures)
+  results/               — generated reports (gitignored by default)
 ```
 
-Current rule:
+## Quick start — web harness
 
-- backend contract tests stay under `backend/tests/`
-- mobile cross-testing protocol and real-device notes stay under
-  `mobile/testing/`
-- this top-level tree is for shared, non-mobile-specific harnesses
+```bash
+cd testing/web && npm install
+npx playwright install chromium
 
-See:
+# Start the frontend separately (in another terminal):
+cd frontend && npm run dev
 
-- `docs/TESTING_ROADMAP_AND_GUIDANCE_2026-04-28.md`
+# Run the smoke test:
+IHN_WEB_URL=http://localhost:3000 npx playwright test
+```
+
+## Separation of concerns
+
+| Area | Purpose |
+|---|---|
+| `backend/tests/` | pytest contract tests against live endpoints |
+| `mobile/testing/` | cross-testing protocol, requests, results, fixture specs |
+| `testing/` (here) | shared browser/E2E harnesses, non-mobile-specific |
+
+## See also
+
+- `docs/TESTING_ROADMAP_AND_GUIDANCE_2026-04-28.md` — full phased plan
+- `docs/DEEPSEEK_TESTING_KICKOFF_2026-04-28.md` — safe-start tasks
