@@ -4,7 +4,7 @@ struct RootView: View {
     @State private var tab: Tab = .home
 
     enum Tab: Hashable {
-        case home, alerts, trust, travel
+        case home, node, trust, travel
     }
 
     var body: some View {
@@ -16,10 +16,10 @@ struct RootView: View {
             .tag(Tab.home)
 
             NavigationStack {
-                AlertsScreen()
+                NodeScreen()
             }
-            .tabItem { Label("Alerts", systemImage: "bell.fill") }
-            .tag(Tab.alerts)
+            .tabItem { Label("Node", systemImage: "antenna.radiowaves.left.and.right") }
+            .tag(Tab.node)
 
             NavigationStack {
                 TrustScreen()
@@ -40,5 +40,6 @@ struct RootView: View {
 #Preview {
     RootView()
         .environmentObject(AppState())
+        .environmentObject(NodeRuntime())
         .preferredColorScheme(.dark)
 }
