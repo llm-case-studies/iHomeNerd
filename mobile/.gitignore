@@ -1,0 +1,27 @@
+# Android local state
+android/.gradle/
+android/**/.gradle/
+android/toolchain/
+android/**/local.properties
+android/**/build/
+android/**/captures/
+android/**/*.apk
+android/**/*.aab
+
+# Android Studio / emulator noise
+android/**/.idea/
+android/**/*.iml
+android/avd/
+
+# iOS local state
+ios/**/DerivedData/
+ios/**/.build/
+ios/**/build/
+ios/**/*.xcuserstate
+ios/**/*.xcworkspace/xcuserdata/
+ios/**/*.xcodeproj/xcuserdata/
+
+# Shared mobile artifacts
+*.keystore
+*.jks
+*.mobileprovision
