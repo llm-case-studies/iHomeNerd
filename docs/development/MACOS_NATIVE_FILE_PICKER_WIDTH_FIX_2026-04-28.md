@@ -104,3 +104,8 @@ If `FK_SidebarWidth2` is huge again, reset it first. Only then reset app-specifi
 
 Avoid deleting all Finder preferences unless the narrow fix fails; the targeted `FK_SidebarWidth2` reset preserves the rest of Finder's configuration.
 
+## References
+
+- Apple AppKit `NSOpenPanel`: https://developer.apple.com/documentation/appkit/nsopenpanel
+- Apple Community report for macOS 26 open dialogs opening too wide across apps: https://discussions.apple.com/thread/256158988
+- Ask Different discussion of Finder/open-panel sidebar width preferences, including `FK_SidebarWidth2`: https://apple.stackexchange.com/questions/415330/fixing-macos-big-sur-finder-sidebar-width-prefs-from-command-line
