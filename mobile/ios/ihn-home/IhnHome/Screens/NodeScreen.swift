@@ -47,6 +47,21 @@ struct NodeScreen: View {
                         .padding(.top, 12)
                 }
 
+                if let connErr = runtime.lastConnectionError {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Last connection error (\(runtime.connectionFailures) total)")
+                            .font(IhnFont.sans(11, weight: .semibold))
+                            .tracking(1.0)
+                            .foregroundStyle(.orange)
+                        Text(connErr)
+                            .font(IhnFont.mono(11))
+                            .foregroundStyle(IhnColor.textSecondary)
+                            .textSelection(.enabled)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                }
+
                 Eyebrow(text: "How to reach it")
                 VStack(alignment: .leading, spacing: 10) {
                     Text("From any LAN client, browse:")

@@ -44,8 +44,13 @@ struct NodeIdentity {
 }
 
 enum NodeIdentityStore {
-    private static let keyLabel = "iHomeNerd-iOS-runtime"
-    private static let keyTag = "com.ihomenerd.home.runtime.key".data(using: .utf8)!
+    // v2: dropped kSecAttrAccessControl in favor of plain kSecAttrAccessible.
+    // The v1 key may have been generated with an access-control object that
+    // caused silent signing failures inside Network.framework's TLS path
+    // (SSL_ERROR_SYSCALL on the wire). Bumping the label/tag shadows any v1
+    // residue without needing an explicit reset.
+    private static let keyLabel = "iHomeNerd-iOS-runtime-v2"
+    private static let keyTag = "com.ihomenerd.home.runtime.key.v2".data(using: .utf8)!
 
     static func loadOrCreate(commonName: String,
                              dnsNames: [String],
@@ -146,22 +151,18 @@ enum NodeIdentityStore {
     }
 
     private static func generateSecKey() throws -> SecKey {
-        let access = SecAccessControlCreateWithFlags(
-            nil,
-            kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            [],
-            nil
-        )
-        var attrs: [String: Any] = [
+        // Plain kSecAttrAccessible — no SecAccessControl object. Network.framework
+        // resolves the SecIdentity and signs TLS handshakes against this key
+        // silently; SecAccessControl on a non-Secure-Enclave key has been
+        // observed to break that path.
+        let attrs: [String: Any] = [
             kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
             kSecAttrKeySizeInBits as String: 256,
             kSecAttrIsPermanent as String: true,
             kSecAttrApplicationTag as String: keyTag,
             kSecAttrLabel as String: keyLabel,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
         ]
-        if let access {
-            attrs[kSecAttrAccessControl as String] = access
-        }
         var error: Unmanaged<CFError>?
         guard let key = SecKeyCreateRandomKey(attrs as CFDictionary, &error) else {
             let msg = (error?.takeRetainedValue()).map { "\($0)" } ?? "nil error"

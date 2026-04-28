@@ -32,8 +32,10 @@ final class NodeRuntime: ObservableObject {
     @Published private(set) var port: Int = 17777
     @Published private(set) var fingerprintSHA256: String = ""
     @Published private(set) var lastError: String?
+    @Published private(set) var lastConnectionError: String?
     @Published private(set) var startedAt: Date?
     @Published private(set) var requestCount: Int = 0
+    @Published private(set) var connectionFailures: Int = 0
 
     private var listener: NWListener?
     private let queue = DispatchQueue(label: "com.ihomenerd.home.runtime")
@@ -135,9 +137,17 @@ final class NodeRuntime: ObservableObject {
         }
         listener.newConnectionHandler = { [weak self] connection in
             guard let self else { return }
-            Self.accept(connection, snapshot: snapshot, queue: self.queue) { [weak self] in
-                Task { @MainActor in self?.requestCount += 1 }
-            }
+            Self.accept(connection, snapshot: snapshot, queue: self.queue,
+                onRequest: { [weak self] in
+                    Task { @MainActor in self?.requestCount += 1 }
+                },
+                onError: { [weak self] message in
+                    Task { @MainActor in
+                        self?.lastConnectionError = message
+                        self?.connectionFailures += 1
+                    }
+                }
+            )
         }
         listener.start(queue: queue)
         self.listener = listener
@@ -156,11 +166,20 @@ final class NodeRuntime: ObservableObject {
     nonisolated private static func accept(_ connection: NWConnection,
                                snapshot: RuntimeSnapshot,
                                queue: DispatchQueue,
-                               onRequest: @escaping () -> Void) {
+                               onRequest: @escaping () -> Void,
+                               onError: @escaping (String) -> Void) {
         connection.stateUpdateHandler = { state in
             switch state {
             case .ready: break
-            case .failed, .cancelled: connection.cancel()
+            case .failed(let error):
+                // Surface handshake / TLS / read failures so the Node screen
+                // can show why a probe came back as SSL_ERROR_SYSCALL.
+                onError("\(connection.endpoint) failed: \(error)")
+                connection.cancel()
+            case .waiting(let error):
+                onError("\(connection.endpoint) waiting: \(error)")
+            case .cancelled:
+                connection.cancel()
             default: break
             }
         }
