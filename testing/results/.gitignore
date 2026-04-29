@@ -1,0 +1,6 @@
+# Generated test reports — not committed by default
+playwright-report/
+*.html
+*.json
+*.png
+*.webm
