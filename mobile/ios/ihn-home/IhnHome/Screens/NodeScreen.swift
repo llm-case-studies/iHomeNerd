@@ -108,6 +108,15 @@ struct NodeScreen: View {
                     .foregroundStyle(IhnColor.textSecondary)
                     .padding(.top, 4)
             }
+            if !runtime.signingPreflight.isEmpty {
+                Text("Signing: \(runtime.signingPreflight)")
+                    .font(IhnFont.mono(14))
+                    .foregroundStyle(runtime.signingPreflight.hasPrefix("OK")
+                                     ? IhnColor.textSecondary : .red)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 6)
+            }
             if let started = runtime.startedAt {
                 Text("Started \(Self.timeFmt.string(from: started))")
                     .font(IhnFont.sans(12))

@@ -41,16 +41,22 @@ struct NodeIdentity {
     let dnsNames: [String]
     let ipAddresses: [String]
     let createdAt: Date
+    // Result of a SecKeyCreateSignature pre-flight against the resolved
+    // SecIdentity's private key. Either "OK (<n> bytes)" or a reason.
+    // Surfaced on the Node screen so we can tell whether keychain signing
+    // is the missing link behind errSSLHandshakeFail.
+    let signingPreflight: String
 }
 
 enum NodeIdentityStore {
-    // v2: dropped kSecAttrAccessControl in favor of plain kSecAttrAccessible.
-    // The v1 key may have been generated with an access-control object that
-    // caused silent signing failures inside Network.framework's TLS path
-    // (SSL_ERROR_SYSCALL on the wire). Bumping the label/tag shadows any v1
-    // residue without needing an explicit reset.
-    private static let keyLabel = "iHomeNerd-iOS-runtime-v2"
-    private static let keyTag = "com.ihomenerd.home.runtime.key.v2".data(using: .utf8)!
+    // v4: split key creation from persistence. SecKeyCreateRandomKey with
+    // kSecAttrIsPermanent (v1-v3) produced a key that round-trips through
+    // the keychain but reports SecKeyIsAlgorithmSupported(.sign, ...) = NO
+    // and fails SecKeyCreateSignature with errSecParam (-50). Generating
+    // transient first and adding via SecItemAdd separately preserves
+    // signing capability across keychain storage.
+    private static let keyLabel = "iHomeNerd-iOS-runtime-v4"
+    private static let keyTag = "com.ihomenerd.home.runtime.key.v4".data(using: .utf8)!
 
     static func loadOrCreate(commonName: String,
                              dnsNames: [String],
@@ -151,22 +157,34 @@ enum NodeIdentityStore {
     }
 
     private static func generateSecKey() throws -> SecKey {
-        // Plain kSecAttrAccessible — no SecAccessControl object. Network.framework
-        // resolves the SecIdentity and signs TLS handshakes against this key
-        // silently; SecAccessControl on a non-Secure-Enclave key has been
-        // observed to break that path.
-        let attrs: [String: Any] = [
+        // Step 1: generate transient (no kSecAttrIsPermanent, no tag/label).
+        // The transient key carries full sign/verify capability; persistence
+        // attrs go in step 2 instead. This works around the SecKeyCreateRandomKey
+        // bug where isPermanent strips signing capability from the resulting key.
+        let transientAttrs: [String: Any] = [
             kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
             kSecAttrKeySizeInBits as String: 256,
-            kSecAttrIsPermanent as String: true,
+        ]
+        var error: Unmanaged<CFError>?
+        guard let key = SecKeyCreateRandomKey(transientAttrs as CFDictionary, &error) else {
+            let msg = (error?.takeRetainedValue()).map { "\($0)" } ?? "nil error"
+            throw NodeIdentityError.keyGenerationFailed(msg)
+        }
+
+        // Step 2: persist the transient key via SecItemAdd with explicit
+        // signing-capability attrs.
+        let addStatus = SecItemAdd([
+            kSecClass as String: kSecClassKey,
+            kSecValueRef as String: key,
             kSecAttrApplicationTag as String: keyTag,
             kSecAttrLabel as String: keyLabel,
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-        ]
-        var error: Unmanaged<CFError>?
-        guard let key = SecKeyCreateRandomKey(attrs as CFDictionary, &error) else {
-            let msg = (error?.takeRetainedValue()).map { "\($0)" } ?? "nil error"
-            throw NodeIdentityError.keyGenerationFailed(msg)
+            kSecAttrIsPermanent as String: true,
+            kSecAttrCanSign as String: true,
+            kSecAttrCanVerify as String: true,
+        ] as CFDictionary, nil)
+        guard addStatus == errSecSuccess || addStatus == errSecDuplicateItem else {
+            throw NodeIdentityError.keychainFailed(addStatus, "SecItemAdd key")
         }
         return key
     }
@@ -255,6 +273,7 @@ enum NodeIdentityStore {
             }
         }
         let createdAt = parsed?.notValidBefore ?? Date()
+        let preflight = signingPreflight(for: identity)
         return NodeIdentity(
             secIdentity: identity,
             secCertificate: secCert,
@@ -263,7 +282,59 @@ enum NodeIdentityStore {
             commonName: cn,
             dnsNames: dns,
             ipAddresses: ips,
-            createdAt: createdAt
+            createdAt: createdAt,
+            signingPreflight: preflight
         )
+    }
+
+    // Confirm the SecIdentity's private key can actually sign for TLS.
+    // Tries digest-style first (what Network.framework's TLS handshake uses
+    // internally — sign a SHA-256 digest), then message-style as a fallback.
+    // The two-line label distinguishes which form succeeded so we can tell
+    // whether key signing is the bottleneck or the TLS failure is downstream.
+    private static func signingPreflight(for identity: SecIdentity) -> String {
+        var keyOut: SecKey?
+        let status = SecIdentityCopyPrivateKey(identity, &keyOut)
+        guard status == errSecSuccess, let key = keyOut else {
+            return "SecIdentityCopyPrivateKey \(status)"
+        }
+        let supportsDigest = SecKeyIsAlgorithmSupported(key, .sign, .ecdsaSignatureDigestX962SHA256)
+        let supportsMessage = SecKeyIsAlgorithmSupported(key, .sign, .ecdsaSignatureMessageX962SHA256)
+        let supportTag = "supports[d=\(supportsDigest ? "Y" : "N") m=\(supportsMessage ? "Y" : "N")]"
+
+        let testMsg = "ihn-tls-preflight".data(using: .utf8)!
+        let digest = Data(SHA256.hash(data: testMsg))
+
+        var sigErr: Unmanaged<CFError>?
+        if let sig = SecKeyCreateSignature(
+            key,
+            .ecdsaSignatureDigestX962SHA256,
+            digest as CFData,
+            &sigErr
+        ) {
+            return "OK digest (\((sig as Data).count) B) \(supportTag)"
+        }
+        let digestErr = signingPreflightShortError(sigErr)
+
+        sigErr = nil
+        if let sig = SecKeyCreateSignature(
+            key,
+            .ecdsaSignatureMessageX962SHA256,
+            testMsg as CFData,
+            &sigErr
+        ) {
+            return "OK message (\((sig as Data).count) B) \(supportTag) digest=\(digestErr)"
+        }
+        let msgErr = signingPreflightShortError(sigErr)
+        return "FAIL \(supportTag) digest=\(digestErr) message=\(msgErr)"
+    }
+
+    private static func signingPreflightShortError(_ unmanaged: Unmanaged<CFError>?) -> String {
+        guard let cfErr = unmanaged?.takeRetainedValue() else { return "[no error]" }
+        let ns = cfErr as Error as NSError
+        let one = ns.localizedDescription
+            .replacingOccurrences(of: "\n", with: " ")
+            .prefix(80)
+        return "[\(ns.domain) \(ns.code): \(one)]"
     }
 }

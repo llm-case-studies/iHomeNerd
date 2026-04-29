@@ -31,6 +31,7 @@ final class NodeRuntime: ObservableObject {
     @Published private(set) var lanAddresses: [String] = []
     @Published private(set) var port: Int = 17777
     @Published private(set) var fingerprintSHA256: String = ""
+    @Published private(set) var signingPreflight: String = ""
     @Published private(set) var lastError: String?
     @Published private(set) var lastConnectionError: String?
     @Published private(set) var startedAt: Date?
@@ -68,6 +69,7 @@ final class NodeRuntime: ObservableObject {
         }
         self.identity = identity
         fingerprintSHA256 = identity.fingerprintSHA256
+        signingPreflight = identity.signingPreflight
 
         let secId = sec_identity_create(identity.secIdentity)
         guard let secId else {
