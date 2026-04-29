@@ -394,12 +394,22 @@ final class NodeRuntime: ObservableObject {
                 },
             ] as [String: Any]
         }
+        if let stt = c.speechToText {
+            flat["speech_to_text"] = true
+            detail["speech_to_text"] = [
+                "available": true,
+                "on_device": stt.onDevice,
+                "locale_count": stt.supportedLocales.count,
+                "supported_locales": stt.supportedLocales,
+            ] as [String: Any]
+        }
         return (flat, detail)
     }
 
     nonisolated private static func capabilityFlatNames(_ c: CapabilitiesSnapshot) -> [String] {
         var names: [String] = []
         if c.textToSpeech != nil { names.append("text_to_speech") }
+        if c.speechToText != nil { names.append("speech_to_text") }
         return names
     }
 

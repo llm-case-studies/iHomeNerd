@@ -33,6 +33,10 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>iHN Home discovers and pairs with your iHomeNerd gateway and nodes on your local network. It does not send your data to outside services.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>iHN Home uses the microphone for the on-device Listen demo. Audio stays on this phone — nothing is uploaded.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>iHN Home uses on-device speech recognition for the Listen demo so you can see the phone transcribe what you say. Apple's recognizer runs locally; no audio leaves the device.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
