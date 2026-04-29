@@ -18,9 +18,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ensureRecordAudioPermission()
-        if (intent?.getBooleanExtra("start_local_runtime", false) == true) {
-            NodeRuntimeService.start(applicationContext)
-        }
+        // The Android node app should bring up its local runtime on ordinary
+        // launcher start, not only when a special intent extra is present.
+        NodeRuntimeService.start(applicationContext)
         val initialGatewayUrl = intent?.getStringExtra("gateway_url")
             ?: if (intent?.getBooleanExtra("start_local_runtime", false) == true) {
                 "http://127.0.0.1:${com.ihomenerd.home.runtime.LocalNodeRuntime.SETUP_PORT}"

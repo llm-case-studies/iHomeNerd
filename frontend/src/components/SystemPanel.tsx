@@ -6,6 +6,7 @@ import {
   Clock,
   Cpu,
   HardDrive,
+  Mic,
   Network,
   Play,
   Power,
@@ -121,6 +122,21 @@ function formatBytes(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+}
+
+function formatPercent(value?: number | null): string {
+  if (value == null || Number.isNaN(value)) return 'Unknown';
+  return `${value.toFixed(1)}%`;
+}
+
+function formatTemperatureC(value?: number | null): string {
+  if (value == null || Number.isNaN(value)) return 'Unknown';
+  return `${value.toFixed(1)} °C`;
+}
+
+function formatThermalStatus(value?: string | null): string {
+  if (!value) return 'Unknown';
+  return titleCase(value);
 }
 
 function formatUptime(seconds: number): string {
@@ -377,13 +393,84 @@ export function SystemPanel() {
         <StatCard icon={Activity} label={t('sys_status')} value={health.status === 'ok' ? 'Healthy' : 'Degraded'} valueColor={health.status === 'ok' ? 'text-success' : 'text-warning'} />
         <StatCard icon={Cpu} label="Active Models" value={`${Object.keys(health.models || {}).length} Loaded`} />
         <StatCard icon={Network} label="Active Sessions" value={String(stats?.session_count ?? 0)} />
-        <StatCard icon={HardDrive} label="Local Storage" value={formatBytes(stats?.storage_bytes ?? 0)} />
+        <StatCard icon={HardDrive} label="Free Storage" value={formatBytes(stats?.free_storage_bytes ?? stats?.storage_bytes ?? 0)} />
       </div>
 
       {stats?.uptime_seconds != null && (
         <div className="flex items-center gap-2 text-sm text-text-secondary px-1">
           <Clock size={14} />
           <span>Uptime: {formatUptime(stats.uptime_seconds)}</span>
+        </div>
+      )}
+
+      {stats?.performance && (
+        <div className="bg-bg-surface border border-border-color rounded-2xl overflow-hidden">
+          <div className="px-6 py-5 border-b border-border-color">
+            <h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
+              <Activity size={20} className="text-accent" />
+              Node Load
+            </h3>
+            <p className="text-sm text-text-secondary mt-1">
+              Live Android runtime cost on this node, including the most recent local chat, ASR, and TTS runs.
+            </p>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <Metric label="App CPU" value={formatPercent(stats.performance.app_cpu_percent ?? stats.process_cpu_percent)} />
+              <Metric label="App Memory" value={formatBytes(stats.performance.app_memory_pss_bytes ?? stats.app_memory_pss_bytes ?? 0)} />
+              <Metric label="Battery Temp" value={formatTemperatureC(stats.performance.battery_temp_c ?? stats.battery_temp_c)} />
+              <Metric label="Thermal Status" value={formatThermalStatus(stats.performance.thermal_status ?? stats.thermal_status)} />
+              <Metric label="CPU Cores" value={String(stats.performance.cpu_cores ?? 'Unknown')} />
+              <Metric label="Battery" value={stats.battery_percent != null ? `${stats.battery_percent}%` : 'Unknown'} />
+            </div>
+
+            <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 space-y-3">
+              <div className="flex items-center gap-2 text-text-primary font-medium">
+                <Cpu size={18} className="text-accent" />
+                Last Chat Run
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                <Metric label="Requests" value={String(stats.performance.chat?.request_count ?? 0)} />
+                <Metric label="Last Duration" value={stats.performance.chat?.last_duration_ms != null ? `${stats.performance.chat.last_duration_ms} ms` : 'No run yet'} />
+                <Metric label="Prompt Size" value={stats.performance.chat?.last_prompt_chars != null ? `${stats.performance.chat.last_prompt_chars} chars` : 'Unknown'} />
+                <Metric label="Reply Size" value={stats.performance.chat?.last_response_chars != null ? `${stats.performance.chat.last_response_chars} chars` : 'Unknown'} />
+                <Metric label="Backend" value={stats.performance.chat?.last_backend || 'Unknown'} />
+                <Metric label="Model" value={stats.performance.chat?.last_model_id || 'Unknown'} />
+                <Metric label="Language" value={stats.performance.chat?.last_language_tag || 'Unknown'} />
+                <Metric label="Last Seen" value={stats.performance.chat?.last_seen || 'Never'} />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 space-y-3">
+              <div className="flex items-center gap-2 text-text-primary font-medium">
+                <Mic size={18} className="text-accent" />
+                Last ASR Run
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                <Metric label="Requests" value={String(stats.performance.asr?.request_count ?? 0)} />
+                <Metric label="Last Duration" value={stats.performance.asr?.last_duration_ms != null ? `${stats.performance.asr.last_duration_ms} ms` : 'No run yet'} />
+                <Metric label="Last Audio Size" value={formatBytes(stats.performance.asr?.last_audio_bytes ?? 0)} />
+                <Metric label="Backend" value={stats.performance.asr?.last_backend || 'Unknown'} />
+                <Metric label="Language" value={stats.performance.asr?.last_language_tag || 'Unknown'} />
+                <Metric label="Last Seen" value={stats.performance.asr?.last_seen || 'Never'} />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 space-y-3">
+              <div className="flex items-center gap-2 text-text-primary font-medium">
+                <Play size={18} className="text-accent" />
+                Last TTS Run
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                <Metric label="Requests" value={String(stats.performance.tts?.request_count ?? 0)} />
+                <Metric label="Last Duration" value={stats.performance.tts?.last_duration_ms != null ? `${stats.performance.tts.last_duration_ms} ms` : 'No run yet'} />
+                <Metric label="Last Audio Size" value={formatBytes(stats.performance.tts?.last_audio_bytes ?? 0)} />
+                <Metric label="Voice" value={stats.performance.tts?.last_voice || 'Unknown'} />
+                <Metric label="Language" value={stats.performance.tts?.last_language_tag || 'Unknown'} />
+                <Metric label="Last Seen" value={stats.performance.tts?.last_seen || 'Never'} />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

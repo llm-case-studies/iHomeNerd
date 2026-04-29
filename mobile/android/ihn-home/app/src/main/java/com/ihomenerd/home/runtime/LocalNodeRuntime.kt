@@ -233,6 +233,39 @@ private fun defaultLocalPacks(): List<LocalPack> = listOf(
         loaded = true,
         loadable = false,
         note = "Uses Sherpa ONNX Moonshine speech models on the Android node instead of browser-side transcription."
+    ),
+    LocalPack(
+        id = "android-ocr-local",
+        name = "Android OCR Local",
+        kind = "service-pack",
+        capabilityProfiles = listOf(
+            LocalCapabilityProfile(
+                name = "analyze_image",
+                title = "Analyze Image / OCR",
+                implementation = "android_mlkit_text_recognition",
+                backend = "android_mlkit_text_recognition",
+                tier = "vision",
+                latencyClass = "interactive",
+                offline = true,
+                languages = listOf("latin-script", "zh", "ja", "ko"),
+                modes = listOf(
+                    CapabilityMode(
+                        id = "fast",
+                        label = "Fast",
+                        note = "Runs one likely local OCR recognizer for speed, based on the requested language hint."
+                    ),
+                    CapabilityMode(
+                        id = "thorough",
+                        label = "Thorough",
+                        note = "Runs multiple local OCR recognizers in parallel and keeps the most legible result on-device."
+                    )
+                ),
+                note = "Real local OCR for uploaded images on Android with Latin plus Chinese, Japanese, and Korean script support. This slice scores OCR legibility locally before returning text."
+            )
+        ),
+        loaded = true,
+        loadable = false,
+        note = "Uses bundled ML Kit text recognition and language ID on the Android node for direct image-to-text extraction."
     )
 )
 
@@ -643,6 +676,18 @@ object LocalNodeRuntime {
                             transcribeAudioResponse(payload)
                         }
                     }
+                    method == "POST" && path == "/v1/vision/ocr" -> {
+                        if (!contentType.startsWith("application/json")) {
+                            errorJsonResponse(
+                                415,
+                                "Android OCR expects application/json uploads with imageBase64 and mimeType.",
+                                code = "json_base64_required"
+                            )
+                        } else {
+                            val payload = if (body.isNotBlank()) JSONObject(body) else JSONObject()
+                            ocrImageResponse(payload)
+                        }
+                    }
                     method == "GET" && !setupPort -> commandCenterRouteResponse(path)
                     else -> textResponse(404, "Not found")
                 }
@@ -878,6 +923,53 @@ object LocalNodeRuntime {
             errorJsonResponse(503, exc.message ?: "Android ASR is not available on this node")
         } catch (exc: Exception) {
             errorJsonResponse(502, "Speech transcription failed: ${exc.message ?: exc.javaClass.simpleName}")
+        }
+    }
+
+    private suspend fun ocrImageResponse(payload: JSONObject): HttpResponse {
+        val context = appContext ?: return errorJsonResponse(503, "Android app context is not available.")
+        val imageBase64 = payload.optString("imageBase64").trim()
+        if (imageBase64.isBlank()) {
+            return errorJsonResponse(400, "imageBase64 is required")
+        }
+        val mimeType = payload.optString("mimeType", "image/jpeg").trim().ifBlank { "image/jpeg" }
+        val language = payload.optString("language").trim().ifBlank { null }
+        val mode = payload.optString("mode", "fast").trim().ifBlank { "fast" }
+        val imageBytes = try {
+            Base64.decode(imageBase64, Base64.DEFAULT)
+        } catch (exc: IllegalArgumentException) {
+            return errorJsonResponse(400, "imageBase64 is not valid base64")
+        }
+        if (imageBytes.isEmpty()) {
+            return errorJsonResponse(400, "decoded image payload is empty")
+        }
+
+        return try {
+            val result = AndroidOcrEngine.extractText(
+                imageBytes = imageBytes,
+                mimeType = mimeType,
+                languageHint = language,
+                mode = mode
+            )
+            jsonResponse(
+                JSONObject()
+                    .put("text", result.text)
+                    .put("model", result.model)
+                    .put("backend", result.backend)
+                    .put("mode", result.mode)
+                    .put("requested_language", result.requestedLanguage ?: JSONObject.NULL)
+                    .put("detected_language", result.detectedLanguage ?: JSONObject.NULL)
+                    .put("legibility_score", result.legibilityScore)
+                    .put("candidate_count", result.candidateCount)
+                    .put("warning", result.warning ?: JSONObject.NULL)
+                    .put("image_bytes", result.imageBytes)
+            )
+        } catch (exc: IllegalArgumentException) {
+            errorJsonResponse(400, exc.message ?: "Invalid OCR request")
+        } catch (exc: IllegalStateException) {
+            errorJsonResponse(503, exc.message ?: "Android OCR is not available on this node")
+        } catch (exc: Exception) {
+            errorJsonResponse(502, "Android OCR failed: ${exc.message ?: exc.javaClass.simpleName}")
         }
     }
 
@@ -1432,6 +1524,7 @@ object LocalNodeRuntime {
                 val runtimeAvailable = when (profile.name) {
                     "chat" -> if (!pack.loaded) null else (appContext?.let { AndroidChatEngine.isReady(it) } ?: false)
                     "transcribe_audio" -> appContext?.let { AndroidAsrEngine.isReady(it) } ?: false
+                    "analyze_image" -> AndroidOcrEngine.isReady()
                     "synthesize_speech" -> AndroidTtsEngine.isReady()
                     else -> null
                 }
@@ -1495,6 +1588,21 @@ object LocalNodeRuntime {
                         })
                     )
                     put("language_routing", "auto-by-requested-language-or-explicit-backend")
+                }
+                if (profile.name == "analyze_image") {
+                    put("upload_transport", "json-base64")
+                    put("preferred_upload_mime_type", "image/jpeg")
+                    put("ocr_only", true)
+                    put("default_mode", "fast")
+                    put("ocr_modes", JSONArray(AndroidOcrEngine.supportedModes()))
+                    put("supports_language_hint", true)
+                    put("supported_language_hints", JSONArray(AndroidOcrEngine.supportedLanguageHints()))
+                    put("parallel_rerank_in_thorough_mode", true)
+                    put("templates", JSONArray(listOf("ocr")))
+                    put("structured_templates", JSONArray())
+                    put("supported_mime_types", JSONArray(AndroidOcrEngine.supportedMimeTypes()))
+                    put("backend", AndroidOcrEngine.backendName())
+                    put("model_hint", AndroidOcrEngine.modelName())
                 }
                 if (profile.name == "chat") {
                     put("model_hint", appContext?.let { AndroidChatEngine.availableModelSummary(it) } ?: JSONObject.NULL)

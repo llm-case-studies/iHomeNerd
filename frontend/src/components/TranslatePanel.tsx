@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRightLeft, Copy, Check, Loader2, Languages } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, getCapabilityDetail, isCapabilityAvailable, NodeCapabilities } from '../lib/api';
 import { useTranslation } from 'react-i18next';
 
 const LANGUAGES = [
@@ -14,7 +14,11 @@ const LANGUAGES = [
   { code: 'ja', name: 'Japanese' },
 ];
 
-export function TranslatePanel() {
+interface TranslatePanelProps {
+  capabilities?: NodeCapabilities | null;
+}
+
+export function TranslatePanel({ capabilities = null }: TranslatePanelProps) {
   const { t } = useTranslation();
   const [sourceLang, setSourceLang] = useState('auto');
   const [targetLang, setTargetLang] = useState('es');
@@ -22,9 +26,12 @@ export function TranslatePanel() {
   const [targetText, setTargetText] = useState('');
   const [copied, setCopied] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+  const translateDetail = getCapabilityDetail(capabilities, 'translate_text');
+  const translateAvailable = capabilities ? isCapabilityAvailable(capabilities, 'translate_text') : true;
+  const translateRoute = translateDetail?.backend || translateDetail?.model || 'not installed';
 
   const handleTranslate = async () => {
-    if (!sourceText.trim() || isTranslating) return;
+    if (!sourceText.trim() || isTranslating || !translateAvailable) return;
     
     setIsTranslating(true);
     try {
@@ -82,6 +89,12 @@ export function TranslatePanel() {
         </div>
       </div>
 
+      {capabilities && !translateAvailable && (
+        <div className="mb-6 rounded-xl border border-border-color bg-bg-surface px-4 py-3 text-sm text-text-secondary">
+          Translation is not active on this node yet. Install or enable a local translation backend before using this tab.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-[400px]">
         {/* Source */}
         <div className="flex flex-col bg-bg-surface border border-border-color rounded-2xl overflow-hidden focus-within:border-accent transition-colors">
@@ -95,7 +108,7 @@ export function TranslatePanel() {
             <span className="text-xs text-text-secondary font-mono">{sourceText.length} chars</span>
             <button 
               onClick={handleTranslate}
-              disabled={!sourceText.trim() || isTranslating}
+              disabled={!sourceText.trim() || isTranslating || !translateAvailable}
               className="px-6 py-2 bg-accent hover:bg-accent-hover disabled:bg-bg-input disabled:text-text-secondary text-white font-medium rounded-lg transition-colors flex items-center gap-2"
             >
               {isTranslating ? (
@@ -113,10 +126,14 @@ export function TranslatePanel() {
         {/* Target */}
         <div className="flex flex-col bg-bg-surface border border-border-color rounded-2xl overflow-hidden">
           <div className="flex-1 p-6 text-text-primary text-lg leading-relaxed whitespace-pre-wrap">
-            {targetText || <span className="text-text-secondary/50">Translation will appear here...</span>}
+            {targetText || (
+              <span className="text-text-secondary/50">
+                {translateAvailable ? 'Translation will appear here...' : 'Translation is not available on this node yet.'}
+              </span>
+            )}
           </div>
           <div className="p-4 border-t border-border-color flex justify-between items-center bg-bg-input/50">
-            <span className="text-xs text-text-secondary font-mono">Model: translategemma-4b</span>
+            <span className="text-xs text-text-secondary font-mono">Translate: {translateRoute}</span>
             <button 
               onClick={copyToClipboard}
               disabled={!targetText}

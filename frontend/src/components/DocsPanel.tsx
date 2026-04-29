@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Folder, Database, Search, Plus, FileText, Send, Bot, User, Loader2, ChevronRight, ChevronDown, X, HardDrive } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, getCapabilityDetail, isCapabilityAvailable, type NodeCapabilities } from '../lib/api';
 import { useTranslation } from 'react-i18next';
 
 interface Collection {
@@ -30,6 +30,50 @@ interface Interaction {
   isLoading?: boolean;
 }
 
+type GroundedDrillKind = 'vocabulary' | 'menu_order' | 'package_label' | 'quickstart_manual';
+
+function groundedDrillKindLabel(kind: GroundedDrillKind): string {
+  switch (kind) {
+    case 'menu_order':
+      return 'Order Speech';
+    case 'package_label':
+      return 'Package Label';
+    case 'quickstart_manual':
+      return 'Quickstart Manual';
+    default:
+      return 'Vocabulary';
+  }
+}
+
+function buildGroundedDrillPrompt(options: {
+  ocrText: string;
+  drillKind: GroundedDrillKind;
+  detectedLanguage?: string | null;
+  selectedLanguage?: string | null;
+}) {
+  const likelyLanguage = options.detectedLanguage || options.selectedLanguage || 'unknown';
+  return [
+    'You are helping create a tiny grounded language-learning drill from OCR text captured from a real object.',
+    'The OCR may be noisy. Keep only phrases that look coherent and useful. Ignore obvious garbage, random symbols, and duplicated junk.',
+    `Drill kind: ${groundedDrillKindLabel(options.drillKind)}.`,
+    `Likely source language: ${likelyLanguage}.`,
+    'Return compact markdown with these sections only:',
+    '## Source Language',
+    '## Useful Phrases',
+    '- 3 to 6 bullet points',
+    '- each bullet must keep the original source phrase and add a short English gloss',
+    '## Speak It',
+    '- 2 short practice lines the learner can say aloud',
+    '## Quick Challenge',
+    '- 1 short prompt that asks the learner to produce a phrase',
+    'Do not invent product details that are not supported by the OCR text.',
+    'If the OCR is weak, say so briefly and salvage only the most trustworthy words or short phrases.',
+    '',
+    'OCR text:',
+    options.ocrText.slice(0, 1800),
+  ].join('\n');
+}
+
 export function DocsPanel() {
   const { t } = useTranslation();
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -37,6 +81,7 @@ export function DocsPanel() {
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [capabilities, setCapabilities] = useState<NodeCapabilities | null>(null);
   
   // Ingest Modal State
   const [showIngestModal, setShowIngestModal] = useState(false);
@@ -45,16 +90,55 @@ export function DocsPanel() {
   const [ingestWatch, setIngestWatch] = useState(true);
   const [ingestOcr, setIngestOcr] = useState(false);
   const [isIngesting, setIsIngesting] = useState(false);
+  const [ocrFile, setOcrFile] = useState<File | null>(null);
+  const [ocrText, setOcrText] = useState('');
+  const [ocrError, setOcrError] = useState('');
+  const [ocrBackend, setOcrBackend] = useState('');
+  const [ocrDetectedLanguage, setOcrDetectedLanguage] = useState('');
+  const [ocrWarning, setOcrWarning] = useState('');
+  const [ocrLegibilityScore, setOcrLegibilityScore] = useState<number | null>(null);
+  const [ocrMode, setOcrMode] = useState<'fast' | 'thorough'>('fast');
+  const [ocrLanguage, setOcrLanguage] = useState('auto');
+  const [isRunningOcr, setIsRunningOcr] = useState(false);
+  const [drillKind, setDrillKind] = useState<GroundedDrillKind>('vocabulary');
+  const [groundedDrill, setGroundedDrill] = useState('');
+  const [groundedDrillError, setGroundedDrillError] = useState('');
+  const [isGeneratingDrill, setIsGeneratingDrill] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const ocrFileInputRef = useRef<HTMLInputElement>(null);
+  const ocrDetail = getCapabilityDetail(capabilities, 'analyze_image');
+  const ocrAvailable = isCapabilityAvailable(capabilities, 'analyze_image');
+  const chatAvailable = isCapabilityAvailable(capabilities, 'chat');
+  const ocrTransport = ocrDetail?.upload_transport === 'json-base64' ? 'json-base64' : 'multipart';
+  const ocrModeChoices = Array.isArray(ocrDetail?.ocr_modes) && ocrDetail?.ocr_modes.length > 0
+    ? ocrDetail.ocr_modes
+    : ['fast', 'thorough'];
+  const ocrLanguageChoices = Array.isArray(ocrDetail?.supported_language_hints) && ocrDetail?.supported_language_hints.length > 0
+    ? ocrDetail.supported_language_hints
+    : ['auto', 'en', 'es', 'pt', 'fr', 'de', 'it', 'zh', 'ja', 'ko'];
 
   useEffect(() => {
     async function loadCollections() {
       try {
-        const data = await api.getDocsCollections();
-        setCollections(data.collections);
-        // Auto-select all by default
-        setSelectedCollections(new Set(data.collections.map((c: Collection) => c.id)));
+        const [collectionsResult, capabilitiesResult] = await Promise.allSettled([
+          api.getDocsCollections(),
+          api.getCapabilities(),
+        ]);
+
+        if (collectionsResult.status === 'fulfilled') {
+          const data = collectionsResult.value;
+          setCollections(data.collections);
+          setSelectedCollections(new Set(data.collections.map((c: Collection) => c.id)));
+        } else {
+          console.error("Failed to load collections", collectionsResult.reason);
+        }
+
+        if (capabilitiesResult.status === 'fulfilled') {
+          setCapabilities(capabilitiesResult.value);
+        } else {
+          console.error("Failed to load capabilities", capabilitiesResult.reason);
+        }
       } catch (error) {
         console.error("Failed to load collections", error);
       } finally {
@@ -143,11 +227,249 @@ export function DocsPanel() {
     }
   };
 
+  const handleOcrFilePicked = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextFile = event.target.files?.[0] ?? null;
+    setOcrFile(nextFile);
+    setOcrText('');
+    setOcrError('');
+    setOcrBackend('');
+    setOcrDetectedLanguage('');
+    setOcrWarning('');
+    setOcrLegibilityScore(null);
+    setGroundedDrill('');
+    setGroundedDrillError('');
+  };
+
+  const handleRunOcr = async () => {
+    if (!ocrFile || isRunningOcr) return;
+    setIsRunningOcr(true);
+    setOcrText('');
+    setOcrError('');
+    setOcrBackend('');
+    setOcrDetectedLanguage('');
+    setOcrWarning('');
+    setOcrLegibilityScore(null);
+    setGroundedDrill('');
+    setGroundedDrillError('');
+    try {
+      const result = await api.ocrImage(ocrFile, {
+        transport: ocrTransport,
+        mimeType: ocrFile.type || 'image/jpeg',
+        language: ocrLanguage === 'auto' ? null : ocrLanguage,
+        mode: ocrMode,
+      });
+      setOcrText(result.text);
+      setOcrBackend(result.backend || result.model || '');
+      setOcrDetectedLanguage(result.detected_language || '');
+      setOcrWarning(result.warning || '');
+      setOcrLegibilityScore(typeof result.legibility_score === 'number' ? result.legibility_score : null);
+    } catch (error) {
+      setOcrError(error instanceof Error ? error.message : 'OCR failed on this node.');
+    } finally {
+      setIsRunningOcr(false);
+    }
+  };
+
+  const handleGenerateGroundedDrill = async () => {
+    if (!ocrText.trim() || isGeneratingDrill) return;
+    setIsGeneratingDrill(true);
+    setGroundedDrill('');
+    setGroundedDrillError('');
+    try {
+      const prompt = buildGroundedDrillPrompt({
+        ocrText,
+        drillKind,
+        detectedLanguage: ocrDetectedLanguage || null,
+        selectedLanguage: ocrLanguage === 'auto' ? null : ocrLanguage,
+      });
+      const response = await api.chat([{ role: 'user', content: prompt }], null, 'en');
+      setGroundedDrill(response.content || '');
+    } catch (error) {
+      setGroundedDrillError(error instanceof Error ? error.message : 'Could not generate a grounded drill on this node.');
+    } finally {
+      setIsGeneratingDrill(false);
+    }
+  };
+
   return (
     <div className="flex h-full max-w-7xl mx-auto w-full p-6 gap-6 relative">
       
       {/* Left Sidebar: Collections */}
       <div className="w-1/3 flex flex-col gap-4">
+        <div className="bg-bg-surface border border-border-color rounded-2xl p-4 space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+              <FileText size={16} className="text-accent" />
+              Image OCR
+            </h3>
+            <p className="text-xs text-text-secondary mt-1">
+              Extract text directly from an uploaded image on this node.
+            </p>
+          </div>
+
+          <input
+            ref={ocrFileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleOcrFilePicked}
+            className="hidden"
+          />
+
+          <div className="flex gap-2">
+            <select
+              value={ocrLanguage}
+              onChange={event => setOcrLanguage(event.target.value)}
+              className="px-3 py-2 bg-bg-input border border-border-color text-text-primary text-sm rounded-lg"
+            >
+              {ocrLanguageChoices.map((choice: string) => (
+                <option key={choice} value={choice}>
+                  {choice === 'auto' ? 'Auto' : choice}
+                </option>
+              ))}
+            </select>
+            <select
+              value={ocrMode}
+              onChange={event => setOcrMode(event.target.value as 'fast' | 'thorough')}
+              className="px-3 py-2 bg-bg-input border border-border-color text-text-primary text-sm rounded-lg"
+            >
+              {ocrModeChoices.map((choice: string) => (
+                <option key={choice} value={choice}>
+                  {choice === 'thorough' ? 'Thorough' : 'Fast'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => ocrFileInputRef.current?.click()}
+              className="px-3 py-2 bg-bg-input hover:bg-border-color text-text-primary text-sm rounded-lg transition-colors"
+            >
+              Choose Image
+            </button>
+            <button
+              onClick={handleRunOcr}
+              disabled={!ocrAvailable || !ocrFile || isRunningOcr}
+              className="px-3 py-2 bg-accent hover:bg-accent-hover disabled:bg-bg-input disabled:text-text-secondary text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+            >
+              {isRunningOcr ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Running...
+                </>
+              ) : (
+                'Run OCR'
+              )}
+            </button>
+          </div>
+
+          <div className="text-xs text-text-secondary min-h-4">
+            {ocrAvailable
+              ? (ocrFile ? `Selected: ${ocrFile.name}` : 'Choose a jpeg, png, or webp image.')
+              : 'OCR is not available on this node yet.'}
+          </div>
+
+          {ocrBackend && (
+            <div className="text-[11px] font-mono text-success bg-success/10 px-2 py-1 rounded">
+              OCR backend: {ocrBackend}
+            </div>
+          )}
+
+          {(ocrDetectedLanguage || ocrLegibilityScore !== null) && (
+            <div className="text-[11px] font-mono text-text-secondary bg-bg-input/40 px-2 py-1 rounded space-x-3">
+              {ocrDetectedLanguage && <span>Detected: {ocrDetectedLanguage}</span>}
+              {ocrLegibilityScore !== null && <span>Legibility: {Math.round(ocrLegibilityScore * 100)}%</span>}
+            </div>
+          )}
+
+          {ocrError && (
+            <div className="text-xs text-error bg-error/10 px-3 py-2 rounded-lg">
+              {ocrError}
+            </div>
+          )}
+
+          {ocrWarning && (
+            <div className="text-xs text-amber-300 bg-amber-500/10 px-3 py-2 rounded-lg">
+              {ocrWarning}
+            </div>
+          )}
+
+          {ocrText && (
+            <div className="bg-bg-input/40 border border-border-color rounded-xl p-3 max-h-56 overflow-y-auto">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary mb-2">
+                Extracted Text
+              </div>
+              <pre className="text-xs text-text-primary whitespace-pre-wrap font-mono leading-relaxed">
+                {ocrText}
+              </pre>
+            </div>
+          )}
+
+          <div className="border-t border-border-color pt-3 space-y-3">
+            <div>
+              <h4 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                <Bot size={15} className="text-accent" />
+                Grounded Drill
+              </h4>
+              <p className="text-xs text-text-secondary mt-1">
+                Turn the OCR text into a tiny local practice drill. Best for menus, labels, packaging, and quickstart instructions.
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <select
+                value={drillKind}
+                onChange={event => setDrillKind(event.target.value as GroundedDrillKind)}
+                className="px-3 py-2 bg-bg-input border border-border-color text-text-primary text-sm rounded-lg flex-1"
+              >
+                <option value="vocabulary">Vocabulary</option>
+                <option value="menu_order">Order Speech</option>
+                <option value="package_label">Package Label</option>
+                <option value="quickstart_manual">Quickstart Manual</option>
+              </select>
+              <button
+                onClick={handleGenerateGroundedDrill}
+                disabled={!chatAvailable || !ocrText.trim() || isGeneratingDrill}
+                className="px-3 py-2 bg-accent hover:bg-accent-hover disabled:bg-bg-input disabled:text-text-secondary text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+              >
+                {isGeneratingDrill ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Thinking...
+                  </>
+                ) : (
+                  'Generate Drill'
+                )}
+              </button>
+            </div>
+
+            <div className="text-xs text-text-secondary min-h-4">
+              {chatAvailable
+                ? (ocrText.trim()
+                  ? 'Uses the local chat model to turn OCR text into a compact drill.'
+                  : 'Run OCR first, then generate a drill from the extracted text.')
+                : 'Local chat is not available on this node yet.'}
+            </div>
+
+            {groundedDrillError && (
+              <div className="text-xs text-error bg-error/10 px-3 py-2 rounded-lg">
+                {groundedDrillError}
+              </div>
+            )}
+
+            {groundedDrill && (
+              <div className="bg-bg-input/40 border border-border-color rounded-xl p-3 max-h-72 overflow-y-auto">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary mb-2">
+                  Generated Drill
+                </div>
+                <pre className="text-xs text-text-primary whitespace-pre-wrap leading-relaxed">
+                  {groundedDrill}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="bg-bg-surface border border-border-color rounded-2xl overflow-hidden flex flex-col h-full">
           <div className="p-5 border-b border-border-color flex items-center justify-between">
             <h2 className="text-lg font-medium text-text-primary flex items-center gap-2">
