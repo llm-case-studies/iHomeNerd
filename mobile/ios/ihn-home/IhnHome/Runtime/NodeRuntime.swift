@@ -22,6 +22,7 @@ private struct RuntimeSnapshot: Sendable {
     let fingerprint: String
     let physicalRAM: UInt64
     let arch: String
+    let capabilities: CapabilitiesSnapshot
 }
 
 private struct BootstrapSnapshot: Sendable {
@@ -143,7 +144,8 @@ final class NodeRuntime: ObservableObject {
             port: Int(Self.listenPort.rawValue),
             fingerprint: identity.fingerprintSHA256,
             physicalRAM: ProcessInfo.processInfo.physicalMemory,
-            arch: Self.detectArch()
+            arch: Self.detectArch(),
+            capabilities: CapabilityHost.snapshot()
         )
 
         listener.stateUpdateHandler = { [weak self] state in
@@ -326,7 +328,7 @@ final class NodeRuntime: ObservableObject {
             "strengths": ["portable controller", "trust helper", "LAN node"],
             "accelerators": [],
             "ollama": false,
-            "capabilities": [],
+            "capabilities": capabilityFlatNames(s.capabilities),
             "network_ips": s.ips,
             "models": [],
         ]
@@ -342,7 +344,7 @@ final class NodeRuntime: ObservableObject {
             "ollama": false,
             "providers": ["ios_local"],
             "models": [:] as [String: String],
-            "available_capabilities": [],
+            "available_capabilities": capabilityFlatNames(s.capabilities),
             "binding": "0.0.0.0",
             "network_ips": s.ips,
             "port": s.port,
@@ -350,16 +352,17 @@ final class NodeRuntime: ObservableObject {
     }
 
     nonisolated private static func capabilitiesJson(_ s: RuntimeSnapshot) -> [String: Any] {
-        // Mirrors Python backend's flat-booleans + _detail shape. iOS hosts no
-        // capabilities yet, so the flat map is empty and _detail just carries
-        // identity metadata that PronunCo / Command Center clients expect.
+        // Mirrors Python backend's flat-booleans + _detail shape: top-level keys
+        // are capability flags, _detail carries identity metadata + per-capability
+        // sub-objects (voice lists, models, etc.).
+        let (flat, detailCaps) = capabilityMaps(s.capabilities)
         let detail: [String: Any] = [
             "hostname": s.hostname,
             "product": product,
             "version": version,
             "os": "ios",
             "arch": s.arch,
-            "capabilities": [:] as [String: Any],
+            "capabilities": detailCaps,
             "node_profile": [
                 "hostname": s.hostname,
                 "role": "brain",
@@ -367,7 +370,37 @@ final class NodeRuntime: ObservableObject {
                 "port": s.port,
             ] as [String: Any],
         ]
-        return ["_detail": detail]
+        var out: [String: Any] = flat
+        out["_detail"] = detail
+        return out
+    }
+
+    nonisolated private static func capabilityMaps(_ c: CapabilitiesSnapshot) -> ([String: Any], [String: Any]) {
+        var flat: [String: Any] = [:]
+        var detail: [String: Any] = [:]
+        if let tts = c.textToSpeech {
+            flat["text_to_speech"] = true
+            detail["text_to_speech"] = [
+                "available": true,
+                "voice_count": tts.voices.count,
+                "default_language": tts.defaultLanguage,
+                "voices": tts.voices.map { v in
+                    [
+                        "id": v.identifier,
+                        "name": v.name,
+                        "language": v.language,
+                        "quality": v.quality,
+                    ]
+                },
+            ] as [String: Any]
+        }
+        return (flat, detail)
+    }
+
+    nonisolated private static func capabilityFlatNames(_ c: CapabilitiesSnapshot) -> [String] {
+        var names: [String] = []
+        if c.textToSpeech != nil { names.append("text_to_speech") }
+        return names
     }
 
     nonisolated private static func indexHTML(_ s: RuntimeSnapshot) -> String {
