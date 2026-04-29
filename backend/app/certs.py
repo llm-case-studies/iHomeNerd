@@ -191,6 +191,105 @@ def get_ca_cert_path(certs_dir: Path) -> Path | None:
     return ca_cert if ca_cert.exists() else None
 
 
+def get_server_cert_path(certs_dir: Path) -> Path | None:
+    """Return the server cert path if it exists."""
+    server_cert = certs_dir / "server.crt"
+    return server_cert if server_cert.exists() else None
+
+
+def _read_cert_metadata(cert_path: Path) -> dict:
+    """Read lightweight X.509 metadata via openssl."""
+    if not cert_path.exists():
+        return {"present": False}
+
+    metadata = {
+        "present": True,
+        "path": str(cert_path),
+        "subject": "",
+        "issuer": "",
+        "notBefore": "",
+        "notAfter": "",
+        "fingerprintSha256": "",
+        "sans": sorted(_read_san_from_cert(cert_path)),
+    }
+
+    try:
+        out = subprocess.check_output(
+            [
+                "openssl",
+                "x509",
+                "-in",
+                str(cert_path),
+                "-noout",
+                "-subject",
+                "-issuer",
+                "-dates",
+                "-fingerprint",
+                "-sha256",
+            ],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+        for raw in out.splitlines():
+            line = raw.strip()
+            if line.startswith("subject="):
+                metadata["subject"] = line.split("=", 1)[1].strip()
+            elif line.startswith("issuer="):
+                metadata["issuer"] = line.split("=", 1)[1].strip()
+            elif line.startswith("notBefore="):
+                metadata["notBefore"] = line.split("=", 1)[1].strip()
+            elif line.startswith("notAfter="):
+                metadata["notAfter"] = line.split("=", 1)[1].strip()
+            elif "Fingerprint=" in line:
+                metadata["fingerprintSha256"] = line.split("=", 1)[1].strip()
+    except Exception as exc:
+        metadata["error"] = f"Unable to read certificate metadata: {exc}"
+
+    return metadata
+
+
+def get_trust_status(certs_dir: Path) -> dict:
+    """Return Home CA + server certificate status for setup and native clients."""
+    ca_cert, _ = _get_ca_paths(certs_dir)
+    server_cert = certs_dir / "server.crt"
+
+    ca = _read_cert_metadata(ca_cert)
+    server = _read_cert_metadata(server_cert)
+
+    status = "trusted"
+    message = "Home CA and server certificate are aligned."
+
+    if not ca.get("present"):
+        status = "missing_ca"
+        message = "Home CA is missing on this node."
+    elif not server.get("present"):
+        status = "missing_server"
+        message = "Server certificate is missing on this node."
+    else:
+        try:
+            subprocess.check_call(
+                ["openssl", "verify", "-CAfile", str(ca_cert), str(server_cert)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except Exception:
+            status = "mismatch"
+            message = "Server certificate does not currently chain to the active Home CA."
+
+    return {
+        "product": "iHomeNerd",
+        "status": status,
+        "message": message,
+        "lanIp": _get_lan_ip(),
+        "hostnames": sorted(_get_hostnames()),
+        "homeCa": {
+            **ca,
+            "shared": bool(_configured_path("IHN_CA_CERT_PATH") or _configured_path("IHN_CA_KEY_PATH")),
+        },
+        "serverCert": server,
+    }
+
+
 def ensure_certs(certs_dir: Path) -> tuple[Path, Path] | None:
     """Ensure valid TLS certs exist, regenerate if IP changed.
 

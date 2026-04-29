@@ -244,6 +244,14 @@ async def setup_test():
     return {"trusted": True, "product": "iHomeNerd"}
 
 
+@app.get("/setup/trust-status")
+async def setup_trust_status():
+    """Return Home CA and server certificate health for setup clients."""
+    from .certs import get_trust_status
+
+    return get_trust_status(_certs_dir)
+
+
 @app.get("/health")
 async def health():
     """Health check — is the Nerd running, is Ollama reachable?
@@ -543,6 +551,10 @@ def _build_setup_app():
     async def setup_test_redirect():
         return await setup_test()
 
+    @setup_app.get("/setup/trust-status")
+    async def setup_trust_status_redirect():
+        return await setup_trust_status()
+
     # Discovery + health on HTTP too — the extension needs these to find
     # brains before the user has installed the HTTPS CA certificate.
     @setup_app.get("/discover/peers")
@@ -564,6 +576,10 @@ def _build_setup_app():
     @setup_app.get("/cluster/nodes")
     async def setup_cluster_nodes():
         return await cluster_nodes()
+
+    @setup_app.get("/system/stats")
+    async def setup_system_stats():
+        return await system_stats()
 
     return setup_app
 
