@@ -31,6 +31,7 @@ final class NodeRuntime: ObservableObject {
     @Published private(set) var lanAddresses: [String] = []
     @Published private(set) var port: Int = 17777
     @Published private(set) var fingerprintSHA256: String = ""
+    @Published private(set) var caFingerprintSHA256: String = ""
     @Published private(set) var signingPreflight: String = ""
     @Published private(set) var lastError: String?
     @Published private(set) var lastConnectionError: String?
@@ -41,6 +42,7 @@ final class NodeRuntime: ObservableObject {
     private var listener: NWListener?
     private let queue = DispatchQueue(label: "com.ihomenerd.home.runtime")
     private var identity: NodeIdentity?
+    private var homeCA: HomeCA?
 
     static let listenPort: NWEndpoint.Port = 17777
     static let serviceType = "_ihomenerd._tcp"
@@ -56,12 +58,23 @@ final class NodeRuntime: ObservableObject {
         advertisedHostname = host
         lanAddresses = ips
 
+        let ca: HomeCA
+        do {
+            ca = try HomeCAStore.loadOrCreate(commonName: "iHomeNerd Home CA on \(host)")
+        } catch {
+            lastError = "homeCA: \(error)"
+            return
+        }
+        self.homeCA = ca
+        caFingerprintSHA256 = ca.fingerprintSHA256
+
         let identity: NodeIdentity
         do {
-            identity = try NodeIdentityStore.loadOrCreate(
+            identity = try NodeIdentityStore.generateFresh(
                 commonName: "iHomeNerd on \(host)",
                 dnsNames: ["\(host).local", host],
-                ipAddresses: ips
+                ipAddresses: ips,
+                ca: ca
             )
         } catch {
             lastError = "identity: \(error)"
@@ -159,6 +172,7 @@ final class NodeRuntime: ObservableObject {
         listener?.cancel()
         listener = nil
         identity = nil
+        homeCA = nil
         isRunning = false
         startedAt = nil
     }

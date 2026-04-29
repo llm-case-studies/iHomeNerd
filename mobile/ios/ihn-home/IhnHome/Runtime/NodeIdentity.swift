@@ -49,28 +49,29 @@ struct NodeIdentity {
 }
 
 enum NodeIdentityStore {
-    // v4: split key creation from persistence. SecKeyCreateRandomKey with
-    // kSecAttrIsPermanent (v1-v3) produced a key that round-trips through
-    // the keychain but reports SecKeyIsAlgorithmSupported(.sign, ...) = NO
-    // and fails SecKeyCreateSignature with errSecParam (-50). Generating
-    // transient first and adding via SecItemAdd separately preserves
-    // signing capability across keychain storage.
-    private static let keyLabel = "iHomeNerd-iOS-runtime-v4"
-    private static let keyTag = "com.ihomenerd.home.runtime.key.v4".data(using: .utf8)!
+    // v5: leaf is now signed by the Home CA (HomeCAStore), not self-signed.
+    // The leaf is also regenerated every session so its SAN tracks current
+    // LAN IPs. v4 kept the same persistence trick (transient SecKeyCreateRandomKey
+    // + explicit SecItemAdd with kSecAttrCanSign/kSecAttrCanVerify) which was
+    // the fix for errSSLHandshakeFail/errSecParam(-50).
+    private static let keyLabel = "iHomeNerd-iOS-runtime-v5"
+    private static let keyTag = "com.ihomenerd.home.runtime.key.v5".data(using: .utf8)!
 
-    static func loadOrCreate(commonName: String,
-                             dnsNames: [String],
-                             ipAddresses: [String]) throws -> NodeIdentity {
-        if let existing = try lookupIdentity() {
-            return existing
-        }
+    static func generateFresh(commonName: String,
+                              dnsNames: [String],
+                              ipAddresses: [String],
+                              ca: HomeCA) throws -> NodeIdentity {
+        // Always regenerate the leaf so its SAN matches the current network.
+        // Delete any prior v5 leaf cert + key first so SecItemAdd doesn't
+        // dedupe and leave us with a stale identity.
+        try reset()
         return try generate(commonName: commonName,
                             dnsNames: dnsNames,
-                            ipAddresses: ipAddresses)
+                            ipAddresses: ipAddresses,
+                            ca: ca)
     }
 
     static func reset() throws {
-        // Delete cert and key by tag/label so the next start regenerates.
         let _ = SecItemDelete([
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: keyTag,
@@ -85,14 +86,16 @@ enum NodeIdentityStore {
 
     private static func generate(commonName: String,
                                  dnsNames: [String],
-                                 ipAddresses: [String]) throws -> NodeIdentity {
-        // 1. Generate persistent EC P-256 SecKey.
+                                 ipAddresses: [String],
+                                 ca: HomeCA) throws -> NodeIdentity {
+        // 1. Generate persistent EC P-256 SecKey for the leaf.
         let secKey = try generateSecKey()
 
-        // 2. Wrap as Certificate.PrivateKey for swift-certificates.
-        let certKey = try Certificate.PrivateKey(secKey)
+        // 2. Wrap leaf SecKey + CA SecKey for swift-certificates.
+        let leafKey = try Certificate.PrivateKey(secKey)
+        let caKey = try Certificate.PrivateKey(ca.secKey)
 
-        // 3. Build self-signed cert.
+        // 3. Build CA-signed leaf cert.
         let subject = try DistinguishedName {
             CommonName(commonName)
             OrganizationName("iHomeNerd")
@@ -106,10 +109,10 @@ enum NodeIdentityStore {
         let cert = try Certificate(
             version: .v3,
             serialNumber: Certificate.SerialNumber(),
-            publicKey: certKey.publicKey,
+            publicKey: leafKey.publicKey,
             notValidBefore: notBefore,
             notValidAfter: notAfter,
-            issuer: subject,
+            issuer: ca.subject,
             subject: subject,
             signatureAlgorithm: .ecdsaWithSHA256,
             extensions: try Certificate.Extensions {
@@ -122,7 +125,7 @@ enum NodeIdentityStore {
                 try ExtendedKeyUsage([.serverAuth, .clientAuth])
                 san
             },
-            issuerPrivateKey: certKey
+            issuerPrivateKey: caKey
         )
 
         // 4. Serialize to DER, create SecCertificate.
@@ -137,9 +140,9 @@ enum NodeIdentityStore {
             throw NodeIdentityError.certEncodingFailed("SecCertificateCreateWithData returned nil")
         }
 
-        // 5. Add cert to keychain. The matching key is already in the keychain
-        //    (kSecAttrIsPermanent at generation), so adding the cert links them
-        //    into a SecIdentity.
+        // 5. Add cert to keychain. The matching leaf key is already there
+        //    (added via SecItemAdd in generateSecKey), so SecIdentity machinery
+        //    links them by public-key hash on lookup.
         let addStatus = SecItemAdd([
             kSecClass as String: kSecClassCertificate,
             kSecValueRef as String: secCert,

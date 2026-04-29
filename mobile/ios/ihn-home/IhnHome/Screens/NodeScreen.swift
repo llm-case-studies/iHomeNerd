@@ -102,11 +102,16 @@ struct NodeScreen: View {
                 .font(IhnFont.display(20, weight: .semibold))
                 .foregroundStyle(IhnColor.textPrimary)
                 .tracking(-0.2)
-            if !runtime.fingerprintSHA256.isEmpty {
-                Text("SHA-256 \(elide(runtime.fingerprintSHA256))")
+            if !runtime.caFingerprintSHA256.isEmpty {
+                Text("CA SHA-256 \(elide(runtime.caFingerprintSHA256))")
                     .font(IhnFont.mono(11))
                     .foregroundStyle(IhnColor.textSecondary)
                     .padding(.top, 4)
+            }
+            if !runtime.fingerprintSHA256.isEmpty {
+                Text("Leaf SHA-256 \(elide(runtime.fingerprintSHA256))")
+                    .font(IhnFont.mono(11))
+                    .foregroundStyle(IhnColor.textSecondary)
             }
             if !runtime.signingPreflight.isEmpty {
                 Text("Signing: \(runtime.signingPreflight)")
