@@ -29,6 +29,7 @@ private struct BootstrapSnapshot: Sendable {
     let caPEM: String
     let caFingerprint: String
     let leafFingerprint: String
+    let mobileconfig: Data
     let port: Int
 }
 
@@ -186,6 +187,7 @@ final class NodeRuntime: ObservableObject {
             caPEM: ca.certificatePEM,
             caFingerprint: ca.fingerprintSHA256,
             leafFingerprint: identity.fingerprintSHA256,
+            mobileconfig: MobileConfig.build(ca: ca, hostname: host),
             port: Int(Self.bootstrapPort.rawValue)
         )
         let bootstrapParams = NWParameters.tcp
@@ -428,16 +430,48 @@ final class NodeRuntime: ObservableObject {
             return HTTPResponse.pem(snapshot.caPEM)
         case ("GET", "/setup/trust-status"):
             return HTTPResponse.json(trustStatusJson(snapshot))
+        case ("GET", "/setup/ihomenerd.mobileconfig"):
+            return HTTPResponse.mobileconfig(snapshot.mobileconfig)
         case ("GET", "/"):
-            let body = """
-            iHomeNerd bootstrap on \(snapshot.hostname)
-            GET /setup/ca.crt
-            GET /setup/trust-status
-            """
-            return HTTPResponse.text(200, body)
+            return HTTPResponse.html(bootstrapIndexHTML(snapshot))
         default:
             return HTTPResponse.text(404, "Not found\n")
         }
+    }
+
+    nonisolated private static func bootstrapIndexHTML(_ s: BootstrapSnapshot) -> String {
+        let elided = elideFingerprint(s.caFingerprint)
+        return """
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>iHomeNerd trust setup on \(s.hostname)</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>
+        body{font-family:-apple-system,system-ui,sans-serif;background:#0e0e10;color:#eee;padding:24px;max-width:560px;margin:0 auto;}
+        h1{font-weight:600;letter-spacing:-0.02em;}
+        a.btn{display:block;background:#1f2937;color:#eee;text-decoration:none;padding:14px 16px;border-radius:10px;margin:10px 0;border:1px solid #374151;}
+        a.btn b{color:#7dd3fc;}
+        code{background:#1f2937;padding:2px 6px;border-radius:4px;font-size:13px;}
+        p{color:#9ca3af;font-size:14px;line-height:1.4;}
+        .fp{font-family:ui-monospace,monospace;font-size:12px;color:#9ca3af;word-break:break-all;}
+        </style></head>
+        <body>
+        <h1>Trust setup — iHomeNerd on \(s.hostname)</h1>
+        <p>Install the Home CA so this device trusts the iHomeNerd nodes on your LAN. The fingerprint below should match what the host shows on its Node screen.</p>
+        <p class="fp">CA SHA-256 \(elided)</p>
+        <a class="btn" href="/setup/ihomenerd.mobileconfig"><b>iOS / iPadOS:</b> install configuration profile</a>
+        <a class="btn" href="/setup/ca.crt"><b>macOS / Linux / Windows:</b> download CA cert (PEM)</a>
+        <p>After installing on iOS, open Settings → General → VPN &amp; Device Management → tap the iHomeNerd profile → Install. Then Settings → General → About → Certificate Trust Settings → enable full trust.</p>
+        <p>Other endpoints: <code>/setup/ca.crt</code> · <code>/setup/trust-status</code> · <code>/setup/ihomenerd.mobileconfig</code></p>
+        </body></html>
+        """
+    }
+
+    nonisolated private static func elideFingerprint(_ raw: String) -> String {
+        let pairs = raw.split(separator: ":")
+        guard pairs.count >= 6 else { return raw }
+        let head = pairs.prefix(4).joined(separator: ":")
+        let tail = pairs.suffix(4).joined(separator: ":")
+        return "\(head) … \(tail)"
     }
 
     nonisolated private static func trustStatusJson(_ s: BootstrapSnapshot) -> [String: Any] {

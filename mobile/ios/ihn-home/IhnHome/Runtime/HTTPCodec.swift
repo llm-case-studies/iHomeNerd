@@ -70,6 +70,12 @@ enum HTTPResponse {
                         body: Data(pem.utf8))
     }
 
+    static func mobileconfig(_ data: Data, status: Int = 200) -> Data {
+        return assemble(status: status,
+                        contentType: "application/x-apple-aspen-config",
+                        body: data)
+    }
+
     private static func assemble(status: Int,
                                  contentType: String,
                                  body: Data) -> Data {
