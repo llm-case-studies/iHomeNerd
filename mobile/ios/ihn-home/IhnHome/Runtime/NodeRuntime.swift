@@ -297,6 +297,8 @@ final class NodeRuntime: ObservableObject {
             return HTTPResponse.json(discoverJson(snapshot))
         case ("GET", "/health"):
             return HTTPResponse.json(healthJson(snapshot))
+        case ("GET", "/capabilities"):
+            return HTTPResponse.json(capabilitiesJson(snapshot))
         case ("GET", "/"):
             return HTTPResponse.html(indexHTML(snapshot))
         default:
@@ -343,6 +345,27 @@ final class NodeRuntime: ObservableObject {
             "network_ips": s.ips,
             "port": s.port,
         ]
+    }
+
+    nonisolated private static func capabilitiesJson(_ s: RuntimeSnapshot) -> [String: Any] {
+        // Mirrors Python backend's flat-booleans + _detail shape. iOS hosts no
+        // capabilities yet, so the flat map is empty and _detail just carries
+        // identity metadata that PronunCo / Command Center clients expect.
+        let detail: [String: Any] = [
+            "hostname": s.hostname,
+            "product": product,
+            "version": version,
+            "os": "ios",
+            "arch": s.arch,
+            "capabilities": [:] as [String: Any],
+            "node_profile": [
+                "hostname": s.hostname,
+                "role": "brain",
+                "ips": s.ips,
+                "port": s.port,
+            ] as [String: Any],
+        ]
+        return ["_detail": detail]
     }
 
     nonisolated private static func indexHTML(_ s: RuntimeSnapshot) -> String {
