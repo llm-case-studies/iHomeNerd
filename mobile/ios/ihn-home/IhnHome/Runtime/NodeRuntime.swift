@@ -396,12 +396,23 @@ final class NodeRuntime: ObservableObject {
         }
         if let stt = c.speechToText {
             flat["speech_to_text"] = true
-            detail["speech_to_text"] = [
+            var sttDetail: [String: Any] = [
                 "available": true,
                 "on_device": stt.onDevice,
+                "tier": stt.tier.rawValue,
+                "candidate_languages": stt.candidateLanguages,
                 "locale_count": stt.supportedLocales.count,
                 "supported_locales": stt.supportedLocales,
-            ] as [String: Any]
+            ]
+            if stt.tier == .whisper {
+                sttDetail["whisper"] = [
+                    "model": WhisperBundle.modelName,
+                    "model_bytes": WhisperBundle.modelBytes,
+                    "auto_language_id": true,
+                    "code_switching": true,
+                ] as [String: Any]
+            }
+            detail["speech_to_text"] = sttDetail
         }
         return (flat, detail)
     }

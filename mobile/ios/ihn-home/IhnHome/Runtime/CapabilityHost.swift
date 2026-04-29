@@ -19,9 +19,15 @@ struct TextToSpeechCapability: Sendable {
     let defaultLanguage: String
 }
 
+enum SpeechTier: String, Sendable {
+    case single, parallel, whisper
+}
+
 struct SpeechToTextCapability: Sendable {
     let supportedLocales: [String]   // BCP-47, e.g. "en-US"
     let onDevice: Bool                // SFSpeechRecognizer.supportsOnDeviceRecognition
+    let tier: SpeechTier
+    let candidateLanguages: [String] // user-curated set (parallel/whisper); empty for single
 }
 
 struct CapabilitiesSnapshot: Sendable {
@@ -56,11 +62,53 @@ enum CapabilityHost {
             if let probe = SFSpeechRecognizer() { return probe.supportsOnDeviceRecognition }
             return false
         }()
+        let tier = detectTier()
+        let candidates = defaultCandidateLanguages(supported: locales, tier: tier)
         let stt: SpeechToTextCapability? = locales.isEmpty
             ? nil
-            : SpeechToTextCapability(supportedLocales: locales, onDevice: onDevice)
+            : SpeechToTextCapability(
+                supportedLocales: locales,
+                onDevice: onDevice,
+                tier: tier,
+                candidateLanguages: candidates
+            )
 
         return CapabilitiesSnapshot(textToSpeech: tts, speechToText: stt)
+    }
+
+    // HW probe. iPhone 12 Pro Max (6GB, A14) → parallel today; whisper once
+    // the Core ML model is bundled (Task #15). Older 3–4GB devices stay on
+    // single-locale to keep battery and CPU sane.
+    private static func detectTier() -> SpeechTier {
+        let mem = ProcessInfo.processInfo.physicalMemory
+        let gb: UInt64 = 1024 * 1024 * 1024
+        let whisperBundled = WhisperBundle.isBundled
+        if mem >= 6 * gb && whisperBundled { return .whisper }
+        if mem >= 3 * gb { return .parallel }
+        return .single
+    }
+
+    // Top user-preferred languages, normalized to BCP-47 tags the recognizer
+    // actually supports. Falls back to en-US if nothing matches. The Listen
+    // tab can override this once it has its own picker UI.
+    private static func defaultCandidateLanguages(supported: [String], tier: SpeechTier) -> [String] {
+        guard tier != .single else { return [] }
+        let supportedSet = Set(supported)
+        var picks: [String] = []
+        for raw in Locale.preferredLanguages.prefix(4) {
+            if supportedSet.contains(raw) { picks.append(raw); continue }
+            // Try language-only match: "ru" → first supported "ru-*"
+            let lang = String(raw.prefix { $0 != "-" })
+            if let match = supported.first(where: { $0.hasPrefix(lang + "-") }) {
+                picks.append(match)
+            }
+        }
+        if !picks.contains("en-US"), supportedSet.contains("en-US") {
+            picks.append("en-US")
+        }
+        // Dedup preserving order.
+        var seen = Set<String>()
+        return picks.filter { seen.insert($0).inserted }
     }
 
     private static func qualityName(_ q: AVSpeechSynthesisVoiceQuality) -> String {
