@@ -62,6 +62,35 @@ function isLoopbackBrain(brain) {
   return isLoopbackHost(brain.ip) || isLoopbackHost(brain.hostname)
 }
 
+function normalizeBrainHost(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function brainPreferenceScore(brain) {
+  if (!brain) return -1000
+  let score = 0
+  if (!isLoopbackBrain(brain)) score += 50
+  if (brain.protocol === 'https' && brain.port === DEFAULT_PORT) score += 400
+  else if (brain.protocol === 'http' && brain.port === DEFAULT_PORT) score += 300
+  else if (brain.protocol === 'http' && brain.port === SETUP_PORT) score += 150
+  else if (brain.protocol === 'https') score += 200
+  if (brain.ollama) score += 40
+  if (Array.isArray(brain.models)) score += Math.min(brain.models.length, 20)
+  if (Array.isArray(brain.suggestedRoles) && brain.suggestedRoles.length > 0) score += 10
+  return score
+}
+
+function isSameBrain(a, b) {
+  if (!a || !b) return false
+  if (isLoopbackBrain(a) && isLoopbackBrain(b)) return true
+  const aIp = normalizeBrainHost(a.ip)
+  const bIp = normalizeBrainHost(b.ip)
+  if (aIp && bIp && aIp === bIp) return true
+  const aHost = normalizeBrainHost(a.hostname)
+  const bHost = normalizeBrainHost(b.hostname)
+  return Boolean(aHost && bHost && aHost === bHost)
+}
+
 function isPrivateNetworkUrl(baseUrl) {
   try {
     const url = new URL(baseUrl)
@@ -300,6 +329,8 @@ async function probeBrain(ip) {
   ] : [
     { protocol: 'http',  port: SETUP_PORT,  path: '/discover' },
     { protocol: 'http',  port: SETUP_PORT,  path: '/health' },
+    { protocol: 'http',  port: DEFAULT_PORT, path: '/discover' },
+    { protocol: 'http',  port: DEFAULT_PORT, path: '/health' },
     { protocol: 'https', port: DEFAULT_PORT, path: '/discover' },
     { protocol: 'https', port: DEFAULT_PORT, path: '/health' },
   ]
@@ -314,7 +345,7 @@ async function probeBrain(ip) {
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       const data = await r.json()
       if (!data || data.product !== 'iHomeNerd') throw new Error('not iHomeNerd')
-      return data
+      return { data, protocol, port }
     } catch (e) {
       clearTimeout(tid)
       throw e
@@ -322,28 +353,42 @@ async function probeBrain(ip) {
   })
 
   try {
-    const data = await Promise.any(probePromises)
-    const models = Array.isArray(data.models)
-      ? data.models
-      : data.models && typeof data.models === 'object'
-        ? Object.keys(data.models)
-        : []
-    return {
-      url: `https://${targetIp}:${DEFAULT_PORT}`,
-      hostname: data.hostname || targetIp,
-      ip: targetIp,
-      port: DEFAULT_PORT,
-      protocol: 'https',
-      version: data.version || 'unknown',
-      gpu: data.gpu || null,
-      accelerators: Array.isArray(data.accelerators) ? data.accelerators : [],
-      suggestedRoles: Array.isArray(data.suggested_roles) ? data.suggested_roles : [],
-      strengths: Array.isArray(data.strengths) ? data.strengths : [],
-      models,
-      ollama: data.ollama || false,
-      role: data.role || 'brain',
-      discoveredAt: Date.now(),
-    }
+    const settled = await Promise.allSettled(probePromises)
+    const candidates = settled
+      .filter(result => result.status === 'fulfilled')
+      .map(result => result.value)
+
+    if (candidates.length === 0) throw new Error('no successful probes')
+
+    const result = candidates
+      .map(item => {
+        const data = item.data || {}
+        const models = Array.isArray(data.models)
+          ? data.models
+          : data.models && typeof data.models === 'object'
+            ? Object.keys(data.models)
+            : []
+        const brain = {
+          url: `${item.protocol}://${targetIp}:${item.port}`,
+          hostname: data.hostname || targetIp,
+          ip: targetIp,
+          port: item.port,
+          protocol: item.protocol,
+          version: data.version || 'unknown',
+          gpu: data.gpu || null,
+          accelerators: Array.isArray(data.accelerators) ? data.accelerators : [],
+          suggestedRoles: Array.isArray(data.suggested_roles) ? data.suggested_roles : [],
+          strengths: Array.isArray(data.strengths) ? data.strengths : [],
+          models,
+          ollama: data.ollama || false,
+          role: data.role || 'brain',
+          discoveredAt: Date.now(),
+        }
+        return brain
+      })
+      .sort((left, right) => brainPreferenceScore(right) - brainPreferenceScore(left))[0]
+
+    return result
   } catch {
     return null
   }
@@ -398,14 +443,17 @@ async function updateScanProgress(scanned, total, found) {
  */
 async function discoverBrains() {
   const brains = []
-  const seenIps = new Set()
 
   function addBrain(brain) {
     if (!brain) return
-    const key = isLoopbackBrain(brain) ? 'loopback' : (brain.ip || brain.hostname)
-    if (seenIps.has(key)) return
-    seenIps.add(key)
-    brains.push(brain)
+    const existingIndex = brains.findIndex(existing => isSameBrain(existing, brain))
+    if (existingIndex === -1) {
+      brains.push(brain)
+      return
+    }
+    if (brainPreferenceScore(brain) > brainPreferenceScore(brains[existingIndex])) {
+      brains[existingIndex] = brain
+    }
   }
 
   // Report initial progress
@@ -480,11 +528,22 @@ async function discoverBrains() {
         }
         if (peersData && Array.isArray(peersData.peers)) {
           for (const peer of peersData.peers) {
-            // Probe each peer — use hostname.local which has permanent permission
-            const peerHost = peer.hostname || peer.ip
-            if (!peerHost || isLoopbackHost(peerHost)) continue
-            const result = await probeBrain(peerHost).catch(() => null)
-            addBrain(result)
+            // Probe peers by IP first. DNS-SD service discovery often gives us a
+            // service target name, but Android-hosted nodes do not always publish
+            // that friendly name as a resolvable .local hostname for browsers.
+            const peerCandidates = [peer.ip, peer.hostname]
+              .map(value => String(value || '').trim())
+              .filter(Boolean)
+              .filter((value, index, values) => values.indexOf(value) === index)
+              .filter(value => !isLoopbackHost(value))
+
+            for (const peerTarget of peerCandidates) {
+              const result = await probeBrain(peerTarget).catch(() => null)
+              if (result) {
+                addBrain(result)
+                break
+              }
+            }
           }
         }
       } catch { /* ignore */ }
@@ -553,11 +612,7 @@ async function discoverBrains() {
   }
 
   // Prefer real LAN nodes before loopback-only results in the stored list.
-  brains.sort((a, b) => {
-    const aloop = isLoopbackBrain(a) ? 1 : 0
-    const bloop = isLoopbackBrain(b) ? 1 : 0
-    return aloop - bloop
-  })
+  brains.sort((a, b) => brainPreferenceScore(b) - brainPreferenceScore(a))
 
   // Final progress
   await updateScanProgress(1, 1, brains.length)
