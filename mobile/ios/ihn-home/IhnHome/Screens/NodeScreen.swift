@@ -113,6 +113,10 @@ struct NodeScreen: View {
                     .font(IhnFont.mono(11))
                     .foregroundStyle(IhnColor.textSecondary)
             }
+            Text("Bootstrap :17778 \(runtime.bootstrapState)")
+                .font(IhnFont.mono(11))
+                .foregroundStyle(runtime.bootstrapState == "ready"
+                                 ? IhnColor.textSecondary : .orange)
             if !runtime.signingPreflight.isEmpty {
                 Text("Signing: \(runtime.signingPreflight)")
                     .font(IhnFont.mono(14))

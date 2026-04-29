@@ -64,6 +64,12 @@ enum HTTPResponse {
                         body: Data(body.utf8))
     }
 
+    static func pem(_ pem: String, status: Int = 200) -> Data {
+        return assemble(status: status,
+                        contentType: "application/x-pem-file",
+                        body: Data(pem.utf8))
+    }
+
     private static func assemble(status: Int,
                                  contentType: String,
                                  body: Data) -> Data {

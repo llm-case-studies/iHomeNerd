@@ -24,6 +24,14 @@ private struct RuntimeSnapshot: Sendable {
     let arch: String
 }
 
+private struct BootstrapSnapshot: Sendable {
+    let hostname: String
+    let caPEM: String
+    let caFingerprint: String
+    let leafFingerprint: String
+    let port: Int
+}
+
 @MainActor
 final class NodeRuntime: ObservableObject {
     @Published private(set) var isRunning: Bool = false
@@ -38,13 +46,16 @@ final class NodeRuntime: ObservableObject {
     @Published private(set) var startedAt: Date?
     @Published private(set) var requestCount: Int = 0
     @Published private(set) var connectionFailures: Int = 0
+    @Published private(set) var bootstrapState: String = "—"
 
     private var listener: NWListener?
+    private var bootstrapListener: NWListener?
     private let queue = DispatchQueue(label: "com.ihomenerd.home.runtime")
     private var identity: NodeIdentity?
     private var homeCA: HomeCA?
 
     static let listenPort: NWEndpoint.Port = 17777
+    static let bootstrapPort: NWEndpoint.Port = 17778
     static let serviceType = "_ihomenerd._tcp"
     static let product = "iHomeNerd"
     static let version = "0.1.0-dev-ios"
@@ -166,11 +177,62 @@ final class NodeRuntime: ObservableObject {
         }
         listener.start(queue: queue)
         self.listener = listener
+
+        // Bootstrap listener on :17778 — plain HTTP, hands out the Home CA
+        // PEM and a trust-status JSON so peers can install the trust anchor
+        // before they ever try to TLS-handshake against :17777.
+        let bootstrap = BootstrapSnapshot(
+            hostname: host,
+            caPEM: ca.certificatePEM,
+            caFingerprint: ca.fingerprintSHA256,
+            leafFingerprint: identity.fingerprintSHA256,
+            port: Int(Self.bootstrapPort.rawValue)
+        )
+        let bootstrapParams = NWParameters.tcp
+        bootstrapParams.allowLocalEndpointReuse = true
+        bootstrapParams.includePeerToPeer = false
+        let bootstrapListener: NWListener
+        do {
+            bootstrapListener = try NWListener(using: bootstrapParams, on: Self.bootstrapPort)
+        } catch {
+            lastError = "bootstrap listen: \(error)"
+            return
+        }
+        bootstrapListener.stateUpdateHandler = { [weak self] state in
+            Task { @MainActor in
+                switch state {
+                case .setup: self?.bootstrapState = "setup"
+                case .ready: self?.bootstrapState = "ready"
+                case .cancelled: self?.bootstrapState = "cancelled"
+                case .failed(let err):
+                    self?.bootstrapState = "failed"
+                    self?.lastError = "bootstrap :17778 failed: \(err)"
+                case .waiting(let err):
+                    self?.bootstrapState = "waiting"
+                    self?.lastError = "bootstrap :17778 waiting: \(err)"
+                @unknown default: self?.bootstrapState = "unknown"
+                }
+            }
+        }
+        bootstrapListener.newConnectionHandler = { [weak self] connection in
+            guard let self else { return }
+            Self.acceptBootstrap(connection, snapshot: bootstrap, queue: self.queue,
+                onError: { [weak self] message in
+                    Task { @MainActor in
+                        self?.lastConnectionError = message
+                        self?.connectionFailures += 1
+                    }
+                })
+        }
+        bootstrapListener.start(queue: queue)
+        self.bootstrapListener = bootstrapListener
     }
 
     func stop() {
         listener?.cancel()
         listener = nil
+        bootstrapListener?.cancel()
+        bootstrapListener = nil
         identity = nil
         homeCA = nil
         isRunning = false
@@ -293,6 +355,85 @@ final class NodeRuntime: ObservableObject {
         <pre style="background:#222;padding:12px;border-radius:6px;font-size:12px;">SHA-256 \(s.fingerprint)</pre>
         </body></html>
         """
+    }
+
+    // MARK: - Bootstrap (plain HTTP on :17778)
+
+    nonisolated private static func acceptBootstrap(_ connection: NWConnection,
+                                        snapshot: BootstrapSnapshot,
+                                        queue: DispatchQueue,
+                                        onError: @escaping (String) -> Void) {
+        connection.stateUpdateHandler = { state in
+            switch state {
+            case .failed(let error):
+                onError("bootstrap \(connection.endpoint) failed: \(error)")
+                connection.cancel()
+            case .cancelled:
+                connection.cancel()
+            default: break
+            }
+        }
+        connection.start(queue: queue)
+        receiveBootstrap(on: connection, accumulated: Data(), snapshot: snapshot, queue: queue)
+    }
+
+    nonisolated private static func receiveBootstrap(on connection: NWConnection,
+                                         accumulated: Data,
+                                         snapshot: BootstrapSnapshot,
+                                         queue: DispatchQueue) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 16 * 1024) { data, _, isComplete, error in
+            var buffer = accumulated
+            if let data, !data.isEmpty { buffer.append(data) }
+            if let request = HTTPRequest.parse(buffer) {
+                let response = respondBootstrap(to: request, snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+                return
+            }
+            if error != nil || isComplete {
+                connection.cancel()
+                return
+            }
+            receiveBootstrap(on: connection, accumulated: buffer, snapshot: snapshot, queue: queue)
+        }
+    }
+
+    nonisolated private static func respondBootstrap(to request: HTTPRequest, snapshot: BootstrapSnapshot) -> Data {
+        switch (request.method, request.path) {
+        case ("GET", "/setup/ca.crt"):
+            return HTTPResponse.pem(snapshot.caPEM)
+        case ("GET", "/setup/trust-status"):
+            return HTTPResponse.json(trustStatusJson(snapshot))
+        case ("GET", "/"):
+            let body = """
+            iHomeNerd bootstrap on \(snapshot.hostname)
+            GET /setup/ca.crt
+            GET /setup/trust-status
+            """
+            return HTTPResponse.text(200, body)
+        default:
+            return HTTPResponse.text(404, "Not found\n")
+        }
+    }
+
+    nonisolated private static func trustStatusJson(_ s: BootstrapSnapshot) -> [String: Any] {
+        // status: trusted | missing_ca | missing_server | mismatch
+        // Both are present whenever the runtime is up, so report "trusted".
+        return [
+            "product": product,
+            "version": version,
+            "hostname": s.hostname,
+            "status": "trusted",
+            "homeCa": [
+                "present": true,
+                "fingerprintSha256": s.caFingerprint,
+            ] as [String: Any],
+            "serverCert": [
+                "present": true,
+                "fingerprintSha256": s.leafFingerprint,
+            ] as [String: Any],
+        ]
     }
 
     nonisolated private static func detectArch() -> String {
