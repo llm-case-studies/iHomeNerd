@@ -27,9 +27,22 @@ actor WhisperEngine {
     func prepare(progress: ((String) -> Void)? = nil) async {
         if case .ready = state { return }
         state = .loading
-        progress?("Loading \(modelName)…")
+        progress?("Loading \(modelName) (download ~145MB if first run)…")
         do {
-            let pipe = try await WhisperKit(model: modelName, verbose: false, logLevel: .error)
+            // load: true forces the Core ML compute units to be brought up
+            // during init. Without it, init "succeeds" without actually
+            // loading the encoder/decoder/tokenizer, and transcribe later
+            // fails with confusing "tokenizer missing" / "models not loaded"
+            // errors mid-call. download: true is already the default but
+            // we set it explicitly so the contract is obvious.
+            let pipe = try await WhisperKit(
+                model: modelName,
+                verbose: false,
+                logLevel: .error,
+                prewarm: true,
+                load: true,
+                download: true
+            )
             self.pipeline = pipe
             state = .ready(model: modelName)
             WhisperBundle.setReady(true)
@@ -56,9 +69,21 @@ actor WhisperEngine {
         }
     }
 
+    enum WhisperError: Error, LocalizedError {
+        case notReady(String)
+        var errorDescription: String? {
+            switch self {
+            case .notReady(let m): return "Whisper not ready: \(m)"
+            }
+        }
+    }
+
     func transcribe(audio: [Float]) async throws -> Result? {
         if !isReady() { await prepare() }
-        guard let pipe = pipeline else { return nil }
+        guard let pipe = pipeline else {
+            if case .failed(let m) = state { throw WhisperError.notReady(m) }
+            throw WhisperError.notReady("model never loaded")
+        }
         let outputs = try await pipe.transcribe(audioArray: audio)
         guard let first = outputs.first else { return nil }
         let segs = first.segments.map { seg in
