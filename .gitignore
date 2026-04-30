@@ -1,6 +1,9 @@
 # Legacy sub-projects (separate repos)
 Organi-Share/
 
+# Local OpenCode workspace state
+.opencode/
+
 # Python
 __pycache__/
 *.py[cod]
