@@ -1,165 +1,155 @@
 # iHomeNerd Mobile Strategy
 
-**Status:** kickoff draft  
-**Date:** 2026-04-24  
+**Status:** working draft  
+**Date:** 2026-04-24 (calibrated 2026-04-27)
 **Owner:** Alex
 
 ---
 
+> **Calibration note (2026-04-27).** An earlier draft of this doc assigned
+> "controller-class" to iOS and "node-class" to Android by OS, treating
+> iPhones as not a strong fit for runtime hosting or portable travel-brain
+> roles. That framing is now retracted — it conflicts with the standing
+> capability-over-OS-class principle. Empirical evidence: the Motorola
+> Edge 2021 (mid-tier Snapdragon, ~2021 silicon) runs Gemma 4 2B
+> responsively as a node host, and iPhone 12 Pro Max (A14, comparable
+> vintage) has been measured running Gemma 4 2B responsively too (see
+> `IOS_TIER_TABLE_2026-04-25.md`). MediaPipe LLM Inference and LiteRT both
+> ship for iOS. Section 4 below has been revised; sections 6 and 11 still
+> read as Android-only and should be re-read as "the first device that
+> ships a node-class build." iOS catch-up plan: `mobile/docs/IOS_CATCHUP_PLAN_2026-04-27.md`.
+
 ## 1. Core principle
 
-The first native mobile app should be a:
-- scout
-- controller
-- trust helper
-- notification surface
+Mobile should not be treated as one thing.
 
-It should not try to be the main local AI brain.
+There are two valid mobile roles:
+- **controller-class app** — pairs, trusts, monitors, alerts, and controls
+- **node-class app** — does the above and can also host a local iHN runtime
 
-The phone is usually:
-- not always on in the same way as a gateway
-- not the right place for heavier home-cluster orchestration
-- not where household trust and node management should primarily live
+Which role a given device fulfils is decided by **measured capability**,
+not by chip name and not by OS. iOS and Android both target both roles;
+older / lower-tier devices land in controller-only by measurement, not
+by guess.
 
-So the right opening move is:
+## 2. Product split
 
-> **Native mobile as the remote for the home brain, not the home brain itself.**
+### 2.1 Controller-class app
 
----
+This app is:
+- a scout
+- a controller
+- a trust helper
+- a notification surface
 
-## 2. Product role for v1
-
-### 2.1 What mobile v1 should do
-
+It should:
 - discover the gateway on the LAN
 - pair with the home
-- install / verify household trust
+- install / verify trust
 - show gateway and node health
-- show active roles and basic capabilities
-- run or trigger common actions
 - surface alerts and summaries
-- help with onboarding and trust setup
+- run selected actions
 
-### 2.2 What mobile v1 should not do
+It should not try to:
+- mirror every dense Command Center screen
+- become the only operator surface
+- fake a full cluster workstation on a small screen
 
-- host the main LLM stack
-- pretend to be a worker node for heavy models
-- become the only control plane
-- hide trust and network complexity with fake magic
+### 2.2 Node-class app
 
----
+This app does everything the controller-class app does, and also:
+- owns or starts the local iHN runtime on the device
+- serves the full web Command Center on `:17777`
+- exposes the device as a nearby iHN node on LAN or hotspot
 
-## 3. Best v1 use cases
+This is the right shape for:
+- a dedicated Android travel brain
+- first-node / virgin-environment setup
+- portable “study now” or “work now” sessions
 
-### 3.1 Trust and pairing helper
+## 3. UX split
 
-The phone is a good place to:
-- discover a new home gateway
-- install the Home CA trust artifact
-- verify trust worked
-- show "this phone trusts this home"
+### 3.1 Native UI should handle
 
-This is especially useful for iOS and Android because trust flows are awkward in the browser alone.
-
-### 3.2 Home status dashboard
-
-Users should be able to see:
-- gateway online/offline
-- node list
-- worker roles
-- update status
-- trust health
-- current alerts
-
-### 3.3 Notifications and summaries
-
-Examples:
-- camera digest is ready
-- node is offline
-- update available
-- trust mismatch detected
-- GPU worker is draining or degraded
-
-### 3.4 Lightweight action surface
-
-Examples:
-- restart node runtime
-- run SSH Doctor
-- approve key install
-- wake or drain node
-- start a scan
-- open docs or camera digest
-
----
-
-## 4. iOS direction
-
-### 4.1 Best fit
-
-iOS is well suited for:
-- discovery
+- first-run bootstrap
 - pairing
-- trust profile install
-- status and notifications
-- camera / mic as inputs to the home
+- trust / cert install and repair
+- home overview
+- this-node overview
+- travel mode / hotspot state
+- alerts
+- quick actions
+- model pack lookup and update actions
+- “open full Command Center on another screen”
 
-### 4.2 Likely stack
+### 3.2 Full Command Center should remain web UI
 
+The dense operational UI should stay in the full web Command Center:
+- Investigate
+- Builder
+- detailed System views
+- high-density node management
+- rich multi-panel workflows
+
+That web UI can be:
+- hosted by a home gateway
+- or hosted by a node-class Android app in travel mode
+
+The goal is:
+- **native UI for trust and control**
+- **web UI for dense operations**
+
+## 4. Platform direction
+
+### 4.1 iOS
+
+Targets both controller-class and node-class roles, gated by measured
+device capability.
+
+Stack:
 - SwiftUI
 - local-network permission flow
-- Bonjour / local discovery
+- Bonjour / `NWBrowser` discovery
 - native networking client
-- profile / trust helpers around `.mobileconfig`
+- trust helpers around `.mobileconfig`
+- MediaPipe LLM Inference iOS (same `.task` / `.litertlm` Gemma weights
+  the Android side loads), or Apple MLX as the native alternative
+- `AVSpeechSynthesizer` for TTS, `SFSpeechRecognizer` (or Sherpa ONNX
+  Moonshine via C bindings) for ASR
+- Embedded HTTPS server (`Network.framework` + Swift-NIO or GCDWebServer)
+  for `:17777` Command Center serving on capable devices
 
-### 4.3 iOS-specific strengths
+Real constraints (still real, just not OS-class disqualifications):
+- background execution limits — addressable via foreground-session model
+  while the user is in the app (matches Android's foreground service)
+- thermal headroom on smaller iPhones — measure, don't assume
+- 7-day Personal Team signing limits dev iteration but not runtime
 
-- polished onboarding
-- good notification UX
-- strong pairing / trust presentation
-- natural "remote for the home" experience
+Reference open-source patterns:
+- `google-ai-edge/gallery` for the on-device LLM UX (Kotlin → mirror to
+  Swift; LiteRT model handling translates directly)
+- `googlesamples/mediapipe` `examples/llm_inference/ios` for the LLM
+  task surface in Swift
 
-### 4.4 iOS-specific constraints
+### 4.2 Android
 
-- local-network privacy prompts
-- background execution limits
-- trust installation still has user steps
-- not a good target for pretending to be an always-on worker
+Targets both controller-class and node-class roles. Currently the furthest
+along — the reference implementation for the runtime-hosting surface
+(`NodeRuntimeService`, `AndroidChatEngine` via MediaPipe LLM Inference,
+`AndroidTtsEngine`, `AndroidAsrEngine` via Sherpa ONNX, on-device
+Home CA generation, `_ihomenerd._tcp` mDNS).
 
----
-
-## 5. Android direction
-
-### 5.1 Best fit
-
-Android is also well suited for:
-- discovery
-- status
-- notifications
-- trust setup assistance
-- controller workflows
-
-### 5.2 Likely stack
-
+Stack:
 - Kotlin
 - Jetpack Compose
 - local network discovery
 - native HTTPS client with explicit trust guidance
 
-### 5.3 Android-specific opportunities
+Constraints:
+- vendor differences around trust install
+- still needs careful handling of power, thermal, and background behavior
 
-- potentially stronger device integration later
-- more flexible local-network behaviors
-- better path for power users and homelab-style operators
-
-### 5.4 Android-specific constraints
-
-- certificate install flows vary by vendor
-- trust steps are less uniform than users expect
-- background behavior still needs careful shaping
-
----
-
-## 6. Relationship to host-assist
+## 5. Relationship to host-assist
 
 Mobile strategy and host-assist are connected.
 
@@ -168,6 +158,7 @@ The mobile app should not have to guess:
 - whether trust is healthy
 - whether the gateway can SSH into a node
 - whether a node is degraded because of cert drift or auth failure
+- which `.local` names the host actually sees
 
 That data should come from the gateway and host-assist layer.
 
@@ -175,18 +166,69 @@ In other words:
 - host-assist helps the gateway know the truth
 - mobile helps the user act on that truth
 
----
+## 6. Travel brain model
 
-## 7. Suggested mobile v1 feature set
+The first strong node-class mobile story is:
+- dedicated Android travel node
+- hotspot enabled
+- laptop / tablet / phones join that local network
+- Android app starts the local iHN runtime
+- full Command Center is served from that Android node on `:17777`
 
-### 7.1 Pair to Home
+This creates a portable local-first environment for:
+- classes
+- workshops
+- travel
+- offline field work
+- small-group study sessions
+
+## 7. Shared session -> personal Home handoff
+
+One important rule:
+- a temporary shared session should not automatically become a permanent shared trust domain
+
+So the long-term shape should support:
+- **temporary shared travel/class environment**
+- **clean handoff into an independent personal Home**
+
+Examples:
+- teacher-led PronunCo class
+- beach study session with friends
+- workshop node at a conference
+
+The key missing product concept is:
+- `Take this Home`
+- or `Create my own Home from this session`
+
+That flow should:
+- copy allowed assets
+- create a new personal Home CA
+- stop long-term dependence on the temporary shared domain
+
+## 8. Class and course trust domains
+
+For educational use, the right trust model is:
+- permanent teacher/personal Home CA
+- separate temporary **class CA**
+- student personal Home CA after handoff
+
+The class CA should be:
+- temporary
+- scoped to one class or cohort
+- revocable or expiring
+
+Students should not stay permanently inside the teacher’s trust domain.
+
+## 9. Suggested mobile v1 feature set
+
+### 9.1 Pair to Home
 
 - discover gateway on LAN
 - show hostname / fingerprint / role
 - install trust artifact
 - verify secure connection
 
-### 7.2 Home Overview
+### 9.2 Home Overview
 
 - gateway card
 - node list
@@ -194,56 +236,64 @@ In other words:
 - online / degraded / offline states
 - update counts
 
-### 7.3 Trust View
+### 9.3 Trust View
 
 - Home CA fingerprint
 - node cert status
 - phone trust verified / not verified
 - recovery actions
 
-### 7.4 Node Actions
+### 9.4 This Node
+
+- this device role
+- runtime state
+- battery / thermal / storage
+- hotspot / client count
+- installed model packs
+
+### 9.5 Quick Actions
 
 - restart runtime
 - check updates
 - run preflight
 - run SSH Doctor
 - drain worker
+- open full Command Center
 
-### 7.5 Alerts
+### 9.6 Alerts
 
 - node offline
 - trust mismatch
 - update available
-- camera digest ready
+- client connected
+- model pack issue
 
----
+## 10. What can wait until later
 
-## 8. What can wait until later
+- full native parity with the web dashboard
+- phone as heavy worker for large models
+- mobile-first builder workflows
+- deep app-specific business logic in iHN UI
 
-- on-device inference as a major feature
-- phone as worker node
-- deep file / photo ingestion from mobile
-- rich mobile-first builder workflows
-- full Home Assistant-style device control
+## 11. Recommended sequencing
 
----
+1. Finish gateway trust and host-assist foundations.
+2. Build native controller UI for pairing, trust, alerts, and quick actions.
+3. On Android, add node-class runtime hosting and `:17777` serving.
+4. Add travel mode and portable-node UX.
+5. Add shared-session -> personal-Home handoff.
+6. Add class-mode trust domains and educational handoff flows.
 
-## 9. Recommended sequencing
+## 12. Bottom line
 
-1. Keep web UI as the main operator surface.
-2. Finish gateway trust and host-assist foundations.
-3. Build native mobile v1 as controller / scout / trust helper.
-4. Add notifications and selected node actions.
-5. Only later consider heavier native mobile intelligence.
+The right mobile story is not:
 
----
+> “Put the whole dense desktop UI onto a phone.”
 
-## 10. Bottom line
+And it is not:
 
-The right native mobile story is not:
-
-> "Run iHomeNerd on your phone."
+> “Make every mobile app host the full brain.”
 
 The right story is:
 
-> "Your phone is the cleanest way to pair with, trust, monitor, and control your home AI cluster."
+> “Use native mobile for pairing, trust, alerts, models, and control — and let node-class Android devices host the full Command Center when they need to act as portable iHN nodes.”

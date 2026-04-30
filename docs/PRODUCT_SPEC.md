@@ -95,6 +95,8 @@ See also:
 - `docs/CURRENT_STATE_AND_NEXT_MOVES_2026-04-24.md`
 - `docs/HOST_ASSIST_VISION_2026-04-24.md`
 - `docs/MOBILE_STRATEGY_2026-04-24.md`
+- `docs/HOME_AND_MOBILE_VISION_ROADMAP_2026-04-24.md`
+- `docs/CLASS_AND_TAKE_HOME_FLOW_2026-04-24.md`
 
 ### 3.2 Capability registry
 
