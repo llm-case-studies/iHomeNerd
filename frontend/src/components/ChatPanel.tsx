@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Send, Bot, User } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, getCapabilityDetail, isCapabilityAvailable, NodeCapabilities } from '../lib/api';
 import { useTranslation } from 'react-i18next';
 
 interface Message {
@@ -10,12 +10,20 @@ interface Message {
   content: string;
 }
 
-export function ChatPanel() {
+interface ChatPanelProps {
+  capabilities?: NodeCapabilities | null;
+}
+
+export function ChatPanel({ capabilities = null }: ChatPanelProps) {
   const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatDetail = getCapabilityDetail(capabilities, 'chat');
+  const chatAvailable = capabilities ? isCapabilityAvailable(capabilities, 'chat') : true;
+  const chatRoute = chatDetail?.backend || chatDetail?.model || 'local route';
+  const chatTier = chatDetail?.tier || 'capability gated';
 
   // Set initial greeting based on language
   useEffect(() => {
@@ -46,7 +54,7 @@ export function ChatPanel() {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !chatAvailable) return;
     
     const newUserMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
     const updatedMessages = [...messages, newUserMsg];
@@ -69,12 +77,13 @@ export function ChatPanel() {
       ]);
     } catch (error) {
       console.error("Chat error:", error);
+      const message = error instanceof Error ? error.message : 'Could not reach the local AI brain.';
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: 'Error: Could not reach the local AI brain.',
+          content: `Error: ${message}`,
         },
       ]);
     } finally {
@@ -126,14 +135,23 @@ export function ChatPanel() {
       </div>
 
       <div className="p-4 pt-0">
+        {capabilities && !chatAvailable && (
+          <div className="mb-3 rounded-xl border border-border-color bg-bg-surface px-4 py-3 text-sm text-text-secondary">
+            Chat is not active on this node yet. Install or enable a local dialogue backend before using this tab.
+          </div>
+        )}
         <div className="relative flex items-center">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={i18n.language === 'zh' ? "问问你的本地大脑任何问题..." : "Ask your local brain anything..."}
-            disabled={isLoading}
+            placeholder={
+              chatAvailable
+                ? (i18n.language === 'zh' ? "问问你的本地大脑任何问题..." : "Ask your local brain anything...")
+                : "Chat is not available on this node yet."
+            }
+            disabled={isLoading || !chatAvailable}
             className="w-full bg-bg-input border border-border-color rounded-xl py-4 pl-5 pr-14 text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
           />
           <button
@@ -145,7 +163,9 @@ export function ChatPanel() {
           </button>
         </div>
         <div className="text-center mt-3 text-xs text-text-secondary font-mono">
-          Model: gemma4:e2b • Tier: medium • Local Inference
+          {chatAvailable
+            ? `Capability: chat • ${chatRoute} • ${chatTier}`
+            : 'Capability: chat • Not installed on this node yet'}
         </div>
       </div>
     </div>
