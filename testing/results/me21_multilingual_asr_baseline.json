@@ -1,0 +1,1002 @@
+[
+  {
+    "locale": "de-DE",
+    "lineId": "de-001",
+    "expected": "Hallo, wie geht es dir heute?",
+    "transcribed": "Hello, we get a steer hunter",
+    "elapsed_s": 0.4,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "de-DE",
+    "lineId": "de-002",
+    "expected": "Guten Morgen.",
+    "transcribed": "Good morning.",
+    "elapsed_s": 0.28,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "de-DE",
+    "lineId": "de-003",
+    "expected": "Wann f\u00e4hrt der Zug in die Innenstadt ab?",
+    "transcribed": "One fair dead soup in the inch that up",
+    "elapsed_s": 0.37,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "de-DE",
+    "lineId": "de-004",
+    "expected": "K\u00f6nnen Sie mir hier in der N\u00e4he ein gutes Restaurant empfehlen?",
+    "transcribed": "Can you see me here in the near and go to restaurant and fill in?",
+    "elapsed_s": 0.4,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "de-DE",
+    "lineId": "de-005",
+    "expected": "Ich habe dar\u00fcber nachgedacht, eine neue Sprache zu lernen, vielleicht Spanisch oder Mandarin, aber ich wei\u00df noch nicht, welche f\u00fcr meine Arbeit n\u00fctzlicher w\u00e4re.",
+    "transcribed": "I have a new experience in the new school, in the old school, and in the old school.",
+    "elapsed_s": 0.58,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "de-DE",
+    "lineId": "de-006",
+    "expected": "Das Wetter an diesem Wochenende sieht perfekt zum Wandern aus, deshalb m\u00f6chte ich am Samstag fr\u00fch in die Berge fahren und am Sonntagabend zur\u00fcckkommen.",
+    "transcribed": "This is where these important indices affect the value, which is the most important stock for the bank and the most important stock for the bank.",
+    "elapsed_s": 0.75,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "de-DE",
+    "lineId": "de-007",
+    "expected": "Eins, zwei, drei, vier, f\u00fcnf, sechs, sieben, acht, neun, zehn.",
+    "transcribed": "1, 2, 3, 4, 5, 6, 7, 8, 9, 10.",
+    "elapsed_s": 0.61,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "de-DE",
+    "lineId": "de-008",
+    "expected": "Ich hei\u00dfe Alex, und meine Freunde hei\u00dfen Maria, Jakob und Sofia.",
+    "transcribed": "Iheisa Alex and my friend Hayes Maria Jakob and Sophia.",
+    "elapsed_s": 0.43,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "de-DE",
+    "lineId": "de-009",
+    "expected": "Heute Morgen bin ich fr\u00fch aus dem Haus gegangen und vor acht Uhr bei der Arbeit angekommen. Nach dem Mittagessen hatte ich noch eine kurze Besprechung mit dem Team.",
+    "transcribed": "Heidi Morgan finished 4th of the year in the House of the United States and was awarded the award by the Albert Anger Common. Nard de Mittach es un hat ich noch eine Kortze Bechprejon mit dem team.",
+    "elapsed_s": 0.82,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "de-DE",
+    "lineId": "de-010",
+    "expected": "Lassen Sie mich kurz pr\u00fcfen: Haben Sie zweiundvierzig Euro oder zweiundf\u00fcnfzig Euro gesagt? Ich m\u00f6chte sicher sein, dass ich das richtig verstanden habe.",
+    "transcribed": "The last thing I can say is that you have to be in a certain area or you have to be in a certain area. Ich m\u00f6chte sicha sein, dass ich das richti hastanten habe.",
+    "elapsed_s": 0.77,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-001",
+    "expected": "Hello, how are you today?",
+    "transcribed": "Hello, how are you today?",
+    "elapsed_s": 0.28,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-002",
+    "expected": "Good morning.",
+    "transcribed": "Good morning",
+    "elapsed_s": 0.2,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-003",
+    "expected": "What time does the train leave for downtown?",
+    "transcribed": "What time does the train leave for downtown?",
+    "elapsed_s": 0.35,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-004",
+    "expected": "Can you recommend a good restaurant nearby?",
+    "transcribed": "Can you recommend a good restaurant nearby?",
+    "elapsed_s": 0.36,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-005",
+    "expected": "I have been thinking about learning a new language, maybe Spanish or Mandarin, but I am not sure which one would be more useful for my career.",
+    "transcribed": "I have been thinking about learning a new language, maybe Spanish or Mandarin, but I am not sure which one would be more useful for my career.",
+    "elapsed_s": 0.72,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-006",
+    "expected": "The weather this weekend looks perfect for hiking, so I am planning to head up to the mountains early Saturday morning and come back by Sunday evening.",
+    "transcribed": "The weather this weekend looks perfect for hiking, so I am planning to head up to the mountains early Saturday morning and come back by Sunday evening.",
+    "elapsed_s": 0.69,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-007",
+    "expected": "One, two, three, four, five, six, seven, eight, nine, ten.",
+    "transcribed": "One, two, three, four, five, six, seven, eight, nine, ten.",
+    "elapsed_s": 0.57,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-008",
+    "expected": "My name is Alex, and my friends are Maria, James, and Priya.",
+    "transcribed": "My name is Alex, and my friends are Maria, James, and Priya.",
+    "elapsed_s": 0.34,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-009",
+    "expected": "The quick brown fox jumps over the lazy dog. The early bird catches the worm, but the second mouse gets the cheese.",
+    "transcribed": "The quick brown fox jumps over the lazy dog. The early bird catches the worm, but the second mouse gets the cheese.",
+    "elapsed_s": 0.64,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "en-US",
+    "lineId": "en-010",
+    "expected": "Okay, so let me check, did you say forty-two dollars or fifty-two dollars? I want to make sure I heard that right.",
+    "transcribed": "Okay, so let me check. Did you say $42 or $52? I want to make sure I heard that right.",
+    "elapsed_s": 0.68,
+    "supported": true,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-001",
+    "expected": "Hola, \u00bfc\u00f3mo est\u00e1s?",
+    "transcribed": "Hola, \u00bfc\u00f3mo est\u00e1s?",
+    "elapsed_s": 1.51,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-002",
+    "expected": "Buenos d\u00edas.",
+    "transcribed": "Buenos d\u00edas.",
+    "elapsed_s": 0.72,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-003",
+    "expected": "\u00bfA qu\u00e9 hora sale el tren para el centro?",
+    "transcribed": "\u00bfA qu\u00e9 hora sale el tren para el centro?",
+    "elapsed_s": 1.78,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-004",
+    "expected": "\u00bfMe puede recomendar un buen restaurante por aqu\u00ed?",
+    "transcribed": "Me puede recomendar un buen restaurante por aqu\u00ed.",
+    "elapsed_s": 1.82,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-005",
+    "expected": "He estado pensando en aprender un nuevo idioma, tal vez franc\u00e9s o alem\u00e1n, pero todav\u00eda no me decido cu\u00e1l ser\u00eda m\u00e1s \u00fatil para mi trabajo.",
+    "transcribed": "He estado pensando en aprender un nuevo idioma, tal vez franc\u00e9s o alem\u00e1n, pero todav\u00eda no me decido cu\u00e1l ser\u00eda m\u00e1s \u00fatil para mi trabajo.",
+    "elapsed_s": 4.89,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-006",
+    "expected": "El clima de este fin de semana parece perfecto para hacer senderismo, as\u00ed que planeo salir el s\u00e1bado temprano y volver el domingo por la tarde.",
+    "transcribed": "El clima de este fin de semana parece perfecto para hacer senderismo, as\u00ed que planeo salir el s\u00e1bado temprano y volver el domingo por la tarde.",
+    "elapsed_s": 5.13,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-007",
+    "expected": "Uno, dos, tres, cuatro, cinco, seis, siete, ocho, nueve, diez.",
+    "transcribed": "\u25811, 2, 3, 4, 5, 6, 7, 8, 9, 10.",
+    "elapsed_s": 3.74,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-008",
+    "expected": "Mi nombre es Alex, y mis amigos son Mar\u00eda, Jaime, y Sof\u00eda.",
+    "transcribed": "Mi nombre es Alex y mis amigos son Mar\u00eda, Jaime y Sof\u00eda.",
+    "elapsed_s": 2.3,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-009",
+    "expected": "En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que viv\u00eda un hidalgo de los de lanza en astillero.",
+    "transcribed": "En un lugar de la mancha, de cuyo nombre no quiero acordarme, no a mucho tiempo que viv\u00eda un hidalgo de los de lanza en astillero.",
+    "elapsed_s": 4.97,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "es-ES",
+    "lineId": "es-010",
+    "expected": "A ver, d\u00e9jame confirmar, \u00bfdijiste cuarenta y dos pesos o cincuenta y dos pesos? Quiero asegurarme de que escuch\u00e9 bien.",
+    "transcribed": "A ver, d\u00e9jame confirmar, dijiste 42 pesos o 52 pesos. Quiero asegurarme de que escuch\u00e9 bien.",
+    "elapsed_s": 4.81,
+    "supported": true,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-001",
+    "expected": "Bonjour, comment allez-vous aujourd'hui ?",
+    "transcribed": null,
+    "elapsed_s": 0,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "HTTP 503"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-002",
+    "expected": "Bonjour.",
+    "transcribed": "Bonjour",
+    "elapsed_s": 0.18,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-003",
+    "expected": "\u00c0 quelle heure part le train pour le centre-ville ?",
+    "transcribed": "Are they going to take the time to enter the city?",
+    "elapsed_s": 0.35,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-004",
+    "expected": "Pouvez-vous me recommander un bon restaurant dans le quartier ?",
+    "transcribed": "For you to come and recommend a good restaurant in the courtyard?",
+    "elapsed_s": 0.37,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-005",
+    "expected": "Je r\u00e9fl\u00e9chis \u00e0 apprendre une nouvelle langue, peut-\u00eatre l'espagnol ou le mandarin, mais je ne sais pas encore laquelle serait la plus utile pour mon travail.",
+    "transcribed": "I reflected to learn a new language, to be the Spanish or the Mandarin language, but I don't know why the one who will be the president for our truth.",
+    "elapsed_s": 0.72,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-006",
+    "expected": "Le temps pr\u00e9vu pour ce week-end semble parfait pour faire de la randonn\u00e9e, alors je pense partir t\u00f4t samedi et rentrer dimanche soir.",
+    "transcribed": "The time is due for this weekend the perfect time to do the round of 9, but I think it's going to be all together and really really fun.",
+    "elapsed_s": 0.67,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-007",
+    "expected": "Un, deux, trois, quatre, cinq, six, sept, huit, neuf, dix.",
+    "transcribed": "1, 2, 3, 4, 5, 6, 7, 8, 9, 10.",
+    "elapsed_s": 0.6,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-008",
+    "expected": "Je m'appelle Alex, et mes amis s'appellent Maria, Jacques et Sofia.",
+    "transcribed": "I'm a Pelle Alex, and my name is Pelle Maria, Jacques Sofia.",
+    "elapsed_s": 0.49,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-009",
+    "expected": "Ce matin, je suis parti t\u00f4t de chez moi et je suis arriv\u00e9 au travail avant huit heures. Apr\u00e8s le d\u00e9jeuner, j'ai encore eu une courte r\u00e9union avec l'\u00e9quipe.",
+    "transcribed": "7. I am part of the path and I am going to revive your adventure. After the day, I am going to show you how to do it.",
+    "elapsed_s": 0.65,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "fr-FR",
+    "lineId": "fr-010",
+    "expected": "Laissez-moi v\u00e9rifier : avez-vous dit quarante-deux euros ou cinquante-deux euros ? Je veux \u00eatre s\u00fbr d'avoir bien entendu.",
+    "transcribed": "The same would be done, but you would say to the two of them, you are in the middle of the hole. I will be back again in the morning.",
+    "elapsed_s": 0.66,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-001",
+    "expected": "Ciao, come stai oggi?",
+    "transcribed": "Ciao, come ester, yodg.",
+    "elapsed_s": 0.23,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-002",
+    "expected": "Buongiorno.",
+    "transcribed": "Bonjourno,",
+    "elapsed_s": 0.25,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-003",
+    "expected": "A che ora parte il treno per il centro?",
+    "transcribed": "Acura parte, el treno peri chentre,",
+    "elapsed_s": 0.23,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-004",
+    "expected": "Pu\u00f2 consigliarmi un buon ristorante qui vicino?",
+    "transcribed": "Poor consigliar mi un bore stramte qui vicino.",
+    "elapsed_s": 0.36,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-005",
+    "expected": "Sto pensando di imparare una nuova lingua, forse lo spagnolo o il mandarino, ma non so ancora quale sarebbe pi\u00f9 utile per il mio lavoro.",
+    "transcribed": "Stopping to impart a new language, because the Spanish or Mandarin are not anchored with the biblical syrup for the new voice.",
+    "elapsed_s": 0.62,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-006",
+    "expected": "Il tempo previsto per questo fine settimana sembra perfetto per fare un'escursione, quindi penso di partire presto sabato e tornare domenica sera.",
+    "transcribed": "The time is promised for this week's week without a perfect perfect excursion, with the pencil of the letter and the sword and the sword, and the sword,",
+    "elapsed_s": 0.76,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-007",
+    "expected": "Uno, due, tre, quattro, cinque, sei, sette, otto, nove, dieci.",
+    "transcribed": "1, 2, 3, 4, 5, 7, 7.",
+    "elapsed_s": 0.55,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-008",
+    "expected": "Mi chiamo Alex, e i miei amici si chiamano Maria, Giacomo e Sofia.",
+    "transcribed": "Mikyamu Alex, and me, I am Michy, si kiamanumariya, Jacumo Isufia.",
+    "elapsed_s": 0.56,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-009",
+    "expected": "Stamattina sono uscito di casa presto e sono arrivato al lavoro prima delle otto. Dopo pranzo abbiamo fatto ancora una breve riunione con il team.",
+    "transcribed": "This machine is a piece of plastic and is a rivet to the bottom of the plate. The dough is a piece of anchored wood with a big rhythm.",
+    "elapsed_s": 0.68,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "it-IT",
+    "lineId": "it-010",
+    "expected": "Mi faccia controllare: ha detto quarantadue euro o cinquantadue euro? Voglio essere sicuro di aver capito bene.",
+    "transcribed": "My father controls me, he has been quarantined in the air, in the air, in the air, he has been a psychologist for a long time.",
+    "elapsed_s": 0.62,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-001",
+    "expected": "\u3053\u3093\u306b\u3061\u306f\u3001\u4eca\u65e5\u306e\u8abf\u5b50\u306f\u3044\u304b\u304c\u3067\u3059\u304b\u3002",
+    "transcribed": "\u3053\u3093\u306b\u3061\u306f\u3001\u30b1\u30d3\u30f3\u306e\u3061\u306f\u3044\u304b\u3089\u3067\u3059\u304b?",
+    "elapsed_s": 0.48,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-002",
+    "expected": "\u304a\u306f\u3088\u3046\u3054\u3056\u3044\u307e\u3059\u3002",
+    "transcribed": "Oh, hi, yoga, sayyimas!",
+    "elapsed_s": 0.27,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-003",
+    "expected": "\u4e2d\u5fc3\u8857\u3078\u884c\u304f\u96fb\u8eca\u306f\u4f55\u6642\u306b\u51fa\u767a\u3057\u307e\u3059\u304b\u3002",
+    "transcribed": "\u5c31\u662f\u5e94\u8be5\u4e5f\u53ef\u96fb\u8eca\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576\u7576",
+    "elapsed_s": 0.84,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-004",
+    "expected": "\u3053\u306e\u8fd1\u304f\u3067\u304a\u3059\u3059\u3081\u306e\u30ec\u30b9\u30c8\u30e9\u30f3\u3092\u6559\u3048\u3066\u3044\u305f\u3060\u3051\u307e\u3059\u304b\u3002",
+    "transcribed": null,
+    "elapsed_s": 0,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "HTTP 503"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-005",
+    "expected": "\u65b0\u3057\u3044\u8a00\u8a9e\u3092\u5b66\u307c\u3046\u3068\u601d\u3063\u3066\u3044\u3066\u3001\u30b9\u30da\u30a4\u30f3\u8a9e\u306b\u3059\u308b\u304b\u4e2d\u56fd\u8a9e\u306b\u3059\u308b\u304b\u8ff7\u3063\u3066\u3044\u307e\u3059\u304c\u3001\u4ed5\u4e8b\u306b\u306f\u3069\u3061\u3089\u304c\u3088\u308a\u5f79\u306b\u7acb\u3064\u306e\u304b\u307e\u3060\u5206\u304b\u308a\u307e\u305b\u3093\u3002",
+    "transcribed": "After the game, Manaboto Moteta, the team's team will be able to play the game. She was born in Dotcheraga, Yoriyakuni, Tatsunoka, Madhavakari, Masser.",
+    "elapsed_s": 0.82,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-006",
+    "expected": "\u4eca\u9031\u672b\u306e\u5929\u6c17\u306f\u30cf\u30a4\u30ad\u30f3\u30b0\u306b\u3074\u3063\u305f\u308a\u305d\u3046\u306a\u306e\u3067\u3001\u571f\u66dc\u65e5\u306e\u671d\u65e9\u304f\u5c71\u3078\u51fa\u304b\u3051\u3066\u3001\u65e5\u66dc\u65e5\u306e\u5915\u65b9\u306b\u623b\u308b\u3064\u3082\u308a\u3067\u3059\u3002",
+    "transcribed": "The consumer's attention is not as much as the price of the pork is. The price of the pork is not as much as the price of the pork is. Nityu will be no younger than him or daughter to Morides.",
+    "elapsed_s": 0.84,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-007",
+    "expected": "\u4e00\u3001\u4e8c\u3001\u4e09\u3001\u56db\u3001\u4e94\u3001\u516d\u3001\u4e03\u3001\u516b\u3001\u4e5d\u3001\u5341\u3002",
+    "transcribed": null,
+    "elapsed_s": 0,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "HTTP 503"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-008",
+    "expected": "\u79c1\u306e\u540d\u524d\u306fAlex\u3067\u3001\u53cb\u3060\u3061\u306fMaria\u3068James\u3068Sofia\u3067\u3059\u3002",
+    "transcribed": null,
+    "elapsed_s": 0,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "HTTP 503"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-009",
+    "expected": "\u4eca\u671d\u306f\u65e9\u304f\u5bb6\u3092\u51fa\u3066\u3001\u516b\u6642\u524d\u306b\u4f1a\u793e\u306b\u7740\u304d\u307e\u3057\u305f\u3002\u663c\u98df\u306e\u3042\u3068\u3001\u30c1\u30fc\u30e0\u3068\u77ed\u3044\u6253\u3061\u5408\u308f\u305b\u3082\u3042\u308a\u307e\u3057\u305f\u3002",
+    "transcribed": "In the case of the Keshavahaya community, the Keshavahaya community is a place where the Keshavahaya community is a place where the Keshavahaya community is a place where the Keshavahaya community is a place where the Keshavahaya community is a place where the Keshavahaya community is a place where the Keshavahaya community is a place where the Keshav",
+    "elapsed_s": 1.2,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ja-JP",
+    "lineId": "ja-010",
+    "expected": "\u78ba\u8a8d\u3055\u305b\u3066\u304f\u3060\u3055\u3044\u3002\u4eca\u304a\u3063\u3057\u3083\u3063\u305f\u306e\u306f\u56db\u5341\u4e8c\u30e6\u30fc\u30ed\u3067\u3059\u304b\u3001\u305d\u308c\u3068\u3082\u4e94\u5341\u4e8c\u30e6\u30fc\u30ed\u3067\u3059\u304b\u3002\u805e\u304d\u9593\u9055\u3044\u304c\u306a\u3044\u304b\u78ba\u304b\u3081\u305f\u3044\u3067\u3059\u3002",
+    "transcribed": "2. The first step is to make a new day. 3. The second step is to make a new day. 4. The second step is to make a new day.",
+    "elapsed_s": 0.85,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-001",
+    "expected": "\uc548\ub155\ud558\uc138\uc694, \uc624\ub298 \uc5b4\ub5a0\uc138\uc694?",
+    "transcribed": null,
+    "elapsed_s": 0,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "HTTP 503"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-002",
+    "expected": "\uc88b\uc740 \uc544\uce68\uc785\ub2c8\ub2e4.",
+    "transcribed": "2.",
+    "elapsed_s": 0.28,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-003",
+    "expected": "\uc2dc\ub0b4\ub85c \uac00\ub294 \uae30\ucc28\ub294 \uba87 \uc2dc\uc5d0 \ucd9c\ubc1c\ud558\ub098\uc694?",
+    "transcribed": "Shinaro ganengi tanin, bioshiye chulbaranayo?",
+    "elapsed_s": 0.45,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-004",
+    "expected": "\uc774 \uadfc\ucc98\uc5d0 \uc88b\uc740 \uc2dd\ub2f9 \ud558\ub098 \ucd94\ucc9c\ud574 \uc8fc\uc2e4 \uc218 \uc788\ub098\uc694?",
+    "transcribed": "You can tell it to uncheck down on that to turn it with your signal.",
+    "elapsed_s": 0.32,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-005",
+    "expected": "\uc0c8\ub85c\uc6b4 \uc5b8\uc5b4\ub97c \ubc30\uc6b0\ub824\uace0 \uc0dd\uac01\ud558\uace0 \uc788\ub294\ub370, \uc2a4\ud398\uc778\uc5b4\uc640 \uc911\uad6d\uc5b4 \uc911\uc5d0\uc11c \uc81c \uc77c\uc5d0 \ub354 \ub3c4\uc6c0\uc774 \ub420 \uc5b8\uc5b4\uac00 \ubb34\uc5c7\uc778\uc9c0 \uc544\uc9c1 \uc798 \ubaa8\ub974\uaca0\uc2b5\ub2c8\ub2e4.",
+    "transcribed": "The main reason for this is that the people who are affected by the virus are the ones who have been affected by the virus. The main reason for this is that the people who are affected by the virus are the ones who have been affected by the virus. I'm going to guess Nida.",
+    "elapsed_s": 0.94,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-006",
+    "expected": "\uc774\ubc88 \uc8fc\ub9d0 \ub0a0\uc528\uac00 \ud558\uc774\ud0b9\ud558\uae30\uc5d0 \ub531 \uc88b\uc744 \uac83 \uac19\uc544\uc11c \ud1a0\uc694\uc77c \uc544\uce68 \uc77c\ucc0d \uc0b0\uc73c\ub85c \ub5a0\ub0ac\ub2e4\uac00 \uc77c\uc694\uc77c \uc800\ub141\uc5d0 \ub3cc\uc544\uc62c \uc0dd\uac01\uc785\ub2c8\ub2e4.",
+    "transcribed": "The most important thing is that the people who are in the world are the ones who are in the world.",
+    "elapsed_s": 0.54,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-007",
+    "expected": "\ud558\ub098, \ub458, \uc14b, \ub137, \ub2e4\uc12f, \uc5ec\uc12f, \uc77c\uacf1, \uc5ec\ub35f, \uc544\ud649, \uc5f4.",
+    "transcribed": "Hannah, Tule, Set, Net, Passot, Yasot, Ilgo, Yadar, Aho, Yar.",
+    "elapsed_s": 0.62,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-008",
+    "expected": "\uc81c \uc774\ub984\uc740 Alex\uc774\uace0, \uc81c \uce5c\uad6c\ub4e4\uc740 Maria, James, \uadf8\ub9ac\uace0 Sofia\uc785\ub2c8\ub2e4.",
+    "transcribed": "Teiraman elixir go, Teirengudaran warrior, Taeemze, Krygo sopiainnida.",
+    "elapsed_s": 0.57,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-009",
+    "expected": "\uc624\ub298 \uc544\uce68\uc5d0\ub294 \uc77c\ucc0d \uc9d1\uc744 \ub098\uc640 \uc5ec\ub35f \uc2dc \uc804\uc5d0 \ud68c\uc0ac\uc5d0 \ub3c4\ucc29\ud588\uc2b5\ub2c8\ub2e4. \uc810\uc2ec \uc2dd\uc0ac \ud6c4\uc5d0\ub294 \ud300\uacfc \uc9e7\uc740 \ud68c\uc758\ub97c \ud588\uc2b5\ub2c8\ub2e4.",
+    "transcribed": "1. The first step is to make a decision to make a decision. 2. The first step is to make a decision to make a decision. Kim Guat-zai-bun-vay-ru-hissnida",
+    "elapsed_s": 0.84,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ko-KR",
+    "lineId": "ko-010",
+    "expected": "\ud655\uc778 \uc880 \ud560\uac8c\uc694. \ubc29\uae08 \uc0ac\uc2ed\uc774 \uc720\ub85c\ub77c\uace0 \ud558\uc168\ub098\uc694, \uc544\ub2c8\uba74 \uc624\uc2ed\uc774 \uc720\ub85c\ub77c\uace0 \ud558\uc168\ub098\uc694? \uc81c\uac00 \uc81c\ub300\ub85c \ub4e4\uc5c8\ub294\uc9c0 \ud655\uc778\ud558\uace0 \uc2f6\uc2b5\ub2c8\ub2e4.",
+    "transcribed": "1. She got a debuted Roninzi, Hakina Goshibsenida.",
+    "elapsed_s": 0.57,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-001",
+    "expected": "Ol\u00e1, como voc\u00ea est\u00e1 hoje?",
+    "transcribed": null,
+    "elapsed_s": 0,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "HTTP 503"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-002",
+    "expected": "Bom dia.",
+    "transcribed": "Don Chia.",
+    "elapsed_s": 0.83,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-003",
+    "expected": "Que horas o trem sai para o centro?",
+    "transcribed": "que os har\u00e9is de la trinza y para el centro.",
+    "elapsed_s": 2.02,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-004",
+    "expected": "Voc\u00ea pode me recomendar um bom restaurante por aqui?",
+    "transcribed": "\u00bfVos sep\u00f3 a Jimige comendar un bonje stauronche por aqu\u00ed?",
+    "elapsed_s": 2.72,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-005",
+    "expected": "Tenho pensado em aprender um novo idioma, talvez espanhol ou mandarim, mas ainda n\u00e3o sei qual seria mais \u00fatil para o meu trabalho.",
+    "transcribed": "Tengo pensado en aprender un nuevo idioma. Tal vez espa\u00f1ol o mandar\u00edn. M\u00e1s all\u00e1 de lo que sea, cual ser\u00eda m\u00e1s ducho para un otro palo.",
+    "elapsed_s": 5.12,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-006",
+    "expected": "A previs\u00e3o para este fim de semana parece perfeita para fazer trilha, ent\u00e3o estou pensando em sair cedo no s\u00e1bado e voltar no domingo \u00e0 noite.",
+    "transcribed": null,
+    "elapsed_s": 0,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "HTTP 503"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-007",
+    "expected": "Um, dois, tr\u00eas, quatro, cinco, seis, sete, oito, nove, dez.",
+    "transcribed": "Un, dos, tres, cuatro, cinco, seis, sech, hoy t\u00fa. No olvides.",
+    "elapsed_s": 3.17,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-008",
+    "expected": "Meu nome \u00e9 Alex, e meus amigos s\u00e3o Maria, Tiago e Sofia.",
+    "transcribed": "Mi nombre es Alex, y nos da amigos a Mar\u00eda, Chiavo y Sof\u00eda.",
+    "elapsed_s": 2.61,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-009",
+    "expected": "Hoje de manh\u00e3 sa\u00ed de casa cedo e cheguei ao trabalho antes das oito. Depois do almo\u00e7o, tive uma reuni\u00e3o curta com a equipe.",
+    "transcribed": "Hoy, si no sabes de qu\u00e9 vas a hacer, te voy a decir otra vez lo antes de todo. Despu\u00e9s, vamos a hacerlo. Si no hay un ni un culto con el kipi.",
+    "elapsed_s": 5.76,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "pt-BR",
+    "lineId": "pt-010",
+    "expected": "Deixe-me confirmar: voc\u00ea disse quarenta e dois euros ou cinquenta e dois euros? Quero ter certeza de que ouvi corretamente.",
+    "transcribed": "Daisy me confirmar\u00e1. Voce jizicuarinte y doiceorus dos cincuenta y doiceorus. Quiarotercerte es de jikiooficojatan.",
+    "elapsed_s": 5.68,
+    "supported": false,
+    "backend": "moonshine-base-es",
+    "status": "ok"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-001",
+    "expected": "\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u043a\u0430\u043a \u0432\u044b \u0441\u0435\u0433\u043e\u0434\u043d\u044f?",
+    "transcribed": null,
+    "elapsed_s": 0,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "HTTP 503"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-002",
+    "expected": "\u0414\u043e\u0431\u0440\u043e\u0435 \u0443\u0442\u0440\u043e.",
+    "transcribed": "Dobre utra",
+    "elapsed_s": 0.25,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-003",
+    "expected": "\u0412\u043e \u0441\u043a\u043e\u043b\u044c\u043a\u043e \u043f\u043e\u0435\u0437\u0434 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u0442\u0441\u044f \u0432 \u0446\u0435\u043d\u0442\u0440?",
+    "transcribed": "Vascul Kapoor is the \"Proviliates of Center\".",
+    "elapsed_s": 0.3,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-004",
+    "expected": "\u0412\u044b \u043c\u043e\u0436\u0435\u0442\u0435 \u043f\u043e\u0440\u0435\u043a\u043e\u043c\u0435\u043d\u0434\u043e\u0432\u0430\u0442\u044c \u0445\u043e\u0440\u043e\u0448\u0438\u0439 \u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d \u043f\u043e\u0431\u043b\u0438\u0437\u043e\u0441\u0442\u0438?",
+    "transcribed": "We must be recommending a high-rise restaurant publicity.",
+    "elapsed_s": 0.44,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-005",
+    "expected": "\u042f \u043f\u043e\u0434\u0443\u043c\u044b\u0432\u0430\u044e \u0432\u044b\u0443\u0447\u0438\u0442\u044c \u043d\u043e\u0432\u044b\u0439 \u044f\u0437\u044b\u043a, \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u0438\u0441\u043f\u0430\u043d\u0441\u043a\u0438\u0439 \u0438\u043b\u0438 \u043a\u0438\u0442\u0430\u0439\u0441\u043a\u0438\u0439, \u043d\u043e \u043f\u043e\u043a\u0430 \u043d\u0435 \u0437\u043d\u0430\u044e, \u043a\u0430\u043a\u043e\u0439 \u0431\u0443\u0434\u0435\u0442 \u043f\u043e\u043b\u0435\u0437\u043d\u0435\u0435 \u0434\u043b\u044f \u043c\u043e\u0435\u0439 \u0440\u0430\u0431\u043e\u0442\u044b.",
+    "transcribed": "I was able to see the music, music and music, but I didn't know how to do it, but I was able to do it.",
+    "elapsed_s": 0.63,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-006",
+    "expected": "\u041d\u0430 \u044d\u0442\u0438\u0445 \u0432\u044b\u0445\u043e\u0434\u043d\u044b\u0445 \u043e\u0431\u0435\u0449\u0430\u044e\u0442 \u043e\u0442\u043b\u0438\u0447\u043d\u0443\u044e \u043f\u043e\u0433\u043e\u0434\u0443 \u0434\u043b\u044f \u043f\u043e\u0445\u043e\u0434\u0430, \u043f\u043e\u044d\u0442\u043e\u043c\u0443 \u044f \u043f\u043b\u0430\u043d\u0438\u0440\u0443\u044e \u0440\u0430\u043d\u043e \u0443\u0442\u0440\u043e\u043c \u0432 \u0441\u0443\u0431\u0431\u043e\u0442\u0443 \u043f\u043e\u0435\u0445\u0430\u0442\u044c \u0432 \u0433\u043e\u0440\u044b \u0438 \u0432\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u0432\u043e\u0441\u043a\u0440\u0435\u0441\u0435\u043d\u044c\u0435 \u0432\u0435\u0447\u0435\u0440\u043e\u043c.",
+    "transcribed": "The night was full of joy and joy in the morning, and the night was full of joy and joy and joy in the evening. The night was full of joy and joy in the evening.",
+    "elapsed_s": 0.72,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-007",
+    "expected": "\u041e\u0434\u0438\u043d, \u0434\u0432\u0430, \u0442\u0440\u0438, \u0447\u0435\u0442\u044b\u0440\u0435, \u043f\u044f\u0442\u044c, \u0448\u0435\u0441\u0442\u044c, \u0441\u0435\u043c\u044c, \u0432\u043e\u0441\u0435\u043c\u044c, \u0434\u0435\u0432\u044f\u0442\u044c, \u0434\u0435\u0441\u044f\u0442\u044c.",
+    "transcribed": "Adyen, Dwa, Tree, Chittiri, Piet, Shest, Sim, Wosim, David, Desit.",
+    "elapsed_s": 0.63,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-008",
+    "expected": "\u041c\u0435\u043d\u044f \u0437\u043e\u0432\u0443\u0442 \u0410\u043b\u0435\u043a\u0441, \u0430 \u043c\u043e\u0438\u0445 \u0434\u0440\u0443\u0437\u0435\u0439 \u0437\u043e\u0432\u0443\u0442 \u041c\u0430\u0440\u0438\u044f, \u042f\u043a\u043e\u0432 \u0438 \u0421\u043e\u0444\u0438\u044f.",
+    "transcribed": "Minya Zavut-Alex, amayf-druzeza-vut-marie, yakaf-isafiya.",
+    "elapsed_s": 0.5,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-009",
+    "expected": "\u0421\u0435\u0433\u043e\u0434\u043d\u044f \u0443\u0442\u0440\u043e\u043c \u044f \u0432\u044b\u0448\u0435\u043b \u0438\u0437 \u0434\u043e\u043c\u0430 \u0440\u0430\u043d\u043e \u0438 \u043f\u0440\u0438\u0435\u0445\u0430\u043b \u043d\u0430 \u0440\u0430\u0431\u043e\u0442\u0443 \u0434\u043e \u0432\u043e\u0441\u044c\u043c\u0438. \u041f\u043e\u0441\u043b\u0435 \u043e\u0431\u0435\u0434\u0430 \u0443 \u043d\u0430\u0441 \u0431\u044b\u043b\u0430 \u0435\u0449\u0451 \u043a\u043e\u0440\u043e\u0442\u043a\u0430\u044f \u0432\u0441\u0442\u0440\u0435\u0447\u0430 \u0441 \u043a\u043e\u043c\u0430\u043d\u0434\u043e\u0439.",
+    "transcribed": "It was a very beautiful summer and a beautiful summer. It was a beautiful summer and a beautiful summer. It was a beautiful summer and a beautiful summer. It was a beautiful summer and a beautiful summer. Monday.",
+    "elapsed_s": 0.85,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "ru-RU",
+    "lineId": "ru-010",
+    "expected": "\u0414\u0430\u0432\u0430\u0439\u0442\u0435 \u0443\u0442\u043e\u0447\u043d\u044e: \u0432\u044b \u0441\u043a\u0430\u0437\u0430\u043b\u0438 \u0441\u043e\u0440\u043e\u043a \u0434\u0432\u0430 \u0435\u0432\u0440\u043e \u0438\u043b\u0438 \u043f\u044f\u0442\u044c\u0434\u0435\u0441\u044f\u0442 \u0434\u0432\u0430 \u0435\u0432\u0440\u043e? \u042f \u0445\u043e\u0447\u0443 \u0443\u0431\u0435\u0434\u0438\u0442\u044c\u0441\u044f, \u0447\u0442\u043e \u0440\u0430\u0441\u0441\u043b\u044b\u0448\u0430\u043b \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e.",
+    "transcribed": "It was very exciting, because it was the 21st of February and the 21st of February. I had a little bit of time, but I was really proud of it.",
+    "elapsed_s": 0.9,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-001",
+    "expected": "\u4f60\u597d\uff0c\u4f60\u4eca\u5929\u600e\u4e48\u6837\uff1f",
+    "transcribed": "\u4f60\u597d,\u5df2\u7d93\u8ddf\u627e\u5462?",
+    "elapsed_s": 0.28,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-002",
+    "expected": "\u65e9\u4e0a\u597d\u3002",
+    "transcribed": "\u5c0f\u5c0f\u597d",
+    "elapsed_s": 0.22,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-003",
+    "expected": "\u53bb\u5e02\u4e2d\u5fc3\u7684\u706b\u8f66\u51e0\u70b9\u53d1\u8f66\uff1f",
+    "transcribed": "She is the only one who has been able to do it.",
+    "elapsed_s": 0.34,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-004",
+    "expected": "\u4f60\u80fd\u7ed9\u6211\u63a8\u8350\u8fd9\u9644\u8fd1\u4e00\u5bb6\u597d\u7684\u9910\u9986\u5417\uff1f",
+    "transcribed": "\u4f60\u80fd\u7ed9\u6211\u5011\u5462,\u5c31affoot\u4f60\u4e00\u5bb6\u597d\u7684\u5f3a\u6996\u5462? \u4f60\u80fd\u7ed9\u6211\u5011\u500b\u5f3a\u6996\u5462?",
+    "elapsed_s": 0.6,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-005",
+    "expected": "\u6211\u4e00\u76f4\u5728\u60f3\u5b66\u4e00\u95e8\u65b0\u7684\u8bed\u8a00\uff0c\u4e5f\u8bb8\u662f\u897f\u73ed\u7259\u8bed\u6216\u8005\u4e2d\u6587\uff0c\u4f46\u6211\u8fd8\u4e0d\u786e\u5b9a\u54ea\u4e00\u79cd\u5bf9\u6211\u7684\u5de5\u4f5c\u66f4\u6709\u7528\u3002",
+    "transcribed": "\u6211\u4e5f\u5c31\u5728\u60f3\u662f\u4e00\u500b\u65b0\u7684\u4e00\u500b\u4e5f\u4e5f\u662f\u662f\u662f\u4ec0\u9ebc\u72d7\u6216\u8005\u4e2d\u6587\u5230\u6211\u8fd8\u4e0d\u505a\u904e\u9ebc\u3002 \u6211\u4e5f\u662f\u4ec0\u9ebc\u72d7\u3002 \u6211\u4e5f\u662f\u4ec0\u9ebc\u72d7\u3002 \u6211\u4e5f\u662f\u4ec0\u9ebc\u72d7 \u90a3\u4e00\u79cd\u5bf9\u6211\u7684\u5de5\u4f5c\u500b\u6709\u7528\u3002 \u90a3\u4e00\u79cd\u5bf9\u6211\u7684\u5de5\u4f5c\u500b\u6709\u7528\u3002 \u90a3\u4e00\u79cd",
+    "elapsed_s": 1.43,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-006",
+    "expected": "\u8fd9\u5468\u672b\u7684\u5929\u6c14\u770b\u8d77\u6765\u5f88\u9002\u5408\u53bb\u5f92\u6b65\uff0c\u6240\u4ee5\u6211\u6253\u7b97\u661f\u671f\u516d\u4e00\u65e9\u51fa\u53d1\u53bb\u5c71\u91cc\uff0c\u661f\u671f\u5929\u665a\u4e0a\u518d\u56de\u6765\u3002",
+    "transcribed": "The number of people who have been infected with COVID-19 has increased by 20%. The number of people who have been infected with COVID-19 has increased by 20%. Since it's a very short time,",
+    "elapsed_s": 0.85,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-007",
+    "expected": "\u4e00\uff0c\u4e8c\uff0c\u4e09\uff0c\u56db\uff0c\u4e94\uff0c\u516d\uff0c\u4e03\uff0c\u516b\uff0c\u4e5d\uff0c\u5341\u3002",
+    "transcribed": null,
+    "elapsed_s": 0,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "HTTP 503"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-008",
+    "expected": "\u6211\u53ebAlex\uff0c\u6211\u7684\u670b\u53cb\u53eb\u739b\u4e3d\u4e9a\u3001\u8a79\u59c6\u65af\u548c\u7d22\u83f2\u4e9a\u3002",
+    "transcribed": "With your Alex, we'll depend on your Malia, Jammu, Su, who's Sofia.",
+    "elapsed_s": 0.56,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-009",
+    "expected": "\u4eca\u5929\u65e9\u4e0a\u6211\u5f88\u65e9\u5c31\u51fa\u95e8\u4e86\uff0c\u516b\u70b9\u524d\u5230\u4e86\u516c\u53f8\u3002\u5348\u996d\u4ee5\u540e\uff0c\u6211\u4eec\u8fd8\u5f00\u4e86\u4e00\u4e2a\u7b80\u77ed\u7684\u56e2\u961f\u4f1a\u8bae\u3002",
+    "transcribed": "\u4eca\u5929\u627e\u4e0b,\u6211\u5f88\u627e\u5c31\u51fa\u51b7\u4e86,\u628a\u5929\u627e\u5230\u4e86\u516c\u53f8\u3002 \u6211\u5feb\u4e00\u53e3,\u6211\u4eec\u8fd8\u53ef\u4ee5\u5f97\u5929\u7684\u5f88\u7684\u5f88\u7684\u5feb\u4e50\u3002 \u6211\u4eec\u6765\u5f88\u597d\u5403\u3002 \u4eca\u5929\u627e\u5230\u4e86\u516c\u53f8\u3002 \u4eca\u5929\u627e\u5230\u4e86\u516c\u53f8\u3002 \u4eca\u5929\u627e\u5230\u4e86\u516c\u53f8\u3002 \u4eca\u5929",
+    "elapsed_s": 1.45,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  },
+  {
+    "locale": "zh-CN",
+    "lineId": "zh-010",
+    "expected": "\u6211\u786e\u8ba4\u4e00\u4e0b\uff1a\u4f60\u521a\u624d\u8bf4\u7684\u662f\u56db\u5341\u4e8c\u6b27\u5143\u8fd8\u662f\u4e94\u5341\u4e8c\u6b27\u5143\uff1f\u6211\u60f3\u786e\u4fdd\u81ea\u5df1\u542c\u5bf9\u4e86\u3002",
+    "transcribed": "\u6211\u5011\u89c9\u4eba\u4e00\u4e0b,\u4f60\u5011\u5728\u8ba9\u7684\u4e8b\u5b9e\u5c0f\u4eba,\u8fd8\u662f\u6211\u5011\u89c9\u4eba\u3002 \u6211\u60f3\u53bbAbout \u81ea\u5df1\u5047\u5bf9\u4e86\u3002 \u6211\u60f3\u53bbAbout \u81ea\u5df1\u5047\u5bf9\u4e86\u3002 \u6211\u60f3\u53bbAbout \u81ea\u5df1\u5047\u5bf9\u4e86\u3002 \u6211\u60f3\u53bbAbout \u81ea\u5df1\u5047\u5bf9\u4e86\u3002 \u6211\u60f3",
+    "elapsed_s": 1.29,
+    "supported": false,
+    "backend": "moonshine-base-en",
+    "status": "ok"
+  }
+]
