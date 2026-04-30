@@ -380,3 +380,51 @@ The next set of problems are not mostly model problems. They are:
 - user-facing recovery flows
 
 That is a good sign. It means the architecture is now colliding with real home-systems concerns.
+
+---
+
+## 8. Testing Status (2026-04-30)
+
+### 8.1 Contract tests deployed (`wip/testing`)
+
+| File | Tests | Covers |
+|------|-------|--------|
+| `backend/tests/test_contract_api.py` | 32 | `/health`, `/discover`, `/capabilities`, `/system/stats`, root, 404, STT tier asserts (7) |
+| `backend/tests/test_bootstrap_routes.py` | 13 | `:17778 /setup/ca.crt`, `/setup/trust-status` |
+| `backend/tests/test_persistence_api.py` | 71 | PronunCo persistence full CRUD |
+| `testing/cases/talk-ui-check.spec.ts` | 3 | Playwright smoke for ME-21 Talk UI |
+
+Run: `pytest backend/tests/ -v` against any node via `IHN_BASE_URL` / `IHN_BOOTSTRAP_URL`.
+
+### 8.2 Per-platform test results
+
+| Platform | Contract | Bootstrap | Tier | Notes |
+|----------|----------|-----------|------|-------|
+| **Python** (local) | 25/25 | 13/13 | `transcription` | Persistence 71/71 |
+| **ME-21** (Android) | 25/25 | 0/13 | `transcription` | Bootstrap port up, just URL config issue |
+| **iPhone 12 PM** (iOS) | 34/39 | 12/13 | `parallel` | 5× system/stats 404 (not implemented) |
+
+### 8.3 Fixture packs
+
+| Pack | Clips | Locales | Location |
+|------|-------|---------|----------|
+| macOS TTS | 20 | en-US, es-ES | `testing/fixtures/audio/` |
+| Azure TTS | 100 | 10 locales | `testing/fixtures/audio/multilingual/` |
+
+### 8.4 Key findings
+
+- **7 contract gaps** between Python/Android documented at `testing/results/CROSS_PLATFORM_CONTRACT_FINDINGS_2026-04-28.md`
+- **iPhone TLS + bootstrap working** (was `SSL_ERROR_SYSCALL`, now 33/38 without system/stats)
+- **ME-21 ASR routing** validates: EN 10/10, ES 10/10 (Azure fixtures), 91/100 total
+- **Azure TTS quality** dramatically better than macOS TTS for Spanish ASR
+- **Tier contract** in place: `single|parallel|whisper|transcription|tts` — all asserts pass cross-platform
+- **Whisper warmup** blocked: tier stays `parallel` after toggle (app rebuild pending)
+
+### 8.5 Blockers for next session
+
+| Blocker | Owner | What |
+|---------|-------|------|
+| iPhone system/stats endpoint | Claude | 5/45 tests fail on this — last missing endpoint |
+| Whisper tier flip | Claude | `WhisperBundle.setReady(true)` called, tier stays `parallel` on toggle — app rebuild needed |
+| iPhone ASR REST endpoint | Claude | No HTTP audio injection for iPhone ASR baseline |
+| Python backend on Linux | Codex | Local backend crashes on start — avahi/DNS-related |
