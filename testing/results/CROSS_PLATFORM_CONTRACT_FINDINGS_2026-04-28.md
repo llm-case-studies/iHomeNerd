@@ -147,31 +147,33 @@ IHN_BASE_URL=https://192.168.0.246:17777 IHN_BOOTSTRAP_URL=http://192.168.0.246:
 
 ---
 
-## 6. iPhone 12 Pro Max — not yet contract-capable
+## 6. iPhone 12 Pro Max — 33/38, rapid progress
 
-**Probe date:** 2026-04-28
+**Probe dates:** 2026-04-28 (two sweeps, ~4 hours apart)
 **IP:** `192.168.0.220`
 
-| Port | Status |
-|---|---|
-| HTTPS `:17777` | TCP connects, Client Hello sent, `SSL_ERROR_SYSCALL` — TLS handshake fails |
-| HTTP `:17778` | Connection refused — no bootstrap listener |
+| Sweep | HTTPS :17777 | HTTP :17778 | Tests passed |
+|-------|-------------|-------------|-------------|
+| First | TCP connects, TLS `SSL_ERROR_SYSCALL` | Connection refused | 0/38 |
+| **Now** | TLS handshake works, health + discover + capabilities live | ca.crt + trust-status live | **33/38** |
 
-Full contract suite (38 tests): all `ConnectError` — none reachable.
+**What's working (33/38 tests):**
+- `GET /health` — full contract: `product`, `version` ("0.1.0-dev-ios"), `hostname` ("iphone"), `ok`, `status`, `providers` (["ios_local"]), `models` ({}), `binding`, `port`, `network_ips`
+- `GET /discover` — full contract: `role` ("brain"), `os` ("ios"), `arch` ("arm64"), `protocol`, `port`, `ram_bytes` (~5.9 GB), `suggested_roles` (["controller", "travel-node-candidate"]), `strengths`, `network_ips`
+- `GET /capabilities` — correct JSON structure with `_detail`, flat boolean map. All capabilities currently `false` (no models loaded — expected for early iOS)
+- `GET /setup/ca.crt` — 200, valid PEM, self-signed, CA:TRUE
+- `GET /setup/trust-status` — 200, `status: "trusted"`, `homeCa.present`, `serverCert.present`, includes `product` and `version` (better than ME-21 which omits them)
+- Root `/` — responds
+- 404 behaviour — correct
 
-This matches the prior probe verdict in
-`mobile/testing/results/IPHONE_12PM_FIRST_LAN_SERVING_PROBE_2026-04-28.md`:
-"advertising-only." The iPhone advertises `_ihomenerd._tcp` via Bonjour but
-does not yet complete a TLS handshake or serve any HTTP/HTTPS routes.
+**What's missing (5/38 tests):**
+- `GET /system/stats` — returns 404 (not yet implemented)
 
-**What's needed to clear the bar:**
-1. Fix TLS handshake (`SSL_ERROR_SYSCALL` — likely cert/key mismatch or missing server cert)
-2. Expose a Home-CA-backed leaf cert (not per-node self-signed)
-3. Serve `/health`, `/capabilities` endpoints
-4. Host HTTP bootstrap on `:17778` with at least `/setup/ca.crt`
-
-The test suite is ready — once TLS handshake works, `pytest backend/tests/ -v`
-against `https://192.168.0.220:17777` will immediately reveal contract gaps.
+**iPhone contract quality notes:**
+- `_detail` includes `hostname` at both top level AND `node_profile` — best of both Python/Android patterns
+- `trust-status` includes `product` + `version` — Android should match this
+- `discover` omits `gpu` field (not None, just absent) — acceptable for mobile
+- `discover` omits `quality_profiles` — same as Python in non-LAN mode
 
 ---
 
