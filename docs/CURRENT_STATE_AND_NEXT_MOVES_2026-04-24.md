@@ -79,6 +79,44 @@ The home cluster model is now grounded enough to talk about real roles:
 
 The misleading "every target shows MSI's RTX" behavior has been fixed.
 
+### 2.6 Android travel-node discovery is now real
+
+The Motorola Edge 2021 is now functioning as a real LAN-discoverable Android node:
+- serves setup on `:17778` and trusted runtime on `:17777` over Wi-Fi without USB forwarding
+- advertises `_ihomenerd._tcp` over mDNS / Avahi
+- is found by the shared iHomeNerd Bridge LAN scan
+- passes the extension's `Test Connection` flow
+
+That is a meaningful milestone because it proves the Android node is no longer just a local-shell demo. It is visible to the browser-side integration path on the home network.
+
+One nuance became clear immediately: Android DNS-SD service advertisement does not automatically give us a stable browser-resolvable friendly `.local` hostname. For Android travel nodes, the extension should treat the discovered IP as the canonical transport address and treat hostnames as labels unless resolution is proven.
+
+The Android code path has also moved past the placeholder web page: the app now packages the real built Command Center assets from `backend/app/static` and the Android HTTPS runtime serves those bundled assets on `:17777`. The remaining work there is live-device verification and then replacing mock endpoint behavior with honest capability-gated Android responses.
+
+That packaging change has now been smoke-tested on the Motorola itself: after reinstall, the Android foreground runtime comes up, both `17777` and `17778` are listening, and the device-local setup endpoint responds with valid trust/cert metadata. The remaining uncertainty is host-side network reachability from the development shell, not Android startup.
+
+That verification gap is now closed from the user side: the Motorola is visibly serving the real Command Center in the browser at `https://192.168.0.246:17777`. The frontend has also been tightened so Android-hosted mode stops pretending missing model backends exist. `Chat`, `Talk`, and `Translate` now use the node capability map and show capability-gated copy instead of fake Gemma/Whisper/Kokoro labels when those backends are not installed.
+
+That milestone has now advanced one step further: the Motorola has a real local Android TTS backend. Over live HTTPS, `/capabilities` reports `synthesize_speech: true` with `backend: android_tts_service`, `/v1/voices` returns the Android voice inventory, and `/v1/synthesize-speech` returns real `audio/wav` bytes.
+
+That leaves the next Android milestone very concrete:
+- keep the real hosted UI
+- keep the honest capability gating
+- keep Android TTS as the first working local speech backend
+- add real ASR next
+- then add a real local dialogue backend
+
+The Motorola now also reports live node-load metrics to the browser and supports browser-side voice selection for Android TTS. That gives us a factual baseline for judging mobile speech cost before we add ASR:
+- idle app CPU / memory / thermal status are visible in `System`
+- last TTS duration, output size, voice, and language are recorded
+- `Talk` can now audition a chosen Android voice instead of only auto-selecting one
+
+That ASR step is now in motion too. The Motorola now exposes a real `POST /v1/transcribe-audio` endpoint backed by Android speech recognition, and the browser `Talk` panel switches to a JSON/base64 upload path for Android-hosted ASR instead of pretending the desktop multipart Whisper flow exists everywhere. The first loopback probe was intentionally simple: synthesize `Testing local speech recognition on iHomeNerd.` on the phone, post that WAV back into the ASR endpoint, and inspect the returned transcript. The result came back as `The school`, which is imperfect but important. It proves the upload path, recognizer handoff, and response plumbing are real. The remaining work has shifted from plumbing to quality measurement:
+- browser mic capture quality from laptop and iPhone
+- first-transcript latency
+- transcript accuracy across a short PronunCo phrase set
+- whether strict on-device recognition can be enabled on this device later, instead of the current offline-preferred recognizer fallback
+
 Current behavior:
 - local node scan -> local real hardware probe
 - remote iHN node scan -> uses that remote node's own `/discover` telemetry
@@ -283,6 +321,39 @@ Native mobile should begin as:
 not as:
 - the place where heavy local inference runs
 
+### 5.7 Validate the spare-hardware ladder
+
+This should become an explicit product and ecosystem workstream, not just ad-hoc tinkering.
+
+Goal:
+- show that free OSS iHN can give old household hardware a real role
+- map tested hardware to the apps it can realistically support
+- keep cloud AI as an optional deeper-insight layer, not the entry requirement
+
+Prerequisites:
+- iHN install/update path is clean enough to repeat on multiple targets
+- Android portable-node networking works over real LAN / hotspot without USB dependency
+- deploy/update function is streamlined enough for repeatable tests on old laptops and desktops
+- build/version visibility is clear enough that device results map to a real revision
+
+Validation ladder:
+1. Make the Motorola Edge 2021 serve both UI and API cleanly over LAN / hotspot.
+2. Try older Android devices against the current iHN implementation and record what role each can actually fill.
+3. Streamline deploy/update and test it on older machines such as `Acer-HL`.
+4. Revive the aging gaming rig with the `24 GB` GPU tier and validate heavier local workloads on it.
+5. Turn the results into a compatibility table with ecosystem-fit labels such as `iHN Core`, `On-My-Watch`, `EdgeKite`, `PronunCo`, `Tax`, and `iMedisys`.
+
+Current Android proof point:
+- `M-E-2021` now serves the real Command Center over `https://:17777`
+- Android local TTS works from Dell and iPhone clients
+- Android local Sherpa ONNX Moonshine ASR now works for `en-US` and `es-ES`
+- `/system/stats` exposes real ASR/TTS performance metrics for browser-visible benchmarking
+
+Why this matters:
+- it creates an honest adoption story around spare hardware
+- it gives vertical apps a factual hardware-fit story
+- it supports free core plus paid convenience / premium-app layers without weakening the local-first position
+
 ---
 
 ## 6. Practical recommended order
@@ -291,7 +362,9 @@ not as:
 2. Host-assist for LAN naming and trust health.
 3. SSH Doctor and key-bootstrap flow.
 4. Host-assisted remote hardware preflight for non-iHN devices.
-5. Native mobile v1 as a household controller.
+5. Android portable-node networking that serves real UI and API over hotspot / LAN.
+6. Spare-hardware validation ladder across old Androids, old PCs, and the 24 GB GPU rig.
+7. Native mobile v1 as a household controller.
 
 ---
 
