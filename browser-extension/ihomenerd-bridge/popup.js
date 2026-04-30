@@ -51,6 +51,82 @@ function normalizeBaseUrl(value) {
   return String(value || '').trim().replace(/\/$/, '')
 }
 
+function isLoopbackUrl(baseUrl) {
+  try {
+    const url = new URL(normalizeBaseUrl(baseUrl))
+    return url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+  } catch {
+    return false
+  }
+}
+
+function portFor(baseUrl) {
+  try {
+    const url = new URL(normalizeBaseUrl(baseUrl))
+    return url.port || (url.protocol === 'https:' ? '443' : '80')
+  } catch {
+    return ''
+  }
+}
+
+function isSetupUrl(baseUrl) {
+  return portFor(baseUrl) === '17778'
+}
+
+function preferredLanBrain() {
+  const candidates = discoveredBrains.filter(brain => !isLoopbackUrl(brain.url))
+  if (candidates.length === 0) return null
+  const score = (brain) => {
+    const url = normalizeBaseUrl(brain.url)
+    let points = 0
+    if (url.startsWith('https://') && portFor(url) === '17777') points += 400
+    else if (url.startsWith('http://') && portFor(url) === '17777') points += 300
+    else if (isSetupUrl(url)) points += 100
+    if (brain.ollama) points += 40
+    if (Array.isArray(brain.models)) points += Math.min(brain.models.length, 20)
+    return points
+  }
+  return candidates.sort((left, right) => score(right) - score(left))[0]
+}
+
+function renderProbeSuccess(result) {
+  const body = result.body || {}
+  const modelNames = Array.isArray(body.models)
+    ? body.models
+    : body.models && typeof body.models === 'object'
+      ? Object.keys(body.models)
+      : []
+  const lines = [
+    `Connected to ${body.product || 'iHomeNerd'} v${body.version || '?'}`,
+    `Ollama: ${body.ollama ? 'ready' : 'not running'}`,
+  ]
+  if (modelNames.length > 0) {
+    lines.push(`Models: ${modelNames.join(', ')}`)
+  }
+  if (body.hostname) {
+    lines.push(`Host: ${body.hostname}`)
+  }
+  testResult.className = 'status-box status-ok'
+  testResult.textContent = lines.join('\n')
+}
+
+async function autoSelectBrain(brain, reasonMessage) {
+  if (!brain || !brain.url) return false
+  try {
+    await sendBridge({
+      kind: 'ihomenerd-bridge/select-brain',
+      url: brain.url,
+    })
+    selectedBrainUrl = brain.url
+    renderActiveBrain(brain)
+    renderBrainList()
+    if (reasonMessage) showDiag('warn', reasonMessage)
+    return true
+  } catch {
+    return false
+  }
+}
+
 function permissionPatternFor(baseUrl) {
   const url = new URL(normalizeBaseUrl(baseUrl))
   return `${url.protocol}//${url.host}/*`
@@ -368,28 +444,83 @@ async function testConnection() {
     })
 
     if (result.ok) {
-      const body = result.body || {}
-      const lines = [
-        `Connected to ${body.product || 'iHomeNerd'} v${body.version || '?'}`,
-        `Ollama: ${body.ollama ? 'ready' : 'not running'}`,
-      ]
-      if (body.models && Object.keys(body.models).length > 0) {
-        lines.push(`Models: ${Object.keys(body.models).join(', ')}`)
-      }
-      if (body.hostname) {
-        lines.push(`Host: ${body.hostname}`)
-      }
-      testResult.className = 'status-box status-ok'
-      testResult.textContent = lines.join('\n')
+      renderProbeSuccess(result)
     } else {
       testResult.className = 'status-box status-err'
       testResult.textContent = `Brain responded with error (${result.status})\n${JSON.stringify(result.body, null, 2)}`
     }
   } catch (err) {
-    testResult.className = 'status-box status-err'
-    testResult.textContent = err.message
+    const fallback = preferredLanBrain()
+    if (selectedBrainUrl && isLoopbackUrl(selectedBrainUrl) && fallback) {
+      const switched = await autoSelectBrain(
+        fallback,
+        `Dead loopback gateway was replaced with ${fallback.hostname || fallback.url}.`
+      )
+      if (switched) {
+        try {
+          const retry = await sendBridge({
+            kind: 'ihomenerd-bridge/probe',
+            path: '/health',
+            timeoutMs: 5000,
+          })
+          if (retry.ok) {
+            renderProbeSuccess(retry)
+            return
+          }
+        } catch {
+          // fall through to the error display below
+        }
+      }
+      testResult.className = 'status-box status-err'
+      testResult.textContent = `${err.message}\nDead loopback gateway detected. Try "${fallback.hostname || fallback.url}" instead.`
+    } else {
+      testResult.className = 'status-box status-err'
+      testResult.textContent = err.message
+    }
   } finally {
     btnTest.disabled = false
+  }
+}
+
+async function reconcileSelectedBrain() {
+  const fallback = preferredLanBrain()
+  if (!fallback) return
+
+  if (selectedBrainUrl && isLoopbackUrl(selectedBrainUrl) && isSetupUrl(selectedBrainUrl)) {
+    try {
+      await sendBridge({
+        kind: 'ihomenerd-bridge/select-brain',
+        url: fallback.url,
+      })
+      selectedBrainUrl = fallback.url
+      renderActiveBrain(fallback)
+      renderBrainList()
+      showDiag('warn', `Loopback setup server was replaced with ${fallback.hostname || fallback.url}.`)
+    } catch {
+      // ignore if the upgrade fails
+    }
+    return
+  }
+
+  if (!selectedBrainUrl || !isLoopbackUrl(selectedBrainUrl)) return
+
+  try {
+    await sendBridge({
+      kind: 'ihomenerd-bridge/probe',
+      path: '/health',
+      timeoutMs: 2500,
+    })
+    if (isSetupUrl(selectedBrainUrl) || selectedBrainUrl === 'http://127.0.0.1:17777') {
+      await autoSelectBrain(
+        fallback,
+        `Loopback preview node was replaced with ${fallback.hostname || fallback.url}.`
+      )
+    }
+  } catch {
+    await autoSelectBrain(
+      fallback,
+      `Dead loopback gateway was replaced with ${fallback.hostname || fallback.url}.`
+    )
   }
 }
 
@@ -432,6 +563,7 @@ async function init() {
     const brainsResult = await sendBridge({ kind: 'ihomenerd-bridge/get-brains' })
     discoveredBrains = brainsResult.discovered || []
     renderBrainList()
+    await reconcileSelectedBrain()
 
     // Show permission state in diagnostics if no brain
     if (!selectedBrainUrl) {
