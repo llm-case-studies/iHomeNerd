@@ -241,3 +241,87 @@ async def test_nonexistent_route_returns_404(client: httpx.AsyncClient):
     # Android may return 200 for catch-all SPA routing; Python backend returns 404.
     # Either is acceptable — the key is that the server responds.
     assert r.status_code in (404, 200), f"unexpected status for unknown route: {r.status_code}"
+
+
+# ===================================================================
+# Speech-to-text tier contract (iOS Whisper + Apple tiers)
+# ===================================================================
+
+
+def _get_stt_capability(capabilities_detail: dict) -> dict | None:
+    """Find the speech_to_text capability, falling back to transcribe_audio."""
+    caps = capabilities_detail.get("capabilities", {})
+    return caps.get("speech_to_text") or caps.get("transcribe_audio")
+
+
+@pytest.fixture
+async def stt_cap(client: httpx.AsyncClient) -> dict | None:
+    """Return the speech_to_text capability dict, or None if absent."""
+    r = await client.get("/capabilities")
+    detail = r.json().get("_detail", {})
+    return _get_stt_capability(detail)
+
+
+async def test_stt_capability_present_or_skip(stt_cap):
+    if stt_cap is None:
+        pytest.skip("no speech_to_text or transcribe_audio capability on this node")
+
+
+async def test_stt_tier_is_string(stt_cap):
+    if stt_cap is None:
+        pytest.skip("no speech_to_text capability")
+    tier = stt_cap.get("tier")
+    assert tier is not None, "speech_to_text must have a 'tier' field"
+    assert isinstance(tier, str), f"tier must be string, got {type(tier)}"
+
+
+async def test_stt_tier_valid_value(stt_cap):
+    if stt_cap is None:
+        pytest.skip("no speech_to_text capability")
+    tier = stt_cap.get("tier")
+    # iOS uses single/parallel/whisper; Android uses transcription; Python uses transcription
+    valid = {"single", "parallel", "whisper", "transcription", "tts"}
+    assert tier in valid, f"tier '{tier}' not in expected set: {valid}"
+
+
+async def test_stt_candidate_languages_when_parallel_or_whisper(stt_cap):
+    if stt_cap is None:
+        pytest.skip("no speech_to_text capability")
+    tier = stt_cap.get("tier")
+    langs = stt_cap.get("candidate_languages")
+    # Only assert non-empty for iOS-style tiers
+    if tier in ("parallel", "whisper"):
+        assert isinstance(langs, list), f"candidate_languages must be list, got {type(langs)}"
+        assert len(langs) > 0, f"candidate_languages must be non-empty for tier={tier}"
+
+
+async def test_stt_candidate_languages_in_supported_locales(stt_cap):
+    if stt_cap is None:
+        pytest.skip("no speech_to_text capability")
+    candidates = stt_cap.get("candidate_languages") or []
+    supported = stt_cap.get("supported_locales") or []
+    if candidates and supported:
+        supported_set = set(supported)
+        for lang in candidates:
+            assert lang in supported_set, f"candidate '{lang}' not in supported_locales"
+
+
+async def test_stt_whisper_subobject_when_whisper_tier(stt_cap):
+    if stt_cap is None:
+        pytest.skip("no speech_to_text capability")
+    tier = stt_cap.get("tier")
+    whisper = stt_cap.get("whisper")
+    if tier == "whisper":
+        assert whisper is not None, "whisper sub-object must be present when tier==whisper"
+        assert isinstance(whisper, dict), f"whisper must be dict, got {type(whisper)}"
+        for key in ("model", "model_bytes", "auto_language_id", "code_switching"):
+            assert key in whisper, f"whisper missing '{key}'"
+
+
+async def test_stt_whisper_absent_when_not_whisper_tier(stt_cap):
+    if stt_cap is None:
+        pytest.skip("no speech_to_text capability")
+    tier = stt_cap.get("tier")
+    whisper = stt_cap.get("whisper")
+    if tier is not None and tier != "whisper":
+        assert whisper is None, f"whisper sub-object must be absent (not null) when tier=={tier}, got {type(whisper)}"
