@@ -274,17 +274,14 @@ final class NodeRuntime: ObservableObject {
                                 snapshot: RuntimeSnapshot,
                                 queue: DispatchQueue,
                                 onRequest: @escaping () -> Void) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 16 * 1024) { data, _, isComplete, error in
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { data, _, isComplete, error in
             var buffer = accumulated
             if let data, !data.isEmpty {
                 buffer.append(data)
             }
             if let request = HTTPRequest.parse(buffer) {
                 onRequest()
-                let response = respond(to: request, snapshot: snapshot)
-                connection.send(content: response, completion: .contentProcessed { _ in
-                    connection.cancel()
-                })
+                dispatch(request: request, snapshot: snapshot, on: connection)
                 return
             }
             if error != nil || isComplete {
@@ -293,6 +290,27 @@ final class NodeRuntime: ObservableObject {
             }
             receive(on: connection, accumulated: buffer, snapshot: snapshot, queue: queue, onRequest: onRequest)
         }
+    }
+
+    nonisolated private static func dispatch(request: HTTPRequest,
+                                             snapshot: RuntimeSnapshot,
+                                             on connection: NWConnection) {
+        // Async POST routes run on a Task and write back when the underlying
+        // engine call completes. Sync routes (GET /health etc.) respond
+        // immediately on the receive callback's queue.
+        if request.method == "POST", request.path == "/v1/transcribe-audio" {
+            Task.detached {
+                let response = await handleTranscribeAudio(request: request, snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
+        let response = respond(to: request, snapshot: snapshot)
+        connection.send(content: response, completion: .contentProcessed { _ in
+            connection.cancel()
+        })
     }
 
     nonisolated private static func respond(to request: HTTPRequest, snapshot: RuntimeSnapshot) -> Data {
@@ -308,6 +326,96 @@ final class NodeRuntime: ObservableObject {
         default:
             return HTTPResponse.text(404, "Not found\n")
         }
+    }
+
+    nonisolated private static func handleTranscribeAudio(request: HTTPRequest,
+                                                          snapshot: RuntimeSnapshot) async -> Data {
+        guard let boundary = Multipart.boundary(from: request.headers["content-type"]) else {
+            return HTTPResponse.json(["detail": "expected multipart/form-data"], status: 400)
+        }
+        guard let parts = Multipart.parse(body: request.body, boundary: boundary) else {
+            return HTTPResponse.json(["detail": "could not parse multipart body"], status: 400)
+        }
+        guard let filePart = parts.first(where: { $0.name == "file" }), !filePart.data.isEmpty else {
+            return HTTPResponse.json(["detail": "missing or empty 'file' part"], status: 400)
+        }
+        let language: String? = parts.first(where: { $0.name == "language" })
+            .flatMap { String(data: $0.data, encoding: .utf8) }?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let langHint = whisperLangCode(language)
+
+        let ext: String? = {
+            guard let fn = filePart.filename else { return nil }
+            let pe = (fn as NSString).pathExtension
+            return pe.isEmpty ? nil : pe
+        }()
+
+        let samples: [Float]
+        let duration: Double
+        do {
+            let decoded = try WAVDecoder.toMono16kFloat(filePart.data, suggestedExtension: ext)
+            samples = decoded.samples
+            duration = decoded.duration
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "decode failed: \(error.localizedDescription)"],
+                status: 400
+            )
+        }
+
+        let t0 = Date()
+        do {
+            let result = try await WhisperEngine.shared.transcribe(audio: samples, language: langHint)
+            let elapsed = Date().timeIntervalSince(t0)
+            guard let r = result else {
+                return HTTPResponse.json(["detail": "transcription returned no result"], status: 502)
+            }
+            let payload: [String: Any] = [
+                "text": r.text,
+                "language": r.language,
+                "duration": round(duration * 100) / 100,
+                "segments": r.segments.map { seg in
+                    [
+                        "start": Double(round(seg.start * 100) / 100),
+                        "end": Double(round(seg.end * 100) / 100),
+                        "text": seg.text,
+                    ] as [String: Any]
+                },
+                "processingTime": round(elapsed * 100) / 100,
+                "model": WhisperBundle.modelName,
+                "backend": "whisperkit_ios",
+            ]
+            return HTTPResponse.json(payload)
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "transcription failed: \(error.localizedDescription)"],
+                status: 502
+            )
+        }
+    }
+
+    nonisolated private static func whisperLangCode(_ raw: String?) -> String? {
+        guard let raw, !raw.isEmpty else { return nil }
+        // BCP-47 → Whisper short code, mirrors backend/app/asr.py mapping so
+        // the contract is consistent across nodes.
+        let mapping: [String: String] = [
+            "en-US": "en", "en-GB": "en",
+            "zh-CN": "zh", "zh-TW": "zh",
+            "ja-JP": "ja",
+            "ko-KR": "ko",
+            "es-ES": "es", "es-MX": "es",
+            "fr-FR": "fr",
+            "de-DE": "de",
+            "it-IT": "it",
+            "pt-BR": "pt", "pt-PT": "pt",
+            "ru-RU": "ru",
+            "tr-TR": "tr",
+            "uk-UA": "uk",
+            "hi-IN": "hi",
+        ]
+        if let m = mapping[raw] { return m }
+        let short = String(raw.split(separator: "-").first ?? "").lowercased()
+        return short.count == 2 ? short : nil
     }
 
     // MARK: - JSON bodies (mirror the Android contract)
@@ -414,6 +522,16 @@ final class NodeRuntime: ObservableObject {
             }
             detail["speech_to_text"] = sttDetail
         }
+        if c.transcribeAudio {
+            flat["transcribe_audio"] = true
+            detail["transcribe_audio"] = [
+                "available": true,
+                "backend": "whisperkit_ios",
+                "model": WhisperBundle.modelName,
+                "endpoint": "/v1/transcribe-audio",
+                "transport": "multipart/form-data",
+            ] as [String: Any]
+        }
         return (flat, detail)
     }
 
@@ -421,6 +539,7 @@ final class NodeRuntime: ObservableObject {
         var names: [String] = []
         if c.textToSpeech != nil { names.append("text_to_speech") }
         if c.speechToText != nil { names.append("speech_to_text") }
+        if c.transcribeAudio { names.append("transcribe_audio") }
         return names
     }
 

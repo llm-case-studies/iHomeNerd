@@ -31,10 +31,11 @@ That is the most useful next move on iMac-Debian. Concretely:
    across iPhone (current `tier=parallel`), ME-21 (likely `tier=single`
    or absent), and the Mac mini Python backend.
 
-Whisper-accuracy on iPhone is **deliberately deferred** — Whisper
-currently translates everything to English (we're shipping the
-one-line `task: .transcribe` fix from this side tomorrow). Don't
-spend your run on Whisper until that lands.
+Whisper-accuracy on iPhone is **now reachable via API** — see §2.3.
+We landed the `task: .transcribe` + `detectLanguage` fix today AND
+wired a `/v1/transcribe-audio` endpoint on the iOS node so you can
+hammer it with the Azure fixtures over plain HTTPS, no audio-injection
+harness required.
 
 ---
 
@@ -108,19 +109,78 @@ Expected pass-rate diff vs the 2026-04-29 morning report should be
 zero or positive — the new fields all live under `_detail` and should
 not break existing asserts.
 
-### 2.3 Repeat on iPhone after Whisper warmup (~10 min)
+### 2.3 iPhone Whisper accuracy via /v1/transcribe-audio (~45 min)
 
-After Alex has opened the Listen tab in **Whisper** mode and
-successfully run at least one transcription on the iPhone (he'll do
-this manually after we ship the transcribe-fix tomorrow), re-run §2.2
-against the iPhone and confirm:
+Newly available as of `3be5f09` on `mac-mini`. The iOS node now hosts
+a Python-contract-compatible Whisper endpoint, so you can run Whisper
+accuracy from iMac-Debian against the same Azure fixtures used in
+§2.1 — apples-to-apples comparison against Apple-engine on the same
+hardware.
 
-- `tier` flipped from `parallel` to `whisper`.
-- `whisper` sub-object is now present with the four expected keys.
+**Endpoint shape:**
+
+```bash
+curl -k -X POST https://iphone.local:17777/v1/transcribe-audio \
+  -F "file=@testing/fixtures/audio/multilingual/es-ES/es-001.wav" \
+  -F "language=es-ES"
+```
+
+- Multipart fields: `file` (required), `language` (optional BCP-47
+  hint — pin the recognizer; omit for auto-detect).
+- Response shape mirrors `backend/app/asr.py`:
+  `{text, language, duration, segments[], processingTime, model, backend}`.
+  `backend` is `"whisperkit_ios"`. `model` is `"openai_whisper-base"`.
+- First call after Node start triggers model load (~30s on iPhone 12 PM,
+  one-time per Node session). Subsequent calls warm: ~0.7s for a 10s
+  clip on iPhone 12 PM (parallel tier device).
+- iPhone resolves via `iphone.local` mDNS. If that doesn't work from
+  iMac-Debian, ask Alex for the IP — `192.168.0.220` at last test.
+
+**What we want:**
+
+- Per-locale Whisper-iOS results in the same 3-band
+  exact/minor/garbled bucket as §2.1, against the same fixtures.
+- Side-by-side table: locale | Apple-engine accuracy | Whisper-iOS
+  accuracy | which is better. This is the headline comparison.
+- Note any locale where the `language` hint matters vs where
+  auto-detect (`language` omitted) is sufficient or better. We have
+  early evidence that DE/RU auto-detect on short clips is brittle on
+  whisper-base — confirming or refuting that with the fixture pack
+  is exactly the data we need.
+- Capture `processingTime` p50/p95 per locale. Useful for the tier
+  model: if Whisper-iOS is slower than Apple-engine by 10× but more
+  accurate on RU/JA/ZH, that's a real tradeoff to surface.
+
+**Known edge:**
+
+- `whisper-base` returns empty text on clips < ~1.0s. That's a model
+  limitation, not an endpoint bug. Flag clips that hit this so we can
+  see how widespread it is in the fixture pack.
+
+**Capability advertisement:** `transcribe_audio` flat boolean +
+`_detail.capabilities.transcribe_audio` only appear when the iPhone is
+on the **whisper** tier. Today that needs a mem ≥ 6GB device + Whisper
+already warmed in a prior session (the bundle probe persists across
+launches). If `tier` is still `parallel` when you check, the endpoint
+will still answer — it's just unadvertised. The §2.2 contract sweep
+should treat the flag as "advertised iff whisper tier".
+
+### 2.4 Repeat §2.2 contract sweep after iPhone Whisper warmup (~10 min)
+
+After §2.3 has triggered Whisper warmup at least once (any successful
+call to `/v1/transcribe-audio`), re-run the contract sweep against
+the iPhone and confirm:
+
+- `tier` flipped from `parallel` to `whisper` (only happens after a
+  Node restart following the warmup; the snapshot is frozen at start).
+- `whisper` sub-object is present with `model`, `model_bytes`,
+  `auto_language_id`, `code_switching`.
+- `transcribe_audio` flat capability now `true`, with detail object.
 - No previously-passing assert regresses.
 
-This may slip a day if the transcribe-fix isn't in by your run.
-That's fine — flag it and do §2.1 + §2.2 first.
+If `tier` doesn't flip, ping Alex — the snapshot freeze means the iOS
+app needs a manual Node toggle off-then-on after warmup. Not blocking
+for §2.3; this is just the contract follow-up.
 
 ---
 
@@ -136,8 +196,9 @@ Same format as `ME21_MULTILINGUAL_ASR_BASELINE_2026-04-30.md`:
 
 File names:
 
-- `testing/results/IPHONE_APPLE_ASR_BASELINE_2026-04-30.md`
-- `testing/results/CROSS_PLATFORM_TIER_CONTRACT_2026-04-30.md`
+- `testing/results/IPHONE_APPLE_ASR_BASELINE_2026-04-30.md` (§2.1)
+- `testing/results/CROSS_PLATFORM_TIER_CONTRACT_2026-04-30.md` (§2.2)
+- `testing/results/IPHONE_WHISPER_ACCURACY_2026-04-30.md` (§2.3)
 
 Push to `wip/testing` like usual. Reply on this request file with
 links if you want a paper trail; otherwise commit messages are fine.
@@ -174,9 +235,14 @@ park it — Mac-side will pick it up after BugWitness review here.
 ## 6. Coordination note
 
 Mac-side parallel work this cycle:
-- Whisper transcribe-vs-translate one-line fix (unblocks §2.3).
+- ✅ Whisper transcribe-vs-translate fix shipped (`mac-mini` HEAD).
+- ✅ `/v1/transcribe-audio` endpoint shipped — unblocks §2.3 today.
 - BugWitness clone + scope review (Mac mini, not iMac-Debian).
 - iOS Vision OCR wiring as the next capability after Whisper completes.
+- Whisper language-picker integration (fixes DE→Hebrew on auto-detect)
+  is the next iOS-side fix, but does NOT block any §2.x work — the API
+  endpoint accepts a `language` hint that already routes around
+  auto-detect when you choose to pass one.
 
 Your work is independent of all three. Don't wait on us.
 

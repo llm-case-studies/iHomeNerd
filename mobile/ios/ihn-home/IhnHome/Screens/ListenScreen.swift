@@ -77,8 +77,40 @@ final class ListenModel: ObservableObject {
         case .apple:
             return candidateLocales.count <= 1 ? "single" : "parallel ×\(candidateLocales.count)"
         case .whisper:
-            return "whisper"
+            return whisperLanguageHint == nil ? "whisper · auto" : "whisper · \(whisperLanguageHint!)"
         }
+    }
+
+    /// Whisper short code (e.g. "de") when exactly one locale is selected;
+    /// otherwise nil so WhisperEngine falls back to auto-detect. The Listen
+    /// tab shares its locale picker with Apple parallel mode — picking
+    /// exactly one locale is the user's signal that they want to *pin* the
+    /// recognizer to that language and skip detection.
+    var whisperLanguageHint: String? {
+        guard candidateLocales.count == 1, let raw = candidateLocales.first else { return nil }
+        return Self.whisperCode(from: raw)
+    }
+
+    private static func whisperCode(from raw: String) -> String? {
+        // Mirrors NodeRuntime.whisperLangCode + backend/app/asr.py mapping.
+        let mapping: [String: String] = [
+            "en-US": "en", "en-GB": "en",
+            "zh-CN": "zh", "zh-TW": "zh",
+            "ja-JP": "ja",
+            "ko-KR": "ko",
+            "es-ES": "es", "es-MX": "es",
+            "fr-FR": "fr",
+            "de-DE": "de",
+            "it-IT": "it",
+            "pt-BR": "pt", "pt-PT": "pt",
+            "ru-RU": "ru",
+            "tr-TR": "tr",
+            "uk-UA": "uk",
+            "hi-IN": "hi",
+        ]
+        if let m = mapping[raw] { return m }
+        let short = String(raw.split(separator: "-").first ?? "").lowercased()
+        return short.count == 2 ? short : nil
     }
 
     func toggle() {
@@ -328,10 +360,12 @@ final class ListenModel: ObservableObject {
         }
         whisperBusy = true
         let seconds = Double(audio.count) / 16_000.0
-        statusLine = String(format: "Transcribing %.1fs with whisper…", seconds)
-        Task { [weak self] in
+        let hint = whisperLanguageHint
+        let hintLabel = hint.map { " (pinned: \($0))" } ?? " (auto-detect)"
+        statusLine = String(format: "Transcribing %.1fs with whisper%@…", seconds, hintLabel)
+        Task { [weak self, hint] in
             do {
-                let result = try await WhisperEngine.shared.transcribe(audio: audio)
+                let result = try await WhisperEngine.shared.transcribe(audio: audio, language: hint)
                 await MainActor.run {
                     guard let self else { return }
                     self.whisperBusy = false
@@ -438,10 +472,10 @@ struct ListenScreen: View {
                     }
                     .padding(.horizontal, 20)
                 } else {
-                    Eyebrow(text: "Whisper · \(WhisperBundle.modelName)")
+                    Eyebrow(text: "Whisper · \(WhisperBundle.modelName) · \(model.modeLabel)")
                     HStack(spacing: 8) {
                         Text(model.whisperReady
-                             ? "Model ready. Auto-detects language."
+                             ? whisperHintBlurb(model)
                              : (model.whisperBusy
                                 ? "Loading…"
                                 : "First run downloads ~145MB; tap Preload or just hit Listen."))
@@ -454,6 +488,27 @@ struct ListenScreen: View {
                                 .foregroundStyle(IhnColor.accent)
                                 .disabled(model.whisperBusy)
                         }
+                    }
+                    .padding(.horizontal, 20)
+
+                    Eyebrow(text: "Language hint (pick 1 to pin, 0 or 2+ for auto-detect)")
+                    HStack(spacing: 8) {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(model.candidateLocales, id: \.self) { id in
+                                    Text(id)
+                                        .font(IhnFont.mono(12))
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Capsule().fill(IhnColor.bgInput))
+                                        .overlay(Capsule().strokeBorder(IhnColor.border, lineWidth: 1))
+                                        .foregroundStyle(IhnColor.textPrimary)
+                                }
+                            }
+                        }
+                        Button("Edit") { showingPicker = true }
+                            .font(IhnFont.sans(13, weight: .semibold))
+                            .foregroundStyle(IhnColor.accent)
                     }
                     .padding(.horizontal, 20)
                 }
@@ -511,6 +566,17 @@ struct ListenScreen: View {
             )
         }
     }
+}
+
+@MainActor
+private func whisperHintBlurb(_ model: ListenModel) -> String {
+    if let hint = model.whisperLanguageHint {
+        return "Model ready. Pinned to \(hint) (skipping auto-detect)."
+    }
+    if model.candidateLocales.isEmpty {
+        return "Model ready. Auto-detect language."
+    }
+    return "Model ready. \(model.candidateLocales.count) selected — auto-detect (pick exactly 1 to pin)."
 }
 
 private struct LanguagePickerSheet: View {

@@ -78,13 +78,24 @@ actor WhisperEngine {
         }
     }
 
-    func transcribe(audio: [Float]) async throws -> Result? {
+    func transcribe(audio: [Float], language: String? = nil) async throws -> Result? {
         if !isReady() { await prepare() }
         guard let pipe = pipeline else {
             if case .failed(let m) = state { throw WhisperError.notReady(m) }
             throw WhisperError.notReady("model never loaded")
         }
-        let outputs = try await pipe.transcribe(audioArray: audio)
+        // Without detectLanguage:true, WhisperKit's default prefill path leaves
+        // language unresolved and the output ends up English-translated even
+        // for clearly Spanish/Russian/German input. Setting task explicitly
+        // and turning detection on keeps the transcript in the source script.
+        // A non-nil language hint pins the recognizer to that locale (skipping
+        // detection); useful for the API path where the caller already knows.
+        let opts = DecodingOptions(
+            task: .transcribe,
+            language: language,
+            detectLanguage: language == nil
+        )
+        let outputs = try await pipe.transcribe(audioArray: audio, decodeOptions: opts)
         guard let first = outputs.first else { return nil }
         let segs = first.segments.map { seg in
             Result.Segment(start: seg.start, end: seg.end, text: seg.text)
