@@ -15,6 +15,9 @@ packages:
   swift-crypto:
     url: https://github.com/apple/swift-crypto
     from: "3.0.0"
+  WhisperKit:
+    url: https://github.com/argmaxinc/WhisperKit
+    from: "0.9.0"
 
 settings:
   base:
@@ -36,6 +39,8 @@ targets:
         product: X509
       - package: swift-crypto
         product: Crypto
+      - package: WhisperKit
+        product: WhisperKit
     info:
       path: IhnHome/Resources/Info.plist
       properties:
@@ -57,6 +62,13 @@ targets:
         NSLocalNetworkUsageDescription: >-
           iHN Home discovers and pairs with your iHomeNerd gateway and nodes on
           your local network. It does not send your data to outside services.
+        NSMicrophoneUsageDescription: >-
+          iHN Home uses the microphone for the on-device Listen demo. Audio
+          stays on this phone — nothing is uploaded.
+        NSSpeechRecognitionUsageDescription: >-
+          iHN Home uses on-device speech recognition for the Listen demo so
+          you can see the phone transcribe what you say. Apple's recognizer
+          runs locally; no audio leaves the device.
         NSBonjourServices:
           - _ihomenerd._tcp
         NSAppTransportSecurity:

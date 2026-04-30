@@ -394,12 +394,33 @@ final class NodeRuntime: ObservableObject {
                 },
             ] as [String: Any]
         }
+        if let stt = c.speechToText {
+            flat["speech_to_text"] = true
+            var sttDetail: [String: Any] = [
+                "available": true,
+                "on_device": stt.onDevice,
+                "tier": stt.tier.rawValue,
+                "candidate_languages": stt.candidateLanguages,
+                "locale_count": stt.supportedLocales.count,
+                "supported_locales": stt.supportedLocales,
+            ]
+            if stt.tier == .whisper {
+                sttDetail["whisper"] = [
+                    "model": WhisperBundle.modelName,
+                    "model_bytes": WhisperBundle.modelBytes,
+                    "auto_language_id": true,
+                    "code_switching": true,
+                ] as [String: Any]
+            }
+            detail["speech_to_text"] = sttDetail
+        }
         return (flat, detail)
     }
 
     nonisolated private static func capabilityFlatNames(_ c: CapabilitiesSnapshot) -> [String] {
         var names: [String] = []
         if c.textToSpeech != nil { names.append("text_to_speech") }
+        if c.speechToText != nil { names.append("speech_to_text") }
         return names
     }
 
