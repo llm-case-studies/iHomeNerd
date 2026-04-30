@@ -1,0 +1,166 @@
+{
+  "packId": "ihn-test-es-es-v1",
+  "lang": "es-ES",
+  "voices": [
+    {
+      "id": "canonical-female",
+      "label": "Canonical female",
+      "sourceKind": "cloud_tts",
+      "provider": "azure-speech",
+      "providerVoiceId": "es-ES-ElviraNeural",
+      "lang": "es-ES",
+      "styleNote": "neutral testing voice"
+    }
+  ],
+  "lines": [
+    {
+      "lineId": "es-001",
+      "text": "Hola, \u00bfc\u00f3mo est\u00e1s?"
+    },
+    {
+      "lineId": "es-002",
+      "text": "Buenos d\u00edas."
+    },
+    {
+      "lineId": "es-003",
+      "text": "\u00bfA qu\u00e9 hora sale el tren para el centro?"
+    },
+    {
+      "lineId": "es-004",
+      "text": "\u00bfMe puede recomendar un buen restaurante por aqu\u00ed?"
+    },
+    {
+      "lineId": "es-005",
+      "text": "He estado pensando en aprender un nuevo idioma, tal vez franc\u00e9s o alem\u00e1n, pero todav\u00eda no me decido cu\u00e1l ser\u00eda m\u00e1s \u00fatil para mi trabajo."
+    },
+    {
+      "lineId": "es-006",
+      "text": "El clima de este fin de semana parece perfecto para hacer senderismo, as\u00ed que planeo salir el s\u00e1bado temprano y volver el domingo por la tarde."
+    },
+    {
+      "lineId": "es-007",
+      "text": "Uno, dos, tres, cuatro, cinco, seis, siete, ocho, nueve, diez."
+    },
+    {
+      "lineId": "es-008",
+      "text": "Mi nombre es Alex, y mis amigos son Mar\u00eda, Jaime, y Sof\u00eda."
+    },
+    {
+      "lineId": "es-009",
+      "text": "En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que viv\u00eda un hidalgo de los de lanza en astillero."
+    },
+    {
+      "lineId": "es-010",
+      "text": "A ver, d\u00e9jame confirmar, \u00bfdijiste cuarenta y dos pesos o cincuenta y dos pesos? Quiero asegurarme de que escuch\u00e9 bien."
+    }
+  ],
+  "variants": [
+    "normal"
+  ],
+  "generatedAt": "2026-04-30T04:52:19.299Z",
+  "outputFormat": "riff-16khz-16bit-mono-pcm",
+  "normalizedAt": "2026-04-30",
+  "normalizationNote": "Renamed .mp3\u2192.wav, contentType audio/mpeg\u2192audio/wav. Actual bytes unchanged.",
+  "clips": [
+    {
+      "lineId": "es-001",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-001.wav",
+      "contentType": "audio/wav",
+      "bytes": 69644,
+      "sha256": "f553c0c0cf774d565e9f5cace30de8144210d64cca5690b2d142af0b668cd990",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "es-002",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-002.wav",
+      "contentType": "audio/wav",
+      "bytes": 60844,
+      "sha256": "49c8de1a12e808fdb19ec2e40460b75f97f8f3e2390926b69e6379be365081c4",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "es-003",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-003.wav",
+      "contentType": "audio/wav",
+      "bytes": 90844,
+      "sha256": "76b7fcc5020e7d2d7f7e216d9b266f2d02c461f878d3126d6d33b52d49e7fae3",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "es-004",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-004.wav",
+      "contentType": "audio/wav",
+      "bytes": 113644,
+      "sha256": "b7bb4936ac61f1d85ab027796aaf4bd546cff18e9b1ef9533f5067d62f80696b",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "es-005",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-005.wav",
+      "contentType": "audio/wav",
+      "bytes": 268044,
+      "sha256": "28014bc317e1b1e39fb3d50ad7b252af1d3b9ca4b7a36ca14748bc69c3fec44c",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "es-006",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-006.wav",
+      "contentType": "audio/wav",
+      "bytes": 268844,
+      "sha256": "6545f9f66cea13aa265344de08faff55ddbdb576b7db1a5eb6b231553b1daf4e",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "es-007",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-007.wav",
+      "contentType": "audio/wav",
+      "bytes": 169244,
+      "sha256": "dcfd1294e1dd763beb8f8eadd1f8516b7e1d140b63588483ab834e3f233eeb85",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "es-008",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-008.wav",
+      "contentType": "audio/wav",
+      "bytes": 140844,
+      "sha256": "150a6b2ae3c95b2eed4783b65a12cfe234515be7b6c75ab99825ce1e12194712",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "es-009",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-009.wav",
+      "contentType": "audio/wav",
+      "bytes": 236844,
+      "sha256": "dccff318c6292cce8084678f004dc7cbad552f4429309c6ebe3f937324149c0a",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "es-010",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/es-ES/es-010.wav",
+      "contentType": "audio/wav",
+      "bytes": 267644,
+      "sha256": "677306e75e8300325a6b863a9db052e8d62685572dbeae24fc20b76c70b38986",
+      "sha256_matches_manifest": true
+    }
+  ]
+}

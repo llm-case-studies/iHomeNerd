@@ -1,0 +1,166 @@
+{
+  "packId": "ihn-test-ja-jp-v1",
+  "lang": "ja-JP",
+  "voices": [
+    {
+      "id": "canonical-female",
+      "label": "Canonical female",
+      "sourceKind": "cloud_tts",
+      "provider": "azure-speech",
+      "providerVoiceId": "ja-JP-NanamiNeural",
+      "lang": "ja-JP",
+      "styleNote": "neutral testing voice"
+    }
+  ],
+  "lines": [
+    {
+      "lineId": "ja-001",
+      "text": "\u3053\u3093\u306b\u3061\u306f\u3001\u4eca\u65e5\u306e\u8abf\u5b50\u306f\u3044\u304b\u304c\u3067\u3059\u304b\u3002"
+    },
+    {
+      "lineId": "ja-002",
+      "text": "\u304a\u306f\u3088\u3046\u3054\u3056\u3044\u307e\u3059\u3002"
+    },
+    {
+      "lineId": "ja-003",
+      "text": "\u4e2d\u5fc3\u8857\u3078\u884c\u304f\u96fb\u8eca\u306f\u4f55\u6642\u306b\u51fa\u767a\u3057\u307e\u3059\u304b\u3002"
+    },
+    {
+      "lineId": "ja-004",
+      "text": "\u3053\u306e\u8fd1\u304f\u3067\u304a\u3059\u3059\u3081\u306e\u30ec\u30b9\u30c8\u30e9\u30f3\u3092\u6559\u3048\u3066\u3044\u305f\u3060\u3051\u307e\u3059\u304b\u3002"
+    },
+    {
+      "lineId": "ja-005",
+      "text": "\u65b0\u3057\u3044\u8a00\u8a9e\u3092\u5b66\u307c\u3046\u3068\u601d\u3063\u3066\u3044\u3066\u3001\u30b9\u30da\u30a4\u30f3\u8a9e\u306b\u3059\u308b\u304b\u4e2d\u56fd\u8a9e\u306b\u3059\u308b\u304b\u8ff7\u3063\u3066\u3044\u307e\u3059\u304c\u3001\u4ed5\u4e8b\u306b\u306f\u3069\u3061\u3089\u304c\u3088\u308a\u5f79\u306b\u7acb\u3064\u306e\u304b\u307e\u3060\u5206\u304b\u308a\u307e\u305b\u3093\u3002"
+    },
+    {
+      "lineId": "ja-006",
+      "text": "\u4eca\u9031\u672b\u306e\u5929\u6c17\u306f\u30cf\u30a4\u30ad\u30f3\u30b0\u306b\u3074\u3063\u305f\u308a\u305d\u3046\u306a\u306e\u3067\u3001\u571f\u66dc\u65e5\u306e\u671d\u65e9\u304f\u5c71\u3078\u51fa\u304b\u3051\u3066\u3001\u65e5\u66dc\u65e5\u306e\u5915\u65b9\u306b\u623b\u308b\u3064\u3082\u308a\u3067\u3059\u3002"
+    },
+    {
+      "lineId": "ja-007",
+      "text": "\u4e00\u3001\u4e8c\u3001\u4e09\u3001\u56db\u3001\u4e94\u3001\u516d\u3001\u4e03\u3001\u516b\u3001\u4e5d\u3001\u5341\u3002"
+    },
+    {
+      "lineId": "ja-008",
+      "text": "\u79c1\u306e\u540d\u524d\u306fAlex\u3067\u3001\u53cb\u3060\u3061\u306fMaria\u3068James\u3068Sofia\u3067\u3059\u3002"
+    },
+    {
+      "lineId": "ja-009",
+      "text": "\u4eca\u671d\u306f\u65e9\u304f\u5bb6\u3092\u51fa\u3066\u3001\u516b\u6642\u524d\u306b\u4f1a\u793e\u306b\u7740\u304d\u307e\u3057\u305f\u3002\u663c\u98df\u306e\u3042\u3068\u3001\u30c1\u30fc\u30e0\u3068\u77ed\u3044\u6253\u3061\u5408\u308f\u305b\u3082\u3042\u308a\u307e\u3057\u305f\u3002"
+    },
+    {
+      "lineId": "ja-010",
+      "text": "\u78ba\u8a8d\u3055\u305b\u3066\u304f\u3060\u3055\u3044\u3002\u4eca\u304a\u3063\u3057\u3083\u3063\u305f\u306e\u306f\u56db\u5341\u4e8c\u30e6\u30fc\u30ed\u3067\u3059\u304b\u3001\u305d\u308c\u3068\u3082\u4e94\u5341\u4e8c\u30e6\u30fc\u30ed\u3067\u3059\u304b\u3002\u805e\u304d\u9593\u9055\u3044\u304c\u306a\u3044\u304b\u78ba\u304b\u3081\u305f\u3044\u3067\u3059\u3002"
+    }
+  ],
+  "variants": [
+    "normal"
+  ],
+  "generatedAt": "2026-04-30T05:03:10.254Z",
+  "outputFormat": "riff-16khz-16bit-mono-pcm",
+  "normalizedAt": "2026-04-30",
+  "normalizationNote": "Renamed .mp3\u2192.wav, contentType audio/mpeg\u2192audio/wav. Actual bytes unchanged.",
+  "clips": [
+    {
+      "lineId": "ja-001",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-001.wav",
+      "contentType": "audio/wav",
+      "bytes": 119244,
+      "sha256": "7cd966317593d8e332647d02c6e0718115ae7cabb26727f9984694d65cd8d3ea",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ja-002",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-002.wav",
+      "contentType": "audio/wav",
+      "bytes": 69244,
+      "sha256": "9a456eb07d665449bbe60ff6fa89c95d977605c0e0ba5a68735a0b7fcaebda00",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ja-003",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-003.wav",
+      "contentType": "audio/wav",
+      "bytes": 138444,
+      "sha256": "135aab396048a93475fa987c970a9a309eff809a74564d52cc0c1000545d72fe",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ja-004",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-004.wav",
+      "contentType": "audio/wav",
+      "bytes": 149644,
+      "sha256": "964d7acb890152640258e0400b22d8d07e057cbfcccb6b242c94c9f3e0bc7cf3",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ja-005",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-005.wav",
+      "contentType": "audio/wav",
+      "bytes": 341644,
+      "sha256": "66c5a035595be6e1d4e396f2439187663e2d5bb402ed5f3c2ddd2c1a444847e4",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ja-006",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-006.wav",
+      "contentType": "audio/wav",
+      "bytes": 320444,
+      "sha256": "5594d1c9209405f911495d9a21c9ab625ba2701416048f04b0f0fb7dfb9df088",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ja-007",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-007.wav",
+      "contentType": "audio/wav",
+      "bytes": 184844,
+      "sha256": "472fbab75b47602b76d8494688f1814e1080821ee0270d6bf9b35b21acae440c",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ja-008",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-008.wav",
+      "contentType": "audio/wav",
+      "bytes": 186844,
+      "sha256": "6d122f14f419dd41ed94be00e84f3e1d09ce7d5a42ec7cf242be7a3a5a5f790f",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ja-009",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-009.wav",
+      "contentType": "audio/wav",
+      "bytes": 309244,
+      "sha256": "b645701b28539e7abe15ce26a7a4c7db37bffe86c1f2e09aef7b863881ec6ef2",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ja-010",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ja-JP/ja-010.wav",
+      "contentType": "audio/wav",
+      "bytes": 368844,
+      "sha256": "e4ede40579241399ee6d6cc65601ec7090f7f1512f74e197e309db74b1e6e860",
+      "sha256_matches_manifest": true
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+{
+  "packId": "ihn-test-zh-cn-v1",
+  "lang": "zh-CN",
+  "voices": [
+    {
+      "id": "canonical-female",
+      "label": "Canonical female",
+      "sourceKind": "cloud_tts",
+      "provider": "azure-speech",
+      "providerVoiceId": "zh-CN-XiaoxiaoNeural",
+      "lang": "zh-CN",
+      "styleNote": "neutral testing voice"
+    }
+  ],
+  "lines": [
+    {
+      "lineId": "zh-001",
+      "text": "\u4f60\u597d\uff0c\u4f60\u4eca\u5929\u600e\u4e48\u6837\uff1f"
+    },
+    {
+      "lineId": "zh-002",
+      "text": "\u65e9\u4e0a\u597d\u3002"
+    },
+    {
+      "lineId": "zh-003",
+      "text": "\u53bb\u5e02\u4e2d\u5fc3\u7684\u706b\u8f66\u51e0\u70b9\u53d1\u8f66\uff1f"
+    },
+    {
+      "lineId": "zh-004",
+      "text": "\u4f60\u80fd\u7ed9\u6211\u63a8\u8350\u8fd9\u9644\u8fd1\u4e00\u5bb6\u597d\u7684\u9910\u9986\u5417\uff1f"
+    },
+    {
+      "lineId": "zh-005",
+      "text": "\u6211\u4e00\u76f4\u5728\u60f3\u5b66\u4e00\u95e8\u65b0\u7684\u8bed\u8a00\uff0c\u4e5f\u8bb8\u662f\u897f\u73ed\u7259\u8bed\u6216\u8005\u4e2d\u6587\uff0c\u4f46\u6211\u8fd8\u4e0d\u786e\u5b9a\u54ea\u4e00\u79cd\u5bf9\u6211\u7684\u5de5\u4f5c\u66f4\u6709\u7528\u3002"
+    },
+    {
+      "lineId": "zh-006",
+      "text": "\u8fd9\u5468\u672b\u7684\u5929\u6c14\u770b\u8d77\u6765\u5f88\u9002\u5408\u53bb\u5f92\u6b65\uff0c\u6240\u4ee5\u6211\u6253\u7b97\u661f\u671f\u516d\u4e00\u65e9\u51fa\u53d1\u53bb\u5c71\u91cc\uff0c\u661f\u671f\u5929\u665a\u4e0a\u518d\u56de\u6765\u3002"
+    },
+    {
+      "lineId": "zh-007",
+      "text": "\u4e00\uff0c\u4e8c\uff0c\u4e09\uff0c\u56db\uff0c\u4e94\uff0c\u516d\uff0c\u4e03\uff0c\u516b\uff0c\u4e5d\uff0c\u5341\u3002"
+    },
+    {
+      "lineId": "zh-008",
+      "text": "\u6211\u53ebAlex\uff0c\u6211\u7684\u670b\u53cb\u53eb\u739b\u4e3d\u4e9a\u3001\u8a79\u59c6\u65af\u548c\u7d22\u83f2\u4e9a\u3002"
+    },
+    {
+      "lineId": "zh-009",
+      "text": "\u4eca\u5929\u65e9\u4e0a\u6211\u5f88\u65e9\u5c31\u51fa\u95e8\u4e86\uff0c\u516b\u70b9\u524d\u5230\u4e86\u516c\u53f8\u3002\u5348\u996d\u4ee5\u540e\uff0c\u6211\u4eec\u8fd8\u5f00\u4e86\u4e00\u4e2a\u7b80\u77ed\u7684\u56e2\u961f\u4f1a\u8bae\u3002"
+    },
+    {
+      "lineId": "zh-010",
+      "text": "\u6211\u786e\u8ba4\u4e00\u4e0b\uff1a\u4f60\u521a\u624d\u8bf4\u7684\u662f\u56db\u5341\u4e8c\u6b27\u5143\u8fd8\u662f\u4e94\u5341\u4e8c\u6b27\u5143\uff1f\u6211\u60f3\u786e\u4fdd\u81ea\u5df1\u542c\u5bf9\u4e86\u3002"
+    }
+  ],
+  "variants": [
+    "normal"
+  ],
+  "generatedAt": "2026-04-30T05:02:46.833Z",
+  "outputFormat": "riff-16khz-16bit-mono-pcm",
+  "normalizedAt": "2026-04-30",
+  "normalizationNote": "Renamed .mp3\u2192.wav, contentType audio/mpeg\u2192audio/wav. Actual bytes unchanged.",
+  "clips": [
+    {
+      "lineId": "zh-001",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-001.wav",
+      "contentType": "audio/wav",
+      "bytes": 72444,
+      "sha256": "2603b548ad33456641560b5482f94b08e68c41f77320b720e9d236e6bce3dd1a",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "zh-002",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-002.wav",
+      "contentType": "audio/wav",
+      "bytes": 43244,
+      "sha256": "d56ca6668a09b527bc87ce05355451e55fe65df9d3df3e5792f5926a7c268edb",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "zh-003",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-003.wav",
+      "contentType": "audio/wav",
+      "bytes": 90844,
+      "sha256": "f7a5b86cea2189efdccab763a7a4ed38f7c83e9cb3e9f4239099dd7287dd3bce",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "zh-004",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-004.wav",
+      "contentType": "audio/wav",
+      "bytes": 112044,
+      "sha256": "81b8e00bc61903736b2f0a23d397387c47d540a2767266ad748cdee2009915c7",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "zh-005",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-005.wav",
+      "contentType": "audio/wav",
+      "bytes": 269644,
+      "sha256": "a42c911872a07ba46793c36007db802d59b2c1dd99d938bf3978cdef2ea9e3f9",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "zh-006",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-006.wav",
+      "contentType": "audio/wav",
+      "bytes": 264844,
+      "sha256": "d4ef15390449394858a05b51eb62b4947720e00413d3e2aa6166f00180acd681",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "zh-007",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-007.wav",
+      "contentType": "audio/wav",
+      "bytes": 181244,
+      "sha256": "d1866d1b14f2eeb79a3a8c5f974957065ce02564b294efb850b09da051c81bc7",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "zh-008",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-008.wav",
+      "contentType": "audio/wav",
+      "bytes": 166444,
+      "sha256": "de51c45b83d3ea32a8849081abe5a322b7ac93ddad9549cbe95d8c9cee3bd1c7",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "zh-009",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-009.wav",
+      "contentType": "audio/wav",
+      "bytes": 265644,
+      "sha256": "9640f1c69eb6f22ac547940c851f856bdf52c74944ddca1dd8d850171fda92aa",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "zh-010",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/zh-CN/zh-010.wav",
+      "contentType": "audio/wav",
+      "bytes": 241244,
+      "sha256": "0cc4d54c68ea26814a63d3c8b37c52edef1c18dd9bdae37ff0242ef0bdaa5f7a",
+      "sha256_matches_manifest": true
+    }
+  ]
+}

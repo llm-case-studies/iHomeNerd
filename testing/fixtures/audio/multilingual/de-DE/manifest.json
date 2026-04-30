@@ -1,0 +1,166 @@
+{
+  "packId": "ihn-test-de-de-v1",
+  "lang": "de-DE",
+  "voices": [
+    {
+      "id": "canonical-female",
+      "label": "Canonical female",
+      "sourceKind": "cloud_tts",
+      "provider": "azure-speech",
+      "providerVoiceId": "de-DE-KatjaNeural",
+      "lang": "de-DE",
+      "styleNote": "neutral testing voice"
+    }
+  ],
+  "lines": [
+    {
+      "lineId": "de-001",
+      "text": "Hallo, wie geht es dir heute?"
+    },
+    {
+      "lineId": "de-002",
+      "text": "Guten Morgen."
+    },
+    {
+      "lineId": "de-003",
+      "text": "Wann f\u00e4hrt der Zug in die Innenstadt ab?"
+    },
+    {
+      "lineId": "de-004",
+      "text": "K\u00f6nnen Sie mir hier in der N\u00e4he ein gutes Restaurant empfehlen?"
+    },
+    {
+      "lineId": "de-005",
+      "text": "Ich habe dar\u00fcber nachgedacht, eine neue Sprache zu lernen, vielleicht Spanisch oder Mandarin, aber ich wei\u00df noch nicht, welche f\u00fcr meine Arbeit n\u00fctzlicher w\u00e4re."
+    },
+    {
+      "lineId": "de-006",
+      "text": "Das Wetter an diesem Wochenende sieht perfekt zum Wandern aus, deshalb m\u00f6chte ich am Samstag fr\u00fch in die Berge fahren und am Sonntagabend zur\u00fcckkommen."
+    },
+    {
+      "lineId": "de-007",
+      "text": "Eins, zwei, drei, vier, f\u00fcnf, sechs, sieben, acht, neun, zehn."
+    },
+    {
+      "lineId": "de-008",
+      "text": "Ich hei\u00dfe Alex, und meine Freunde hei\u00dfen Maria, Jakob und Sofia."
+    },
+    {
+      "lineId": "de-009",
+      "text": "Heute Morgen bin ich fr\u00fch aus dem Haus gegangen und vor acht Uhr bei der Arbeit angekommen. Nach dem Mittagessen hatte ich noch eine kurze Besprechung mit dem Team."
+    },
+    {
+      "lineId": "de-010",
+      "text": "Lassen Sie mich kurz pr\u00fcfen: Haben Sie zweiundvierzig Euro oder zweiundf\u00fcnfzig Euro gesagt? Ich m\u00f6chte sicher sein, dass ich das richtig verstanden habe."
+    }
+  ],
+  "variants": [
+    "normal"
+  ],
+  "generatedAt": "2026-04-30T05:02:24.116Z",
+  "outputFormat": "riff-16khz-16bit-mono-pcm",
+  "normalizedAt": "2026-04-30",
+  "normalizationNote": "Renamed .mp3\u2192.wav, contentType audio/mpeg\u2192audio/wav. Actual bytes unchanged.",
+  "clips": [
+    {
+      "lineId": "de-001",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-001.wav",
+      "contentType": "audio/wav",
+      "bytes": 92844,
+      "sha256": "1d4da533600a89e5573cd937e0be3a2af23fbbd44f4b1339545c691e03b59cd1",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "de-002",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-002.wav",
+      "contentType": "audio/wav",
+      "bytes": 60444,
+      "sha256": "365cda3cc546494b8ad308fc40ae9730be0c3992c781cc37a791c480e4435c83",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "de-003",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-003.wav",
+      "contentType": "audio/wav",
+      "bytes": 97244,
+      "sha256": "488cf788786b42354dd3e76321098b50e40e16f4f48614c38b89c7bf972df149",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "de-004",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-004.wav",
+      "contentType": "audio/wav",
+      "bytes": 140844,
+      "sha256": "622eff624556f406edf5d781447f9e7d060ed963bcfe3279459363f3fe932cb0",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "de-005",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-005.wav",
+      "contentType": "audio/wav",
+      "bytes": 332844,
+      "sha256": "479cdf1d342a5c40bc916573370a5ef5efba320b06f13501358dea4a79b0037e",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "de-006",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-006.wav",
+      "contentType": "audio/wav",
+      "bytes": 308844,
+      "sha256": "55ce43205938618bb279bff0999425028c83bc0415204b020718100fd948e22d",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "de-007",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-007.wav",
+      "contentType": "audio/wav",
+      "bytes": 228844,
+      "sha256": "f16eec499d8f2f26219dd53836dd73d9672bf5af5a911c894455a0e2f7443904",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "de-008",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-008.wav",
+      "contentType": "audio/wav",
+      "bytes": 174844,
+      "sha256": "e077fb88b6a06cb3723e4432497960b2db72a55c58bddcde501825cb37065032",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "de-009",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-009.wav",
+      "contentType": "audio/wav",
+      "bytes": 338044,
+      "sha256": "e00e1a389bda1939efc718235eda72a663fa8530a9fa988a7858207a4a500420",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "de-010",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/de-DE/de-010.wav",
+      "contentType": "audio/wav",
+      "bytes": 352444,
+      "sha256": "af0304a222351fa9ee4c4284ad16b09f0013a37f88e970676c8190401d5db79a",
+      "sha256_matches_manifest": true
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+{
+  "packId": "ihn-test-en-us-v1",
+  "lang": "en-US",
+  "voices": [
+    {
+      "id": "canonical-female",
+      "label": "Canonical female",
+      "sourceKind": "cloud_tts",
+      "provider": "azure-speech",
+      "providerVoiceId": "en-US-JennyNeural",
+      "lang": "en-US",
+      "styleNote": "neutral testing voice"
+    }
+  ],
+  "lines": [
+    {
+      "lineId": "en-001",
+      "text": "Hello, how are you today?"
+    },
+    {
+      "lineId": "en-002",
+      "text": "Good morning."
+    },
+    {
+      "lineId": "en-003",
+      "text": "What time does the train leave for downtown?"
+    },
+    {
+      "lineId": "en-004",
+      "text": "Can you recommend a good restaurant nearby?"
+    },
+    {
+      "lineId": "en-005",
+      "text": "I have been thinking about learning a new language, maybe Spanish or Mandarin, but I am not sure which one would be more useful for my career."
+    },
+    {
+      "lineId": "en-006",
+      "text": "The weather this weekend looks perfect for hiking, so I am planning to head up to the mountains early Saturday morning and come back by Sunday evening."
+    },
+    {
+      "lineId": "en-007",
+      "text": "One, two, three, four, five, six, seven, eight, nine, ten."
+    },
+    {
+      "lineId": "en-008",
+      "text": "My name is Alex, and my friends are Maria, James, and Priya."
+    },
+    {
+      "lineId": "en-009",
+      "text": "The quick brown fox jumps over the lazy dog. The early bird catches the worm, but the second mouse gets the cheese."
+    },
+    {
+      "lineId": "en-010",
+      "text": "Okay, so let me check, did you say forty-two dollars or fifty-two dollars? I want to make sure I heard that right."
+    }
+  ],
+  "variants": [
+    "normal"
+  ],
+  "generatedAt": "2026-04-30T04:51:51.529Z",
+  "outputFormat": "riff-16khz-16bit-mono-pcm",
+  "normalizedAt": "2026-04-30",
+  "normalizationNote": "Renamed .mp3\u2192.wav, contentType audio/mpeg\u2192audio/wav. Actual bytes unchanged.",
+  "clips": [
+    {
+      "lineId": "en-001",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-001.wav",
+      "contentType": "audio/wav",
+      "bytes": 77244,
+      "sha256": "c0b39680811b1a6b0fe3b904372ff374386fb84989264dcfd1a93454ecf81b1e",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "en-002",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-002.wav",
+      "contentType": "audio/wav",
+      "bytes": 53244,
+      "sha256": "f115ce9b3fb0cdd31bb0fb4810765c17b7417fe1eaade85b4c40de03b26b5a5a",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "en-003",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-003.wav",
+      "contentType": "audio/wav",
+      "bytes": 93244,
+      "sha256": "dcdc3cf4a5d66e072899198634a5380d91c3a208301ff5c3de2154eb43f92439",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "en-004",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-004.wav",
+      "contentType": "audio/wav",
+      "bytes": 90844,
+      "sha256": "fdb4546f3ae18f8257e0c0843337b13c033438af333766fa0152d5f80f9049eb",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "en-005",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-005.wav",
+      "contentType": "audio/wav",
+      "bytes": 256844,
+      "sha256": "b0feadd411bf13372c3caa29f8b99cc83e94feb6b612d9bae8daa9949788aeb4",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "en-006",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-006.wav",
+      "contentType": "audio/wav",
+      "bytes": 264844,
+      "sha256": "de4185225738cf04b5d681687fab332a1ae14b1130081fe05b045faf5c784294",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "en-007",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-007.wav",
+      "contentType": "audio/wav",
+      "bytes": 228044,
+      "sha256": "7d71582e739a0163b5ae3a40482cc14bd18de6e4c1cc958753acc5bcb6338617",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "en-008",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-008.wav",
+      "contentType": "audio/wav",
+      "bytes": 152844,
+      "sha256": "3ea4f8756063af1be1c58263eff45a94a942be356048d8154476bafc26756696",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "en-009",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-009.wav",
+      "contentType": "audio/wav",
+      "bytes": 257644,
+      "sha256": "a3d00451ae4df96e410151ef6c9d9b029a89eff22f82bd0d79a8fd5c86ba4c1a",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "en-010",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/en-US/en-010.wav",
+      "contentType": "audio/wav",
+      "bytes": 260444,
+      "sha256": "cf1f42c2def4e2bbde5db0e5570a462e4a10eb3c29da98338c91bc9b12d48f29",
+      "sha256_matches_manifest": true
+    }
+  ]
+}

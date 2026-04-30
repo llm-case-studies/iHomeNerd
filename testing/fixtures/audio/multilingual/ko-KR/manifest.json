@@ -1,0 +1,166 @@
+{
+  "packId": "ihn-test-ko-kr-v1",
+  "lang": "ko-KR",
+  "voices": [
+    {
+      "id": "canonical-female",
+      "label": "Canonical female",
+      "sourceKind": "cloud_tts",
+      "provider": "azure-speech",
+      "providerVoiceId": "ko-KR-SunHiNeural",
+      "lang": "ko-KR",
+      "styleNote": "neutral testing voice"
+    }
+  ],
+  "lines": [
+    {
+      "lineId": "ko-001",
+      "text": "\uc548\ub155\ud558\uc138\uc694, \uc624\ub298 \uc5b4\ub5a0\uc138\uc694?"
+    },
+    {
+      "lineId": "ko-002",
+      "text": "\uc88b\uc740 \uc544\uce68\uc785\ub2c8\ub2e4."
+    },
+    {
+      "lineId": "ko-003",
+      "text": "\uc2dc\ub0b4\ub85c \uac00\ub294 \uae30\ucc28\ub294 \uba87 \uc2dc\uc5d0 \ucd9c\ubc1c\ud558\ub098\uc694?"
+    },
+    {
+      "lineId": "ko-004",
+      "text": "\uc774 \uadfc\ucc98\uc5d0 \uc88b\uc740 \uc2dd\ub2f9 \ud558\ub098 \ucd94\ucc9c\ud574 \uc8fc\uc2e4 \uc218 \uc788\ub098\uc694?"
+    },
+    {
+      "lineId": "ko-005",
+      "text": "\uc0c8\ub85c\uc6b4 \uc5b8\uc5b4\ub97c \ubc30\uc6b0\ub824\uace0 \uc0dd\uac01\ud558\uace0 \uc788\ub294\ub370, \uc2a4\ud398\uc778\uc5b4\uc640 \uc911\uad6d\uc5b4 \uc911\uc5d0\uc11c \uc81c \uc77c\uc5d0 \ub354 \ub3c4\uc6c0\uc774 \ub420 \uc5b8\uc5b4\uac00 \ubb34\uc5c7\uc778\uc9c0 \uc544\uc9c1 \uc798 \ubaa8\ub974\uaca0\uc2b5\ub2c8\ub2e4."
+    },
+    {
+      "lineId": "ko-006",
+      "text": "\uc774\ubc88 \uc8fc\ub9d0 \ub0a0\uc528\uac00 \ud558\uc774\ud0b9\ud558\uae30\uc5d0 \ub531 \uc88b\uc744 \uac83 \uac19\uc544\uc11c \ud1a0\uc694\uc77c \uc544\uce68 \uc77c\ucc0d \uc0b0\uc73c\ub85c \ub5a0\ub0ac\ub2e4\uac00 \uc77c\uc694\uc77c \uc800\ub141\uc5d0 \ub3cc\uc544\uc62c \uc0dd\uac01\uc785\ub2c8\ub2e4."
+    },
+    {
+      "lineId": "ko-007",
+      "text": "\ud558\ub098, \ub458, \uc14b, \ub137, \ub2e4\uc12f, \uc5ec\uc12f, \uc77c\uacf1, \uc5ec\ub35f, \uc544\ud649, \uc5f4."
+    },
+    {
+      "lineId": "ko-008",
+      "text": "\uc81c \uc774\ub984\uc740 Alex\uc774\uace0, \uc81c \uce5c\uad6c\ub4e4\uc740 Maria, James, \uadf8\ub9ac\uace0 Sofia\uc785\ub2c8\ub2e4."
+    },
+    {
+      "lineId": "ko-009",
+      "text": "\uc624\ub298 \uc544\uce68\uc5d0\ub294 \uc77c\ucc0d \uc9d1\uc744 \ub098\uc640 \uc5ec\ub35f \uc2dc \uc804\uc5d0 \ud68c\uc0ac\uc5d0 \ub3c4\ucc29\ud588\uc2b5\ub2c8\ub2e4. \uc810\uc2ec \uc2dd\uc0ac \ud6c4\uc5d0\ub294 \ud300\uacfc \uc9e7\uc740 \ud68c\uc758\ub97c \ud588\uc2b5\ub2c8\ub2e4."
+    },
+    {
+      "lineId": "ko-010",
+      "text": "\ud655\uc778 \uc880 \ud560\uac8c\uc694. \ubc29\uae08 \uc0ac\uc2ed\uc774 \uc720\ub85c\ub77c\uace0 \ud558\uc168\ub098\uc694, \uc544\ub2c8\uba74 \uc624\uc2ed\uc774 \uc720\ub85c\ub77c\uace0 \ud558\uc168\ub098\uc694? \uc81c\uac00 \uc81c\ub300\ub85c \ub4e4\uc5c8\ub294\uc9c0 \ud655\uc778\ud558\uace0 \uc2f6\uc2b5\ub2c8\ub2e4."
+    }
+  ],
+  "variants": [
+    "normal"
+  ],
+  "generatedAt": "2026-04-30T05:02:59.890Z",
+  "outputFormat": "riff-16khz-16bit-mono-pcm",
+  "normalizedAt": "2026-04-30",
+  "normalizationNote": "Renamed .mp3\u2192.wav, contentType audio/mpeg\u2192audio/wav. Actual bytes unchanged.",
+  "clips": [
+    {
+      "lineId": "ko-001",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-001.wav",
+      "contentType": "audio/wav",
+      "bytes": 102844,
+      "sha256": "d0a4dcf9d1bfd5bae7d506764501421b836ebe9ac6ab2c385fb19b1a99b0aebd",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ko-002",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-002.wav",
+      "contentType": "audio/wav",
+      "bytes": 70844,
+      "sha256": "0a9e2a011f7755b3f4dad9f6e526734d1ae39ee463246d57045d6e6868d90f3b",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ko-003",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-003.wav",
+      "contentType": "audio/wav",
+      "bytes": 115244,
+      "sha256": "82260127bf78fe70349f2da8910c53591271dc08af61428697fb5b0372377f60",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ko-004",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-004.wav",
+      "contentType": "audio/wav",
+      "bytes": 126444,
+      "sha256": "fd511d5f39dc6304c0238977a52061356d7edc140b9eef6957f0d153ce715a03",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ko-005",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-005.wav",
+      "contentType": "audio/wav",
+      "bytes": 299244,
+      "sha256": "989546fc57414158d3ad7a4badcbb3d3662cc6dba10bafaaa778bf049bc6010e",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ko-006",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-006.wav",
+      "contentType": "audio/wav",
+      "bytes": 277244,
+      "sha256": "b6c96cf5c9d0c7419d81b1515023a23f7f47d6e14f7269f7fa4aa42d194d0a63",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ko-007",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-007.wav",
+      "contentType": "audio/wav",
+      "bytes": 236844,
+      "sha256": "e2444ba8da0f49ee00d80aee52bbeedf15d7b697fcbfe8d338bf17aaa79d0ea6",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ko-008",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-008.wav",
+      "contentType": "audio/wav",
+      "bytes": 211244,
+      "sha256": "81981280023f5bbd506ccccf63ace82baf998a1cf1c5e587ec0c139c695f3b32",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ko-009",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-009.wav",
+      "contentType": "audio/wav",
+      "bytes": 302444,
+      "sha256": "d3729fcc440b9e752cff37571692828ef415216b2bd240c7badcafe49d645cf2",
+      "sha256_matches_manifest": true
+    },
+    {
+      "lineId": "ko-010",
+      "voiceId": "canonical-female",
+      "variant": "normal",
+      "path": "testing/fixtures/audio/multilingual/ko-KR/ko-010.wav",
+      "contentType": "audio/wav",
+      "bytes": 346844,
+      "sha256": "68fd0767d6e3b644195355b56269f481a88c6b0cb33e947ec3bcbe27dad4b497",
+      "sha256_matches_manifest": true
+    }
+  ]
+}

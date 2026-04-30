@@ -1,0 +1,30 @@
+{
+  "description": "PronunCo Azure multilingual fixture pack \u2014 normalized for iHomeNerd testing harness",
+  "source": "/tmp/pronunco-azure-fixtures",
+  "locale_count": 10,
+  "total_clips": 100,
+  "locales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "fr-FR",
+    "it-IT",
+    "ja-JP",
+    "ko-KR",
+    "pt-BR",
+    "ru-RU",
+    "zh-CN"
+  ],
+  "manifest_paths": [
+    "testing/fixtures/audio/multilingual/de-DE/manifest.json",
+    "testing/fixtures/audio/multilingual/en-US/manifest.json",
+    "testing/fixtures/audio/multilingual/es-ES/manifest.json",
+    "testing/fixtures/audio/multilingual/fr-FR/manifest.json",
+    "testing/fixtures/audio/multilingual/it-IT/manifest.json",
+    "testing/fixtures/audio/multilingual/ja-JP/manifest.json",
+    "testing/fixtures/audio/multilingual/ko-KR/manifest.json",
+    "testing/fixtures/audio/multilingual/pt-BR/manifest.json",
+    "testing/fixtures/audio/multilingual/ru-RU/manifest.json",
+    "testing/fixtures/audio/multilingual/zh-CN/manifest.json"
+  ]
+}
