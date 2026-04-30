@@ -424,7 +424,14 @@ Run: `pytest backend/tests/ -v` against any node via `IHN_BASE_URL` / `IHN_BOOTS
 
 | Blocker | Owner | What |
 |---------|-------|------|
+| ~~iPhone ASR REST endpoint~~ | ~~Claude~~ | **RESOLVED** — `POST /v1/transcribe-audio` deployed (multipart), 100/100 Azure clips auto-injected |
+| Whisper tier flip | Claude | `WhisperBundle.setReady(true)` not triggered by HTTP endpoint path — tier stays `parallel` |
 | iPhone system/stats endpoint | Claude | 5/45 tests fail on this — last missing endpoint |
-| Whisper tier flip | Claude | `WhisperBundle.setReady(true)` called, tier stays `parallel` on toggle — app rebuild needed |
-| iPhone ASR REST endpoint | Claude | No HTTP audio injection for iPhone ASR baseline |
 | Python backend on Linux | Codex | Local backend crashes on start — avahi/DNS-related |
+
+### 8.6 iPhone Whisper ASR baseline (NEW)
+
+- **100/100 Azure fixture clips auto-injected** via Claude's new multipart endpoint
+- All 10 languages transcribed natively (vs ME-21 Moonshine: only EN/ES)
+- Zero HTTP errors, zero 503s (vs ME-21: 9/100 503 errors)
+- Full report: `testing/results/IPHONE_WHISPER_ASR_BASELINE_2026-04-30.md`
