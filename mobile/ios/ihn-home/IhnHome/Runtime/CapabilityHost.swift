@@ -33,8 +33,13 @@ struct SpeechToTextCapability: Sendable {
 struct CapabilitiesSnapshot: Sendable {
     let textToSpeech: TextToSpeechCapability?
     let speechToText: SpeechToTextCapability?
+    // True when this node serves /v1/transcribe-audio. Only exposed when the
+    // Whisper tier is active because the Apple-engine path needs file-URL
+    // recognition we haven't wired yet. Mirrors Python backend's
+    // `transcribe_audio` flat capability.
+    let transcribeAudio: Bool
 
-    static let empty = CapabilitiesSnapshot(textToSpeech: nil, speechToText: nil)
+    static let empty = CapabilitiesSnapshot(textToSpeech: nil, speechToText: nil, transcribeAudio: false)
 }
 
 enum CapabilityHost {
@@ -73,7 +78,12 @@ enum CapabilityHost {
                 candidateLanguages: candidates
             )
 
-        return CapabilitiesSnapshot(textToSpeech: tts, speechToText: stt)
+        let transcribeAudio = (tier == .whisper)
+        return CapabilitiesSnapshot(
+            textToSpeech: tts,
+            speechToText: stt,
+            transcribeAudio: transcribeAudio
+        )
     }
 
     // HW probe. iPhone 12 Pro Max (6GB, A14) → parallel today; whisper once
