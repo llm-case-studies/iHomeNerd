@@ -10,8 +10,8 @@ detailed reports; this file stays short and always current.
 
 | # | What | Who | Severity |
 |---|------|-----|----------|
-| 1 | **iPhone ASR needs human** — no REST audio injection endpoint, every ASR test requires Alex manually operating the phone UI | Claude | HIGH |
-| 2 | **Whisper tier won't flip** — `WhisperBundle.setReady(true)` called but tier stays `parallel` after Node toggle (app rebuild needed) | Claude | MEDIUM |
+| 1 | ~~**iPhone ASR needs human**~~ | ~~Claude~~ | **RESOLVED** — Claude deployed `POST /v1/transcribe-audio` (multipart). 100/100 clips auto-injected. |
+| 2 | **Whisper tier won't flip** — `WhisperBundle.setReady(true)` not triggered by HTTP endpoint path | Claude | MEDIUM |
 | 3 | **iPhone `/system/stats` 404** — last unimplemented endpoint, 5/45 tests fail | Claude | MEDIUM |
 | 4 | **Python backend won't start on iMac-Debian** — avahi/mDNS-related crash | Codex | LOW |
 
@@ -43,6 +43,7 @@ Run: `IHN_BASE_URL=<url> IHN_BOOTSTRAP_URL=<url> pytest backend/tests/ -v`
 
 | Date | What |
 |------|------|
+| **2026-04-30** | **iPhone Whisper baseline: 100/100 clips, all 10 languages native! Claude's transcribe endpoint works.** |
 | 2026-04-30 | Tier contract sweep: iPhone + ME-21, all 7 tier asserts pass |
 | 2026-04-30 | ME-21 multilingual ASR baseline: 91/100 clips, Azure TTS fixes Spanish |
 | 2026-04-30 | Azure fixture pack normalized (100 WAVs, 10 locales, sha256 verified) |
