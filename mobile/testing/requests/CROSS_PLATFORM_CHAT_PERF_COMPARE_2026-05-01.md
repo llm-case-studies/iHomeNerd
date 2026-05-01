@@ -10,6 +10,8 @@
 **Expected branch context:** `feature/mlx-llm-engine` (iOS) and current `mac-mini` Android build
 **Why this exists:** Both platforms now host `/v1/chat` from a real on-device LLM. We've never measured them side by side, and the response shapes already diverge — we want one round trip that captures both perf reality and the contract gap.
 
+**Publishability note:** Treat this pass as marketing-ready data, not internal-only. Same template will roll forward to other iHN nodes (omv-elbo, the iMac, OPi5, etc.) as they pick up LLM hosting. Capture device specs in publishable form: chip family, total RAM, OS version, thermal state at run start (warm or cold), whether the device was on battery or AC, and whether the screen stayed on. That metadata is what makes the numbers comparable across nodes and credible to readers.
+
 ---
 
 ## 1. The shared model
@@ -157,9 +159,39 @@ Run each prompt **once cold (right after model-load)**, then **once warm (immedi
 
 Don't grade the *quality* of the answers. We're after latency and stability, not correctness.
 
-### 4.4 Repeat-stability smoke (per platform)
+### 4.5 Mac mini M1 baseline (runtime-only, no iHN node)
 
-After §4.3 finishes, fire P1 ten times in a tight loop against the same loaded model. Record:
+The Mac mini is not running the iHN app — yet — but the underlying runtime *is* available there. This gives us a reference upper bound: "what the same model does when it's not constrained by the phone."
+
+Setup once on the Mac mini:
+```bash
+python3 -m venv ~/.venvs/mlx-bench && source ~/.venvs/mlx-bench/bin/activate
+pip install -U mlx-lm
+```
+
+Run the same five prompts (P1–P5 from §4.3) against the **same MLX repo** the iPhone uses:
+```bash
+mlx_lm.generate \
+  --model mlx-community/gemma-4-e2b-it-4bit \
+  --prompt "In one short sentence, say what device you are running on." \
+  --max-tokens 200
+```
+
+`mlx-lm` prints `Prompt: X tokens, Y tokens-per-sec` and `Generation: X tokens, Y tokens-per-sec` to stderr. Capture:
+
+- prompt_tps, generation_tps, response_chars, peak memory (`mlx_lm.generate --verbose` or read RSS via `ps`).
+
+Run cold + warm like §4.3. One row per prompt × cold/warm.
+
+Also capture the Mac's spec line as a publishable fact: `M1 / 16 GB unified memory / macOS <version>`.
+
+This is **not** an iHN-node test — it's a runtime baseline. The interesting comparison is `iPhone 12 PM tok/s ÷ Mac mini M1 tok/s` for Gemma 4 E2B. That ratio is the headline number for "how much does iOS-on-phone leave on the table vs the same MLX runtime on a desktop M1?"
+
+If you want to push further: also run Qwen 2.5 1.5B 4-bit on the Mac (iOS already has it, Android can't run it) and a larger model like `mlx-community/Qwen2.5-7B-Instruct-4bit` to show what an unconstrained M1 will host that no phone we have can. Both are optional; skip if time-boxed.
+
+### 4.6 Repeat-stability smoke (per platform)
+
+After §4.3/§4.5 finish, fire P1 ten times in a tight loop against the same loaded model. Record:
 
 - pass/fail count (HTTP 200 + non-empty content)
 - min / median / max `wall_clock_s`
@@ -183,11 +215,13 @@ Include:
 4. Contract regression pass/fail counts (one row per platform).
 5. Raw JSON for one successful chat call per platform (so the shape divergence is visible in the artifact).
 6. The §4.3 perf table (one row per `platform × prompt × cold|warm`).
-7. The §4.4 repeat-stability summary.
-8. Any runtime gaps you hit, especially:
+7. The §4.5 Mac M1 baseline table, plus the iPhone-vs-M1 tok/s ratio for Gemma 4 E2B as a single highlighted line.
+8. The §4.6 repeat-stability summary.
+9. Any runtime gaps you hit, especially:
    - iOS: `/system/stats` not responding, `model: "unknown"` in chat response, app suspending mid-generation, repeat-prompt crash.
    - Android: missing model file, GPU backend init failure (then CPU fallback), `/system/stats` parity gap.
-9. **Recommendation section (one paragraph):** which platform/runtime is currently more usable on these specific devices, and what's the single biggest gap blocking parity.
+   - Mac M1: `mlx-lm` install failures, model download stalls.
+10. **Recommendation section (one paragraph):** which platform/runtime is currently more usable on these specific devices, and what's the single biggest gap blocking parity. Phrase it so it could be quoted in a marketing piece.
 
 ---
 
