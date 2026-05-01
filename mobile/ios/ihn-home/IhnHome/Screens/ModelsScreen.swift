@@ -9,10 +9,17 @@ struct ModelsScreen: View {
     @State private var errorMessage: String? = nil
     @State private var errorModelId: String? = nil
 
+    // Sizes are repo-as-of-2026-05-01 figures (safetensors footprint on HF).
+    // ramWhenLoadedMB ≈ download × 1.3 — covers KV cache + activations during
+    // generation. These are headline numbers users actually feel; the param
+    // count + quantization moves to a "Tech" footnote so it's documented but
+    // not the lead.
     private let models: [OfflineModelOption] = [
         OfflineModelOption(
             name: "Qwen 2.5 Instruct",
             configuration: LLMRegistry.qwen2_5_1_5b,
+            downloadSizeMB: 960,
+            ramWhenLoadedMB: 1250,
             parameterSize: "1.5B parameters",
             quantization: "4-bit",
             note: "Balanced small chat model"
@@ -20,6 +27,8 @@ struct ModelsScreen: View {
         OfflineModelOption(
             name: "Gemma 4 E2B Instruct",
             configuration: LLMRegistry.gemma4_e2b_it_4bit,
+            downloadSizeMB: 1500,
+            ramWhenLoadedMB: 2000,
             parameterSize: "2B parameters",
             quantization: "4-bit",
             note: "Google Gemma family"
@@ -48,11 +57,17 @@ struct ModelsScreen: View {
                                     Text(model.name)
                                         .font(.system(size: 16, weight: .semibold))
                                         .foregroundColor(.white)
-                                    Text("\(model.parameterSize) • \(model.quantization) • \(model.note)")
+                                    Text(model.note)
                                         .font(.system(size: 13))
                                         .foregroundColor(IhnColor.textSecondary)
-                                    Text(model.configuration.name)
+                                    Text("Download: ~\(formatSize(model.downloadSizeMB)) · RAM when loaded: ~\(formatSize(model.ramWhenLoadedMB))")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(IhnColor.textPrimary)
+                                    Text("Tech: \(model.parameterSize) · \(model.quantization)")
                                         .font(.system(size: 12))
+                                        .foregroundColor(IhnColor.textTertiary)
+                                    Text(model.configuration.name)
+                                        .font(.system(size: 11))
                                         .foregroundColor(IhnColor.textTertiary)
                                         .lineLimit(1)
                                         .truncationMode(.middle)
@@ -157,11 +172,21 @@ struct ModelsScreen: View {
 private struct OfflineModelOption: Identifiable {
     let name: String
     let configuration: ModelConfiguration
+    let downloadSizeMB: Int
+    let ramWhenLoadedMB: Int
     let parameterSize: String
     let quantization: String
     let note: String
 
     var id: String { configuration.name }
+}
+
+private func formatSize(_ mb: Int) -> String {
+    if mb >= 1024 {
+        let gb = Double(mb) / 1024.0
+        return String(format: "%.1f GB", gb)
+    }
+    return "\(mb) MB"
 }
 
 #Preview {
