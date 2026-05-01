@@ -3,9 +3,11 @@ import AVFoundation
 import Speech
 
 // What this iOS node *actually* hosts. Becomes the flat-boolean map and
-// _detail.capabilities sub-object on `/capabilities`. Static today
-// (capabilities don't change at runtime), so `snapshot()` is called once
-// at NodeRuntime.start() and frozen into the RuntimeSnapshot.
+// _detail.capabilities sub-object on `/capabilities`. Rebuilt live on every
+// /capabilities, /discover, /health request — cheap (a few synchronous
+// AVSpeechSynthesisVoice / SFSpeechRecognizer queries plus a UserDefaults
+// lookup for the Whisper bundle flag) and lets a mid-session Whisper warmup
+// flip the advertised tier without a Node toggle.
 
 struct CapabilityVoice: Sendable {
     let identifier: String
@@ -86,14 +88,17 @@ enum CapabilityHost {
         )
     }
 
-    // HW probe. iPhone 12 Pro Max (6GB, A14) → parallel today; whisper once
-    // the Core ML model is bundled (Task #15). Older 3–4GB devices stay on
-    // single-locale to keep battery and CPU sane.
+    // HW probe. ProcessInfo.physicalMemory reports user-visible RAM, which
+    // sits ~5–10% under the marketing GB on every iPhone (12 Pro Max ships
+    // 6 GB but reports ~5.56 GiB; iPhone 11 ships 4 GB but reports ~3.6 GiB).
+    // Use thresholds calibrated against those real values: 5 GiB cleanly
+    // admits the 6 GB-class (12 PM, 13 PM, 14 PM, 15-line) while excluding
+    // 4 GB-class devices that can't run Whisper-base comfortably.
     private static func detectTier() -> SpeechTier {
         let mem = ProcessInfo.processInfo.physicalMemory
         let gb: UInt64 = 1024 * 1024 * 1024
         let whisperBundled = WhisperBundle.isBundled
-        if mem >= 6 * gb && whisperBundled { return .whisper }
+        if mem >= 5 * gb && whisperBundled { return .whisper }
         if mem >= 3 * gb { return .parallel }
         return .single
     }
