@@ -1,4 +1,5 @@
 import Foundation
+import MLX
 import MLXLLM
 import MLXLMCommon
 
@@ -36,31 +37,101 @@ actor MLXEngine {
 
     func loadModel(name: String, path: URL) async throws {
         try enforceMemoryBudget(for: name)
-        
+
+        // Capture old model identity and then drop the container *before*
+        // loading the new one so their GPU footprints don't overlap.
+        let previousName = self.modelName
+        let previousConfig: ModelConfiguration?
+        let previousPath: URL?
+        if let previousContainer = self.modelContainer {
+            previousConfig = await previousContainer.configuration
+            previousPath = try? await previousContainer.modelDirectory
+            self.modelContainer = nil
+            self.modelName = nil
+            self.isLoaded = false
+        } else {
+            previousConfig = nil
+            previousPath = nil
+        }
+
+        // Old model arrays are now in the MLX cache pool; evict them.
+        Memory.clearCache()
+
         do {
-            self.modelContainer = try await LLMModelFactory.shared.loadContainer(
+            let newContainer = try await LLMModelFactory.shared.loadContainer(
                 from: path,
                 using: tokenizerLoader
             )
+            self.modelContainer = newContainer
             self.modelName = name
             self.isLoaded = true
         } catch {
+            // Attempt to restore the previous model so a failed switch
+            // doesn't strand the user with nothing loaded.
+            if let previousPath {
+                do {
+                    let restoredContainer = try await LLMModelFactory.shared.loadContainer(
+                        from: previousPath,
+                        using: tokenizerLoader
+                    )
+                    self.modelContainer = restoredContainer
+                    self.modelName = previousName ?? previousConfig?.name
+                    self.isLoaded = true
+                } catch {
+                    // Restore failed; leave state empty and propagate the
+                    // original load error.
+                }
+            }
             throw MLXError.modelLoadFailed(error.localizedDescription)
         }
     }
 
     func loadFromHub(configuration: ModelConfiguration) async throws {
         try enforceMemoryBudget(for: configuration.name)
-        
+
+        // Capture old model identity and then drop the container *before*
+        // loading the new one so their GPU footprints don't overlap.
+        let previousName = self.modelName
+        let previousConfig: ModelConfiguration?
+        if let previousContainer = self.modelContainer {
+            previousConfig = await previousContainer.configuration
+            self.modelContainer = nil
+            self.modelName = nil
+            self.isLoaded = false
+        } else {
+            previousConfig = nil
+        }
+
+        // Old model arrays are now in the MLX cache pool; evict them.
+        Memory.clearCache()
+
         do {
-            self.modelContainer = try await LLMModelFactory.shared.loadContainer(
+            let newContainer = try await LLMModelFactory.shared.loadContainer(
                 from: downloader,
                 using: tokenizerLoader,
                 configuration: configuration
             )
+            self.modelContainer = newContainer
             self.modelName = configuration.name
             self.isLoaded = true
         } catch {
+            // Attempt to restore the previous model so a failed switch
+            // doesn't strand the user with nothing loaded.
+            if let previousConfig {
+                do {
+                    let restoredContainer = try await LLMModelFactory.shared.loadContainer(
+                        from: downloader,
+                        using: tokenizerLoader,
+                        configuration: previousConfig
+                    )
+                    self.modelContainer = restoredContainer
+                    self.modelName = previousName ?? previousConfig.name
+                    self.isLoaded = true
+                } catch {
+                    // Restore failed; leave state empty and propagate the
+                    // original load error.
+                }
+            }
             throw MLXError.modelLoadFailed(error.localizedDescription)
         }
     }
