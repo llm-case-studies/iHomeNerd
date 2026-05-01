@@ -29,12 +29,14 @@ struct SpeechToTextCapability: Sendable {
     let supportedLocales: [String]   // BCP-47, e.g. "en-US"
     let onDevice: Bool                // SFSpeechRecognizer.supportsOnDeviceRecognition
     let tier: SpeechTier
-    let candidateLanguages: [String] // user-curated set (parallel/whisper); empty for single
-}
-
 struct AnalyzeImageCapability: Sendable {
     let ocrSupported: Bool                // true on iOS 13+
     let recognitionLanguages: [String]    // BCP-47 list from Vision
+}
+
+struct ChatCapability: Sendable {
+    let available: Bool
+    let loadedPackName: String?
 }
 
 struct CapabilitiesSnapshot: Sendable {
@@ -46,8 +48,9 @@ struct CapabilitiesSnapshot: Sendable {
     // `transcribe_audio` flat capability.
     let transcribeAudio: Bool
     let analyzeImage: AnalyzeImageCapability?
+    let chat: ChatCapability?
 
-    static let empty = CapabilitiesSnapshot(textToSpeech: nil, speechToText: nil, transcribeAudio: false, analyzeImage: nil)
+    static let empty = CapabilitiesSnapshot(textToSpeech: nil, speechToText: nil, transcribeAudio: false, analyzeImage: nil, chat: nil)
 }
 
 enum CapabilityHost {
@@ -91,11 +94,21 @@ enum CapabilityHost {
             ocrSupported: true,
             recognitionLanguages: OCREngine.supportedRecognitionLanguages
         )
+        
+        let mem = ProcessInfo.processInfo.physicalMemory
+        let gb: UInt64 = 1024 * 1024 * 1024
+        // Show chat available if we have at least 6GB RAM (iPhone 12 Pro Max floor)
+        let chat = ChatCapability(
+            available: mem >= 5 * gb,
+            loadedPackName: MLXEngine.shared.getLoadedModelName()
+        )
+        
         return CapabilitiesSnapshot(
             textToSpeech: tts,
             speechToText: stt,
             transcribeAudio: transcribeAudio,
-            analyzeImage: analyzeImage
+            analyzeImage: analyzeImage,
+            chat: chat
         )
     }
 

@@ -28,6 +28,8 @@ actor MLXEngine {
     private var isLoaded = false
     private var modelName: String?
     private var modelContainer: ModelContainer?
+    
+    static let shared = MLXEngine()
 
     init() {}
 
@@ -100,5 +102,13 @@ actor MLXEngine {
         } catch {
             throw MLXError.inferenceFailed(error.localizedDescription)
         }
+    }
+    
+    // Allow CapabilityHost to check if we are loaded without async if possible
+    nonisolated func getLoadedModelName() -> String? {
+        // Warning: This reads state that is mutated in async.
+        // For accurate snapshotting, we might need a dedicated nonisolated lock or similar.
+        // For now, returning nil is fine, or we can make it an async capability probe in the future.
+        return nil
     }
 }

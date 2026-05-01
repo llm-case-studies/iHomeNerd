@@ -330,6 +330,15 @@ final class NodeRuntime: ObservableObject {
             }
             return
         }
+        if request.method == "POST", request.path == "/v1/chat" {
+            Task.detached {
+                let response = await handleChat(request: request, snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
         let response = respond(to: request, snapshot: snapshot)
         connection.send(content: response, completion: .contentProcessed { _ in
             connection.cancel()
@@ -460,6 +469,34 @@ final class NodeRuntime: ObservableObject {
         } catch {
             return HTTPResponse.json(
                 ["detail": "OCR failed: \(error.localizedDescription)"],
+                status: 502
+            )
+        }
+    }
+
+    nonisolated private static func handleChat(request: HTTPRequest,
+                                              snapshot: RuntimeSnapshot) async -> Data {
+        guard let dict = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any],
+              let prompt = dict["prompt"] as? String else {
+            return HTTPResponse.json(["detail": "expected JSON with 'prompt' key"], status: 400)
+        }
+        
+        let t0 = Date()
+        do {
+            let result = try await MLXEngine.shared.generate(prompt: prompt)
+            let elapsed = Date().timeIntervalSince(t0)
+            
+            let payload: [String: Any] = [
+                "text": result.text,
+                "processingTime": round(elapsed * 100) / 100,
+                "tokensPerSecond": round(result.tokensPerSecond * 100) / 100,
+                "model": MLXEngine.shared.getLoadedModelName() ?? "unknown",
+                "backend": "mlx_ios"
+            ]
+            return HTTPResponse.json(payload)
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "MLX inference failed: \(error.localizedDescription)"],
                 status: 502
             )
         }
@@ -616,6 +653,19 @@ final class NodeRuntime: ObservableObject {
                 "preferred_upload_mime_type": "image/png",
             ] as [String: Any]
         }
+        if let ch = c.chat {
+            flat["chat"] = ch.available
+            
+            var chatDetail: [String: Any] = [
+                "available": ch.available,
+                "backend": "mlx_ios",
+                "endpoint": "/v1/chat"
+            ]
+            if let p = ch.loadedPackName {
+                chatDetail["loaded_pack_name"] = p
+            }
+            detail["chat"] = chatDetail
+        }
         return (flat, detail)
     }
 
@@ -655,6 +705,7 @@ final class NodeRuntime: ObservableObject {
         if c.speechToText != nil { names.append("speech_to_text") }
         if c.transcribeAudio { names.append("transcribe_audio") }
         if c.analyzeImage != nil { names.append("analyze_image") }
+        if let ch = c.chat, ch.available { names.append("chat") }
         return names
     }
 
