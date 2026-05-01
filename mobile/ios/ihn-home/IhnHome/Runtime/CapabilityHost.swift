@@ -32,6 +32,11 @@ struct SpeechToTextCapability: Sendable {
     let candidateLanguages: [String] // user-curated set (parallel/whisper); empty for single
 }
 
+struct AnalyzeImageCapability: Sendable {
+    let ocrSupported: Bool                // true on iOS 13+
+    let recognitionLanguages: [String]    // BCP-47 list from Vision
+}
+
 struct CapabilitiesSnapshot: Sendable {
     let textToSpeech: TextToSpeechCapability?
     let speechToText: SpeechToTextCapability?
@@ -40,8 +45,9 @@ struct CapabilitiesSnapshot: Sendable {
     // recognition we haven't wired yet. Mirrors Python backend's
     // `transcribe_audio` flat capability.
     let transcribeAudio: Bool
+    let analyzeImage: AnalyzeImageCapability?
 
-    static let empty = CapabilitiesSnapshot(textToSpeech: nil, speechToText: nil, transcribeAudio: false)
+    static let empty = CapabilitiesSnapshot(textToSpeech: nil, speechToText: nil, transcribeAudio: false, analyzeImage: nil)
 }
 
 enum CapabilityHost {
@@ -81,10 +87,15 @@ enum CapabilityHost {
             )
 
         let transcribeAudio = (tier == .whisper)
+        let analyzeImage = AnalyzeImageCapability(
+            ocrSupported: true,
+            recognitionLanguages: OCREngine.supportedRecognitionLanguages
+        )
         return CapabilitiesSnapshot(
             textToSpeech: tts,
             speechToText: stt,
-            transcribeAudio: transcribeAudio
+            transcribeAudio: transcribeAudio,
+            analyzeImage: analyzeImage
         )
     }
 
