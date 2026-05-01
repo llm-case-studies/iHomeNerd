@@ -16,6 +16,7 @@ Bounded assignment briefs we send to copilot models (Gemini, Codex, Kimi, Qwen, 
 |---|---|---|---|---|
 | 2026-04-28 | DeepSeek | [Testing kickoff](2026-04-28_deepseek_testing-kickoff.md) | completed | Kicked off the contract-test track; DeepSeek now owns cross-platform tests |
 | 2026-05-01 | Gemini 3.1 Pro | [iOS Vision OCR](2026-05-01_gemini_ios-ocr.md) | completed | OCR shipped (commit b486b63); on Antigravity rate-leave for next week |
+| 2026-05-01 | Kimi K2.6 | [MLX model-switch crash fix](2026-05-01_kimi_mlx-model-switch-crash.md) | active | First Kimi handoff; small bounded Swift fix (~14 lines in MLXEngine.swift) |
 
 Status values: **active** (in flight), **completed** (work shipped + verified), **aborted** (returned without merge), **paused** (copilot on rate-leave).
 
