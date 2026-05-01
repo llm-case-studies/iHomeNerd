@@ -66,6 +66,8 @@ final class NodeRuntime: ObservableObject {
         guard !isRunning else { return }
         lastError = nil
 
+        UIDevice.current.isBatteryMonitoringEnabled = true
+
         let host = sanitizedHostname()
         let ips = LocalAddresses.ipv4()
         advertisedHostname = host
@@ -670,13 +672,31 @@ final class NodeRuntime: ObservableObject {
     }
 
     nonisolated private static func systemStatsJson(_ s: RuntimeSnapshot) -> [String: Any] {
-        // Minimal Python-contract-compatible /system/stats. The contract pack
-        // requires uptime_seconds (numeric), session_count (int), one of
-        // storage_bytes / app_memory_pss_bytes (numeric), connected_apps
-        // (list). iOS doesn't have the SQLite-backed sessions the Python
-        // backend tracks, so session_count is 0 today; that becomes real
-        // when we wire local persistence.
         let uptime = max(0, Date().timeIntervalSince(s.startedAt))
+
+        let thermalState: String = {
+            switch ProcessInfo.processInfo.thermalState {
+            case .nominal: return "nominal"
+            case .fair: return "fair"
+            case .serious: return "serious"
+            case .critical: return "critical"
+            @unknown default: return "unknown"
+            }
+        }()
+
+        let device = UIDevice.current
+        let batteryLevel: Float = device.batteryLevel
+        let batteryPercent: Any = batteryLevel < 0 ? NSNull() : Int(round(batteryLevel * 100))
+        let onACPower: Any = {
+            switch device.batteryState {
+            case .charging, .full: return true
+            case .unplugged: return false
+            case .unknown: return NSNull()
+            @unknown default: return NSNull()
+            }
+        }()
+        let lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+
         return [
             "uptime_seconds": round(uptime * 100) / 100,
             "session_count": 0,
@@ -685,6 +705,10 @@ final class NodeRuntime: ObservableObject {
             "hostname": s.hostname,
             "product": product,
             "version": version,
+            "thermal_state": thermalState,
+            "battery_level_percent": batteryPercent,
+            "is_on_ac_power": onACPower,
+            "low_power_mode_enabled": lowPowerMode,
         ]
     }
 
