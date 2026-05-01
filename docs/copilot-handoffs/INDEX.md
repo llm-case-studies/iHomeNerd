@@ -17,6 +17,7 @@ Bounded assignment briefs we send to copilot models (Gemini, Codex, Kimi, Qwen, 
 | 2026-04-28 | DeepSeek | [Testing kickoff](2026-04-28_deepseek_testing-kickoff.md) | completed | Kicked off the contract-test track; DeepSeek now owns cross-platform tests |
 | 2026-05-01 | Gemini 3.1 Pro | [iOS Vision OCR](2026-05-01_gemini_ios-ocr.md) | completed | OCR shipped (commit b486b63); on Antigravity rate-leave for next week |
 | 2026-05-01 | Kimi K2.6 | [MLX model-switch crash fix](2026-05-01_kimi_mlx-model-switch-crash.md) | completed | Fix shipped (commit 6e19331); Kimi found `MLX.Memory.clearCache()` after the original load-then-swap pattern failed on 6 GB devices. Recipe at `docs/MLX_MODEL_SWITCH_MEMORY_RECIPE.md`. Cost ~$2, output verbose but high-quality. |
+| 2026-05-01 | Qwen | [`/system/stats` device-state fields](2026-05-01_qwen_system-stats-device-state.md) | active | First Qwen handoff; additive fields (thermal/battery/AC/low-power) for publishable perf-data context. Single-file fence on NodeRuntime.swift. |
 
 Status values: **active** (in flight), **completed** (work shipped + verified), **aborted** (returned without merge), **paused** (copilot on rate-leave).
 
