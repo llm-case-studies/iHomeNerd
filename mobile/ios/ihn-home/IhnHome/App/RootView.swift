@@ -4,7 +4,7 @@ struct RootView: View {
     @State private var tab: Tab = .home
 
     enum Tab: Hashable {
-        case home, node, speak, listen, trust, travel
+        case home, node, speak, listen, trust, models
     }
 
     var body: some View {
@@ -40,10 +40,10 @@ struct RootView: View {
             .tag(Tab.trust)
 
             NavigationStack {
-                TravelScreen()
+                ModelsScreen()
             }
-            .tabItem { Label("Travel", systemImage: "airplane") }
-            .tag(Tab.travel)
+            .tabItem { Label("Models", systemImage: "cpu") }
+            .tag(Tab.models)
         }
         .tint(IhnColor.accent)
     }
