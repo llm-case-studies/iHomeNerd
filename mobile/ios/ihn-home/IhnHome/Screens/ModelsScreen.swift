@@ -41,7 +41,7 @@ struct ModelsScreen: View {
                         
                         if let err = errorMessage {
                             Text(err)
-                                .foregroundColor(IhnColor.destructive)
+                                .foregroundColor(IhnColor.error)
                                 .font(.system(size: 13))
                         }
                         
@@ -83,9 +83,9 @@ struct ModelsScreen: View {
         Task {
             do {
                 // mlx-swift-examples provides a pre-configured Qwen 2.5 configuration we can pull
-                try await MLXEngine.shared.loadFromHub(configuration: ModelRegistry.qwen2_5_1_5b_4bit)
+                try await MLXEngine.shared.loadFromHub(configuration: LLMRegistry.qwen2_5_1_5b)
                 await MainActor.run {
-                    self.loadedModel = ModelRegistry.qwen2_5_1_5b_4bit.name
+                    self.loadedModel = LLMRegistry.qwen2_5_1_5b.name
                     self.loading = false
                 }
             } catch {

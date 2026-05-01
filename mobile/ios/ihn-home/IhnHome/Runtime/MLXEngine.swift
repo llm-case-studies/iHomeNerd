@@ -2,6 +2,9 @@ import Foundation
 import MLX
 import MLXLLM
 import MLXLMCommon
+import MLXHuggingFace
+import Tokenizers
+import HuggingFace
 
 actor MLXEngine {
     struct Result: Sendable {
@@ -45,11 +48,28 @@ actor MLXEngine {
         // 2. MLXLLM model loading logic
         do {
             let config = ModelConfiguration(directory: path)
-            self.modelContainer = try await ModelContainer.load(
-                configuration: config,
-                modelFactory: LLMModelFactory()
+            self.modelContainer = try await #huggingFaceLoadModelContainer(
+                configuration: config
             )
             self.modelName = name
+            self.isLoaded = true
+        } catch {
+            throw MLXError.modelLoadFailed(error.localizedDescription)
+        }
+    }
+
+    func loadFromHub(configuration: ModelConfiguration) async throws {
+        // Enforce RAM check
+        let physicalMemoryGB = Double(ProcessInfo.processInfo.physicalMemory) / (1024 * 1024 * 1024)
+        if configuration.name.lowercased().contains("4b") && physicalMemoryGB < 7.5 {
+            throw MLXError.outOfMemory
+        }
+        
+        do {
+            self.modelContainer = try await #huggingFaceLoadModelContainer(
+                configuration: configuration
+            )
+            self.modelName = configuration.name
             self.isLoaded = true
         } catch {
             throw MLXError.modelLoadFailed(error.localizedDescription)
@@ -64,41 +84,33 @@ actor MLXEngine {
         let startTime = Date()
         
         do {
-            // 3. Tokenize the input prompt
-            let promptTokens = try await container.perform { _, tokenizer in
-                tokenizer.encode(text: prompt)
-            }
-            
-            var generatedTokens: [Int] = []
-            
-            // 4. Run the forward pass with KV caching
             let parameters = GenerateParameters(temperature: 0.7)
-            _ = try await container.perform { model, tokenizer in
-                try MLXLMCommon.generate(
-                    promptTokens: promptTokens,
-                    parameters: parameters,
-                    model: model,
-                    tokenizer: tokenizer
-                ) { tokens in
-                    generatedTokens = tokens
-                    return .more
+            let messages: [[String: any Sendable]] = [["role": "user", "content": prompt]]
+            let userInput = UserInput(messages: messages)
+            let input = try await container.prepare(input: userInput)
+            let stream = try await container.generate(input: input, parameters: parameters)
+            
+            var text = ""
+            var tokensPerSecond = 0.0
+            
+            for try await generation in stream {
+                switch generation {
+                case .chunk(let chunkText):
+                    text += chunkText
+                case .info(let info):
+                    tokensPerSecond = info.tokensPerSecond
+                default:
+                    break
                 }
             }
             
-            // 5. Decode the final output tokens back into a string
-            let text = try await container.perform { _, tokenizer in
-                tokenizer.decode(tokens: generatedTokens)
-            }
-            
             let duration = Date().timeIntervalSince(startTime)
-            let tps = duration > 0 ? Double(generatedTokens.count) / duration : 0.0
             
             return Result(
                 text: text,
                 processingTime: duration,
-                tokensPerSecond: tps
+                tokensPerSecond: tokensPerSecond
             )
-            
         } catch {
             throw MLXError.inferenceFailed(error.localizedDescription)
         }
