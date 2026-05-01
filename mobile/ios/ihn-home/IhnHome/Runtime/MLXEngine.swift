@@ -1,10 +1,6 @@
 import Foundation
-import MLX
 import MLXLLM
 import MLXLMCommon
-import MLXHuggingFace
-import Tokenizers
-import HuggingFace
 
 actor MLXEngine {
     struct Result: Sendable {
@@ -31,25 +27,20 @@ actor MLXEngine {
     private var isLoaded = false
     private var modelName: String?
     private var modelContainer: ModelContainer?
+    private let downloader = MLXHuggingFaceHubDownloader()
+    private let tokenizerLoader = MLXHuggingFaceTokenizerLoader()
     
     static let shared = MLXEngine()
 
     init() {}
 
     func loadModel(name: String, path: URL) async throws {
-        // 1. Enforce RAM check here for 4B vs 2B (as discussed)
-        let physicalMemoryGB = Double(ProcessInfo.processInfo.physicalMemory) / (1024 * 1024 * 1024)
+        try enforceMemoryBudget(for: name)
         
-        // Require 8GB for 4B-class models
-        if name.lowercased().contains("4b") && physicalMemoryGB < 7.5 {
-            throw MLXError.outOfMemory
-        }
-        
-        // 2. MLXLLM model loading logic
         do {
-            let config = ModelConfiguration(directory: path)
-            self.modelContainer = try await #huggingFaceLoadModelContainer(
-                configuration: config
+            self.modelContainer = try await LLMModelFactory.shared.loadContainer(
+                from: path,
+                using: tokenizerLoader
             )
             self.modelName = name
             self.isLoaded = true
@@ -59,14 +50,12 @@ actor MLXEngine {
     }
 
     func loadFromHub(configuration: ModelConfiguration) async throws {
-        // Enforce RAM check
-        let physicalMemoryGB = Double(ProcessInfo.processInfo.physicalMemory) / (1024 * 1024 * 1024)
-        if configuration.name.lowercased().contains("4b") && physicalMemoryGB < 7.5 {
-            throw MLXError.outOfMemory
-        }
+        try enforceMemoryBudget(for: configuration.name)
         
         do {
-            self.modelContainer = try await #huggingFaceLoadModelContainer(
+            self.modelContainer = try await LLMModelFactory.shared.loadContainer(
+                from: downloader,
+                using: tokenizerLoader,
                 configuration: configuration
             )
             self.modelName = configuration.name
@@ -74,6 +63,38 @@ actor MLXEngine {
         } catch {
             throw MLXError.modelLoadFailed(error.localizedDescription)
         }
+    }
+
+    func loadedModelName() -> String? {
+        modelName
+    }
+
+    private func enforceMemoryBudget(for modelName: String) throws {
+        let physicalMemoryGB = Double(ProcessInfo.processInfo.physicalMemory) / (1024 * 1024 * 1024)
+
+        // Keep 4B+ models off 6GB devices, but do not confuse 4-bit quantization with 4B parameters.
+        if Self.largestParameterCount(in: modelName).map({ $0 >= 4.0 }) == true && physicalMemoryGB < 7.5 {
+            throw MLXError.outOfMemory
+        }
+    }
+
+    private static func largestParameterCount(in modelName: String) -> Double? {
+        let pattern = #"(?i)(?:^|[^0-9.])([0-9]+(?:\.[0-9]+)?)\s*b(?:$|[^a-z])"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return nil
+        }
+
+        let range = NSRange(modelName.startIndex..<modelName.endIndex, in: modelName)
+        return regex.matches(in: modelName, range: range).compactMap { match -> Double? in
+            guard
+                match.numberOfRanges > 1,
+                let scalarRange = Range(match.range(at: 1), in: modelName)
+            else {
+                return nil
+            }
+            return Double(modelName[scalarRange])
+        }
+        .max()
     }
 
     func generate(prompt: String) async throws -> Result {

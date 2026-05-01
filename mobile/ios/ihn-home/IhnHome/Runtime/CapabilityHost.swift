@@ -29,6 +29,9 @@ struct SpeechToTextCapability: Sendable {
     let supportedLocales: [String]   // BCP-47, e.g. "en-US"
     let onDevice: Bool                // SFSpeechRecognizer.supportsOnDeviceRecognition
     let tier: SpeechTier
+    let candidateLanguages: [String]
+}
+
 struct AnalyzeImageCapability: Sendable {
     let ocrSupported: Bool                // true on iOS 13+
     let recognitionLanguages: [String]    // BCP-47 list from Vision

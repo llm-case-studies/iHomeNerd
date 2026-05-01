@@ -490,7 +490,7 @@ final class NodeRuntime: ObservableObject {
                 "text": result.text,
                 "processingTime": round(elapsed * 100) / 100,
                 "tokensPerSecond": round(result.tokensPerSecond * 100) / 100,
-                "model": MLXEngine.shared.getLoadedModelName() ?? "unknown",
+                "model": await MLXEngine.shared.loadedModelName() ?? "unknown",
                 "backend": "mlx_ios"
             ]
             return HTTPResponse.json(payload)

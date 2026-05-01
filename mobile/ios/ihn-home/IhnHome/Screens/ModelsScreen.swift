@@ -1,11 +1,30 @@
 import SwiftUI
 import MLXLLM
+import MLXLMCommon
 
 struct ModelsScreen: View {
     @EnvironmentObject private var state: AppState
-    @State private var loading = false
+    @State private var loadingModelId: String? = nil
     @State private var loadedModel: String? = nil
     @State private var errorMessage: String? = nil
+    @State private var errorModelId: String? = nil
+
+    private let models: [OfflineModelOption] = [
+        OfflineModelOption(
+            name: "Qwen 2.5 Instruct",
+            configuration: LLMRegistry.qwen2_5_1_5b,
+            parameterSize: "1.5B parameters",
+            quantization: "4-bit",
+            note: "Balanced small chat model"
+        ),
+        OfflineModelOption(
+            name: "Gemma 4 E2B Instruct",
+            configuration: LLMRegistry.gemma4_e2b_it_4bit,
+            parameterSize: "2B parameters",
+            quantization: "4-bit",
+            note: "Google Gemma family"
+        )
+    ]
 
     var body: some View {
         ScrollView {
@@ -21,50 +40,54 @@ struct ModelsScreen: View {
 
                 Eyebrow(text: "Apple Silicon MLX")
 
-                VStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Qwen 2.5 1.5B (4-bit)")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                            Spacer()
-                            if loadedModel != nil {
-                                Text("Loaded")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(IhnColor.success)
-                            } else {
-                                Text("Not Loaded")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                        
-                        if let err = errorMessage {
-                            Text(err)
-                                .foregroundColor(IhnColor.error)
-                                .font(.system(size: 13))
-                        }
-                        
-                        if loading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        } else {
-                            IhnButton(title: loadedModel != nil ? "Loaded" : "Download & Load", variant: .primary) {
-                                if loadedModel == nil {
-                                    loadModel()
+                VStack(spacing: 10) {
+                    ForEach(models) { model in
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(alignment: .top, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(model.name)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
+                                    Text("\(model.parameterSize) • \(model.quantization) • \(model.note)")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(IhnColor.textSecondary)
+                                    Text(model.configuration.name)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(IhnColor.textTertiary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
                                 }
+
+                                Spacer(minLength: 12)
+
+                                statusLabel(for: model)
                             }
-                            .disabled(loadedModel != nil)
+
+                            if let err = errorMessage, errorModelId == model.id {
+                                Text(err)
+                                    .foregroundColor(IhnColor.error)
+                                    .font(.system(size: 13))
+                            }
+
+                            if loadingModelId == model.id {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            } else {
+                                IhnButton(title: buttonTitle(for: model), variant: .primary) {
+                                    loadModel(model)
+                                }
+                                .disabled(loadedModel == model.id || loadingModelId != nil)
+                            }
                         }
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(IhnColor.bgSurface)
+                                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(IhnColor.border, lineWidth: 1))
+                        )
                     }
-                    .padding(16)
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(IhnColor.bgSurface)
-                        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(IhnColor.border, lineWidth: 1))
-                )
                 .padding(.horizontal, 16)
                 
                 Spacer(minLength: 40)
@@ -73,29 +96,72 @@ struct ModelsScreen: View {
         .background(IhnColor.bgPrimary.ignoresSafeArea())
         .navigationBarHidden(true)
         .onAppear {
-            loadedModel = MLXEngine.shared.getLoadedModelName()
-        }
-    }
-    
-    private func loadModel() {
-        loading = true
-        errorMessage = nil
-        Task {
-            do {
-                // mlx-swift-examples provides a pre-configured Qwen 2.5 configuration we can pull
-                try await MLXEngine.shared.loadFromHub(configuration: LLMRegistry.qwen2_5_1_5b)
+            Task {
+                let modelName = await MLXEngine.shared.loadedModelName()
                 await MainActor.run {
-                    self.loadedModel = LLMRegistry.qwen2_5_1_5b.name
-                    self.loading = false
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = error.localizedDescription
-                    self.loading = false
+                    loadedModel = modelName
                 }
             }
         }
     }
+
+    @ViewBuilder
+    private func statusLabel(for model: OfflineModelOption) -> some View {
+        if loadedModel == model.id {
+            Text("Loaded")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(IhnColor.success)
+        } else if loadingModelId == model.id {
+            Text("Loading")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(IhnColor.accent)
+        } else {
+            Text("Not Loaded")
+                .font(.system(size: 13))
+                .foregroundColor(.gray)
+        }
+    }
+
+    private func buttonTitle(for model: OfflineModelOption) -> String {
+        if loadedModel == model.id {
+            return "Loaded"
+        }
+        if loadedModel != nil {
+            return "Switch Model"
+        }
+        return "Download & Load"
+    }
+    
+    private func loadModel(_ model: OfflineModelOption) {
+        loadingModelId = model.id
+        errorMessage = nil
+        errorModelId = nil
+        Task {
+            do {
+                try await MLXEngine.shared.loadFromHub(configuration: model.configuration)
+                await MainActor.run {
+                    self.loadedModel = model.id
+                    self.loadingModelId = nil
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.errorModelId = model.id
+                    self.loadingModelId = nil
+                }
+            }
+        }
+    }
+}
+
+private struct OfflineModelOption: Identifiable {
+    let name: String
+    let configuration: ModelConfiguration
+    let parameterSize: String
+    let quantization: String
+    let note: String
+
+    var id: String { configuration.name }
 }
 
 #Preview {
