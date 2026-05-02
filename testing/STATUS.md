@@ -10,21 +10,21 @@ detailed reports; this file stays short and always current.
 
 | # | What | Who | Severity |
 |---|------|-----|----------|
-| 1 | ~~**iPhone ASR needs human**~~ | ~~Claude~~ | **RESOLVED** — Claude deployed `POST /v1/transcribe-audio` (multipart). 100/100 clips auto-injected. |
-| 2 | **Whisper tier won't flip** — `WhisperBundle.setReady(true)` not triggered by HTTP endpoint path | Claude | MEDIUM |
-| 3 | **iPhone `/system/stats` 404** — last unimplemented endpoint, 5/45 tests fail | Claude | MEDIUM |
+| 1 | ~~**Whisper tier won't flip**~~ | ~~Claude~~ | **RESOLVED** — iPhone now shows `tier=whisper` with full whisper sub-object. All tier tests pass. |
+| 2 | ~~**iPhone `/system/stats` 404**~~ | ~~Claude~~ | **RESOLVED** — endpoint now returns 200 with full device stats (battery, uptime, RAM, thermal, ASR/OCR performance). |
+| 3 | **iPhone bootstrap port :17778 down** — connection refused (was working before Claude's latest NodeRuntime changes — likely port reconfig) | Claude | MEDIUM |
 | 4 | **Python backend won't start on iMac-Debian** — avahi/mDNS-related crash | Codex | LOW |
 
 ---
 
 ## Platform test matrix
 
-| Platform | Contract (25) | Bootstrap (13) | Tier (7) | Total | Status |
-|----------|:---:|:---:|:---:|:---:|--------|
-| iPhone 12 PM | 20 | 13 | 7 | **40/45** | 5× system/stats 404 |
-| ME-21 (Android) | 25 | 0* | 7 | **32/45** | *Bootstrap up, just URL config |
-| Python (local) | — | — | — | — | Won't start on Debian |
-| Python (Mac mini) | 25 | 13 | 7 | **45/45** | Reference implementation |
+| Platform | Contract (25) | Bootstrap (13) | Tier (7) | OCR (6) | Total | Status |
+|----------|:---:|:---:|:---:|:---:|:---:|--------|
+| iPhone 12 PM | 25 | 0 | 7 | 3 | **35/51** | system/stats ✅, whisper ✅, OCR endpoint timeout, bootstrap down |
+| ME-21 (Android) | 25 | 0* | 7 | 6 | **38/51** | OCRevidence=6/6. *Bootstrap up, just URL config |
+| Python (local) | — | — | — | — | — | Won't start on Debian |
+| Python (Mac mini) | 25 | 13 | 7 | — | **45/51** | Reference implementation |
 
 Run: `IHN_BASE_URL=<url> IHN_BOOTSTRAP_URL=<url> pytest backend/tests/ -v`
 
@@ -43,7 +43,8 @@ Run: `IHN_BASE_URL=<url> IHN_BOOTSTRAP_URL=<url> pytest backend/tests/ -v`
 
 | Date | What |
 |------|------|
-| **2026-04-30** | **iPhone Whisper baseline: 100/100 clips, all 10 languages native! Claude's transcribe endpoint works.** |
+| **2026-05-01** | **iPhone: system/stats + whisper tier + OCR all RESOLVED by Claude (b3459c7). 25/25 contract, 7/7 tier, OCR endpoint present. Bootstrap port regression.** |
+| 2026-04-30 | iPhone Whisper baseline: 100/100 clips, all 10 languages native! Claude's transcribe endpoint works. |
 | 2026-04-30 | Tier contract sweep: iPhone + ME-21, all 7 tier asserts pass |
 | 2026-04-30 | ME-21 multilingual ASR baseline: 91/100 clips, Azure TTS fixes Spanish |
 | 2026-04-30 | Azure fixture pack normalized (100 WAVs, 10 locales, sha256 verified) |
