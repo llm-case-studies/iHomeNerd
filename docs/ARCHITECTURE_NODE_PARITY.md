@@ -301,10 +301,12 @@ Each item lists which app drives it and the natural lab-origin node (where it's 
 
 ---
 
-## 11. Operating principle for copilots working under this doc
+## 11. Operating principle for experts engaging with this initiative
 
-When a copilot is briefed on a slice of this initiative, the brief cites this doc. **The fence is whatever is consistent with the menu-side contract here.** Lab work has no fence beyond "doesn't break the menu" — copilots working on platform-specific lab dishes are encouraged to take the cuffs off. Show off what the hardware can really do.
+When an expert is invited to review or lead a slice of this initiative, the brief cites this doc. **The fence is whatever is consistent with the menu-side contract here.** Lab work has no fence beyond "doesn't break the menu" — experts working on platform-specific lab dishes are encouraged to take the cuffs off. Show off what the hardware can really do.
 
-If a copilot wants to deviate from the menu — for instance, add a capability not in the §3 demand catalog, or change an existing menu shape — the answer is: **update *this doc* first** (with reasoning grounded in §3 demand), get review, then implement.
+If an expert thinks the menu approach is wrong — for instance, that a capability proposed for §3 is misshapen, or that an existing menu shape needs revising — that pushback is more valuable than implementing something flawed. The answer is: **update *this doc* first** (with reasoning grounded in §3 demand), get review, then implement.
 
 Implementation that contradicts the menu is rejected even if it works locally. The menu is the fence. The branch is just where the work lands. The lab is where you go cook for family.
+
+Briefs live in `docs/expert-briefs/`. Each one says *why we're asking you*, *what we're trying to do*, *the slice we'd value your review on*, and (if they're game) *guidance for taking it on as the expert*. The framing is reviewer-first, expert-if-they-want-it — never assignment.
