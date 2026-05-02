@@ -325,3 +325,132 @@ async def test_stt_whisper_absent_when_not_whisper_tier(stt_cap):
     whisper = stt_cap.get("whisper")
     if tier is not None and tier != "whisper":
         assert whisper is None, f"whisper sub-object must be absent (not null) when tier=={tier}, got {type(whisper)}"
+
+
+# ===================================================================
+# Analyze Image / OCR capability tests
+# ===================================================================
+
+
+def _get_ocr_capability(capabilities_detail: dict) -> dict | None:
+    """Find the analyze_image capability."""
+    caps = capabilities_detail.get("capabilities", {})
+    return caps.get("analyze_image")
+
+
+@pytest.fixture
+async def ocr_cap(client: httpx.AsyncClient) -> dict | None:
+    r = await client.get("/capabilities")
+    detail = r.json().get("_detail", {})
+    return _get_ocr_capability(detail)
+
+
+async def test_ocr_capability_present_or_skip(ocr_cap):
+    if ocr_cap is None:
+        pytest.skip("no analyze_image capability on this node")
+
+
+async def test_ocr_is_available(ocr_cap):
+    if ocr_cap is None:
+        pytest.skip("no analyze_image capability")
+    assert ocr_cap.get("available") is True, f"analyze_image.available must be True, got {ocr_cap.get('available')}"
+
+
+async def test_ocr_supported(ocr_cap):
+    if ocr_cap is None:
+        pytest.skip("no analyze_image capability")
+    # iPhone uses ocr_supported, ME-21 uses ocr_only
+    ocr_flag = ocr_cap.get("ocr_supported") or ocr_cap.get("ocr_only")
+    assert ocr_flag is True, f"analyze_image must support OCR (ocr_supported=true), got {ocr_flag}"
+
+
+async def test_ocr_recognition_languages(ocr_cap):
+    if ocr_cap is None:
+        pytest.skip("no analyze_image capability")
+    langs = ocr_cap.get("recognition_languages") or ocr_cap.get("languages") or []
+    assert isinstance(langs, list), f"recognition_languages must be list, got {type(langs)}"
+    assert len(langs) > 0, "recognition_languages must be non-empty"
+
+
+async def test_ocr_endpoint(client: httpx.AsyncClient, ocr_cap):
+    if ocr_cap is None:
+        pytest.skip("no analyze_image capability")
+
+    import base64, os
+
+    # Use a real screenshot if available, otherwise a tiny test PNG
+    test_images = [
+        "mobile/design/claude/2026-04-24-initial-concepts/screenshots/android-emulator-ihn-home-first-run.png",
+        "browser-extension/ihomenerd-bridge/icons/icon-128.png",
+    ]
+    png_bytes = None
+    for img_path in test_images:
+        if os.path.exists(img_path):
+            with open(img_path, "rb") as f:
+                png_bytes = f.read()
+            break
+
+    if png_bytes is None:
+        png_bytes = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
+
+    transport = ocr_cap.get("upload_transport", "")
+    mime = "image/png"
+
+    # Try JSON base64 first (ME-21 Android style)
+    if "json" in transport or not transport:
+        b64 = base64.b64encode(png_bytes).decode()
+        for path in ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr"):
+            r = await client.post(path, json={"imageBase64": b64, "mimeType": mime})
+            if r.status_code != 404:
+                # Accept 200 (success) or 400 (bad image but valid endpoint)
+                assert r.status_code in (200, 400), \
+                    f"{path} returned {r.status_code}: {r.text[:200]}"
+                if r.status_code == 200:
+                    result = r.json()
+                    assert "text" in result, f"response missing 'text' key: {list(result.keys())[:5]}"
+                return
+
+    # Try multipart (iPhone style)
+    boundary = "----ocrboundary"
+    body = (
+        f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"test.png\"\r\n"
+        f"Content-Type: {mime}\r\n\r\n"
+    ).encode() + png_bytes + f"\r\n--{boundary}--\r\n".encode()
+
+    for path in ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr"):
+        r = await client.post(path, content=body, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        if r.status_code != 404:
+            assert r.status_code in (200, 400), \
+                f"{path} returned {r.status_code}: {r.text[:200]}"
+            if r.status_code == 200:
+                result = r.json()
+                assert "text" in result, f"response missing 'text' key"
+            return
+
+    pytest.skip("no OCR endpoint found")
+
+
+async def test_ocr_endpoint_rejects_empty(client: httpx.AsyncClient, ocr_cap):
+    if ocr_cap is None:
+        pytest.skip("no analyze_image capability")
+
+    # JSON base64 with empty image
+    for path in ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr"):
+        r = await client.post(path, json={"imageBase64": ""})
+        if r.status_code != 404:
+            # 400 or 415 are both valid rejection codes
+            assert r.status_code in (400, 415, 422), \
+                f"{path} should reject empty body (400/415/422), got {r.status_code}"
+            return
+
+    # Multipart with empty
+    boundary = "----emptyboundary"
+    empty = f"--{boundary}\r\n\r\n--{boundary}--\r\n".encode()
+    for path in ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr"):
+        r = await client.post(path, content=empty, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        if r.status_code != 404:
+            assert r.status_code in (400, 415, 422), \
+                f"{path} should reject empty body, got {r.status_code}"
+            return
+
+    pytest.skip("no OCR endpoint found")
