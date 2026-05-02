@@ -1,25 +1,27 @@
 import Foundation
 
-// Reports whether the on-device Whisper model is downloaded + loaded.
-// CapabilityHost.detectTier() consults this synchronously when building
-// the /capabilities snapshot, so we cache an atomic bool that the
-// WhisperEngine flips after a successful load. Until the user has
-// actually used Whisper at least once the cache is false, and we
-// advertise tier="parallel". After a successful load it flips true and
-// the next /capabilities request will surface tier="whisper".
+// Reports whether the on-device Whisper model has ever finished loading on
+// this device. CapabilityHost.detectTier() consults this synchronously
+// when building the /capabilities snapshot. The flag persists to
+// UserDefaults so it survives app relaunches: once the user has
+// successfully warmed Whisper once, every subsequent NodeRuntime.start()
+// already knows we're whisper-tier and advertises accordingly.
+// NodeRuntime.start() pairs that with a background prepare() call so the
+// engine is actually warm by the time a /v1/transcribe-audio request
+// arrives.
 
 enum WhisperBundle {
     private static let lock = NSLock()
-    private static var _ready: Bool = false
+    private static let defaultsKey = "whisper.bundle.ready.v1"
 
     static var isBundled: Bool {
         lock.lock(); defer { lock.unlock() }
-        return _ready
+        return UserDefaults.standard.bool(forKey: defaultsKey)
     }
 
     static func setReady(_ ready: Bool) {
         lock.lock(); defer { lock.unlock() }
-        _ready = ready
+        UserDefaults.standard.set(ready, forKey: defaultsKey)
     }
 
     static var modelName: String { "openai_whisper-base" }

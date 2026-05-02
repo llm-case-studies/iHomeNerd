@@ -22,7 +22,7 @@ private struct RuntimeSnapshot: Sendable {
     let fingerprint: String
     let physicalRAM: UInt64
     let arch: String
-    let capabilities: CapabilitiesSnapshot
+    let startedAt: Date
 }
 
 private struct BootstrapSnapshot: Sendable {
@@ -145,8 +145,22 @@ final class NodeRuntime: ObservableObject {
             fingerprint: identity.fingerprintSHA256,
             physicalRAM: ProcessInfo.processInfo.physicalMemory,
             arch: Self.detectArch(),
-            capabilities: CapabilityHost.snapshot()
+            startedAt: Date()
         )
+
+        // Capability shape (tts/stt/whisper tier) is rebuilt live on every
+        // /capabilities, /discover, /health request — see
+        // CapabilityHost.snapshot() callers below. That way a Whisper warmup
+        // mid-session flips tier from "parallel" to "whisper" on the next
+        // request, no Node toggle required. The auto-prewarm below runs once
+        // per Node start so the model is resident by the time the first
+        // /v1/transcribe-audio call lands and we don't pay ~30s cold-start
+        // under a 503-prone request.
+        if WhisperBundle.isBundled {
+            Task.detached(priority: .utility) {
+                await WhisperEngine.shared.prepare()
+            }
+        }
 
         listener.stateUpdateHandler = { [weak self] state in
             Task { @MainActor in
@@ -307,6 +321,15 @@ final class NodeRuntime: ObservableObject {
             }
             return
         }
+        if request.method == "POST", request.path == "/v1/vision/ocr" {
+            Task.detached {
+                let response = await handleOCR(request: request, snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
         let response = respond(to: request, snapshot: snapshot)
         connection.send(content: response, completion: .contentProcessed { _ in
             connection.cancel()
@@ -321,6 +344,8 @@ final class NodeRuntime: ObservableObject {
             return HTTPResponse.json(healthJson(snapshot))
         case ("GET", "/capabilities"):
             return HTTPResponse.json(capabilitiesJson(snapshot))
+        case ("GET", "/system/stats"):
+            return HTTPResponse.json(systemStatsJson(snapshot))
         case ("GET", "/"):
             return HTTPResponse.html(indexHTML(snapshot))
         default:
@@ -394,6 +419,52 @@ final class NodeRuntime: ObservableObject {
         }
     }
 
+    nonisolated private static func handleOCR(request: HTTPRequest,
+                                              snapshot: RuntimeSnapshot) async -> Data {
+        guard let boundary = Multipart.boundary(from: request.headers["content-type"]) else {
+            return HTTPResponse.json(["detail": "expected multipart/form-data"], status: 400)
+        }
+        guard let parts = Multipart.parse(body: request.body, boundary: boundary) else {
+            return HTTPResponse.json(["detail": "could not parse multipart body"], status: 400)
+        }
+        guard let filePart = parts.first(where: { $0.name == "file" }), !filePart.data.isEmpty else {
+            return HTTPResponse.json(["detail": "missing or empty 'file' part"], status: 400)
+        }
+        let language: String? = parts.first(where: { $0.name == "language" })
+            .flatMap { String(data: $0.data, encoding: .utf8) }?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let validHint: String?
+        if let hint = language, !hint.isEmpty, OCREngine.supportedRecognitionLanguages.contains(hint) {
+            validHint = hint
+        } else {
+            validHint = nil
+        }
+        
+        let t0 = Date()
+        do {
+            let result = try await OCREngine.recognize(imageData: filePart.data, languageHint: validHint)
+            let elapsed = Date().timeIntervalSince(t0)
+            
+            var payload: [String: Any] = [
+                "text": result.text,
+                "lineCount": result.lineCount,
+                "processingTime": round(elapsed * 100) / 100,
+                "model": "VNRecognizeTextRequest",
+                "backend": "vision_ios"
+            ]
+            if let lang = result.language {
+                payload["language"] = lang
+            }
+            return HTTPResponse.json(payload)
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "OCR failed: \(error.localizedDescription)"],
+                status: 502
+            )
+        }
+    }
+
     nonisolated private static func whisperLangCode(_ raw: String?) -> String? {
         guard let raw, !raw.isEmpty else { return nil }
         // BCP-47 → Whisper short code, mirrors backend/app/asr.py mapping so
@@ -436,7 +507,7 @@ final class NodeRuntime: ObservableObject {
             "strengths": ["portable controller", "trust helper", "LAN node"],
             "accelerators": [],
             "ollama": false,
-            "capabilities": capabilityFlatNames(s.capabilities),
+            "capabilities": capabilityFlatNames(CapabilityHost.snapshot()),
             "network_ips": s.ips,
             "models": [],
         ]
@@ -452,7 +523,7 @@ final class NodeRuntime: ObservableObject {
             "ollama": false,
             "providers": ["ios_local"],
             "models": [:] as [String: String],
-            "available_capabilities": capabilityFlatNames(s.capabilities),
+            "available_capabilities": capabilityFlatNames(CapabilityHost.snapshot()),
             "binding": "0.0.0.0",
             "network_ips": s.ips,
             "port": s.port,
@@ -463,7 +534,7 @@ final class NodeRuntime: ObservableObject {
         // Mirrors Python backend's flat-booleans + _detail shape: top-level keys
         // are capability flags, _detail carries identity metadata + per-capability
         // sub-objects (voice lists, models, etc.).
-        let (flat, detailCaps) = capabilityMaps(s.capabilities)
+        let (flat, detailCaps) = capabilityMaps(CapabilityHost.snapshot())
         let detail: [String: Any] = [
             "hostname": s.hostname,
             "product": product,
@@ -529,10 +600,53 @@ final class NodeRuntime: ObservableObject {
                 "backend": "whisperkit_ios",
                 "model": WhisperBundle.modelName,
                 "endpoint": "/v1/transcribe-audio",
-                "transport": "multipart/form-data",
+                "upload_transport": "multipart/form-data",
+                "preferred_upload_mime_type": "audio/wav",
+            ] as [String: Any]
+        }
+        if let ai = c.analyzeImage {
+            flat["analyze_image"] = true
+            detail["analyze_image"] = [
+                "available": true,
+                "ocr_supported": ai.ocrSupported,
+                "recognition_language_count": ai.recognitionLanguages.count,
+                "recognition_languages": ai.recognitionLanguages,
+                "endpoint": "/v1/vision/ocr",
+                "upload_transport": "multipart/form-data",
+                "preferred_upload_mime_type": "image/png",
             ] as [String: Any]
         }
         return (flat, detail)
+    }
+
+    nonisolated private static func systemStatsJson(_ s: RuntimeSnapshot) -> [String: Any] {
+        // Minimal Python-contract-compatible /system/stats. The contract pack
+        // requires uptime_seconds (numeric), session_count (int), one of
+        // storage_bytes / app_memory_pss_bytes (numeric), connected_apps
+        // (list). iOS doesn't have the SQLite-backed sessions the Python
+        // backend tracks, so session_count is 0 today; that becomes real
+        // when we wire local persistence.
+        let uptime = max(0, Date().timeIntervalSince(s.startedAt))
+        return [
+            "uptime_seconds": round(uptime * 100) / 100,
+            "session_count": 0,
+            "app_memory_pss_bytes": appResidentBytes(),
+            "connected_apps": [] as [String],
+            "hostname": s.hostname,
+            "product": product,
+            "version": version,
+        ]
+    }
+
+    nonisolated private static func appResidentBytes() -> UInt64 {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<integer_t>.size)
+        let kr = withUnsafeMutablePointer(to: &info) { ptr -> kern_return_t in
+            ptr.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+            }
+        }
+        return kr == KERN_SUCCESS ? info.resident_size : 0
     }
 
     nonisolated private static func capabilityFlatNames(_ c: CapabilitiesSnapshot) -> [String] {
@@ -540,6 +654,7 @@ final class NodeRuntime: ObservableObject {
         if c.textToSpeech != nil { names.append("text_to_speech") }
         if c.speechToText != nil { names.append("speech_to_text") }
         if c.transcribeAudio { names.append("transcribe_audio") }
+        if c.analyzeImage != nil { names.append("analyze_image") }
         return names
     }
 
