@@ -1,7 +1,7 @@
 """Agents domain — autonomous task execution with ReAct loop.
 
 Each agent has a role, a model, and a set of tools it can call.
-Tasks are executed via a think→act→observe loop using Ollama.
+Tasks are executed via a think→act→observe loop using the configured LLM provider.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import subprocess
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from .. import ollama, docstore
+from .. import llm, docstore
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ async def execute_tool(tool_name: str, args: str) -> str:
 
     elif tool_name == "search_docs":
         try:
-            query_embedding = await ollama.embed(args)
+            query_embedding = await llm.embed(args)
             chunks = docstore.search_similar(query_embedding, k=3, min_score=0.4)
             if not chunks:
                 return "No relevant documents found."
@@ -130,7 +130,7 @@ async def execute_tool(tool_name: str, args: str) -> str:
 
     elif tool_name == "summarize":
         try:
-            summary = await ollama.generate(
+            summary = await llm.generate(
                 f"Summarize the following concisely:\n\n{args[:3000]}",
                 tier="light",
             )
@@ -211,7 +211,7 @@ async def run_react_loop(agent: dict, task: str) -> list[dict]:
 
     for iteration in range(MAX_ITERATIONS):
         try:
-            response = await ollama.chat(messages, tier="medium")
+            response = await llm.chat(messages, tier="medium")
         except Exception as e:
             activities.append({"type": "message", "content": f"Error: Model unavailable — {e}"})
             break

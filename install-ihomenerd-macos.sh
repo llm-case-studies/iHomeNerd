@@ -457,7 +457,7 @@ if echo "$HEALTH_PAYLOAD" | grep -q '"ok":true'; then
 elif [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
     if curl -fsS "http://127.0.0.1:${MLX_SERVER_PORT}/v1/models" >/dev/null 2>&1; then
         ok "MLX sidecar is reachable too"
-        warn "The iHN Python provider adapter for MLX is still being wired; chat may not route to MLX yet."
+        ok "iHN is configured to route text chat through MLX"
     else
         warn "The Brain is up, but the MLX sidecar is not ready yet."
     fi

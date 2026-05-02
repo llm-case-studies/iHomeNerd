@@ -144,5 +144,6 @@ This repo now starts the flow with:
 - iOS `GET /setup/mac/manifest`
 - macOS preflight fields for Apple Silicon / MLX readiness
 - macOS installer switches for future MLX provider selection
+- Python backend text-provider routing for Ollama or MLX chat sidecars
 
 The next real milestone is pairing approval plus token-gated certificate handoff.
