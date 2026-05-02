@@ -217,6 +217,55 @@ async def test_system_stats_connected_apps(client: httpx.AsyncClient):
 
 
 # ---------------------------------------------------------------------------
+# /system/stats — qwen-branch fields (thermal, battery, power)
+# ---------------------------------------------------------------------------
+
+
+async def test_system_stats_thermal_field(client: httpx.AsyncClient):
+    r = await client.get("/system/stats")
+    body = r.json()
+    # iPhone uses thermal_state, ME-21 uses thermal_status
+    thermal = body.get("thermal_state") or body.get("thermal_status")
+    if thermal is not None:
+        assert isinstance(thermal, str), f"thermal field must be string, got {type(thermal)}"
+        valid = {"nominal", "fair", "serious", "critical", "none", "unknown"}
+        assert thermal in valid, f"thermal '{thermal}' not in {valid}"
+
+
+async def test_system_stats_battery_field(client: httpx.AsyncClient):
+    r = await client.get("/system/stats")
+    body = r.json()
+    # iPhone uses battery_level_percent, ME-21 uses battery_percent
+    battery = body.get("battery_level_percent") or body.get("battery_percent")
+    if battery is not None:
+        assert isinstance(battery, (int, float)), f"battery must be numeric, got {type(battery)}"
+
+
+async def test_system_stats_power_fields(client: httpx.AsyncClient):
+    r = await client.get("/system/stats")
+    body = r.json()
+    # iPhone-only fields — optional on other platforms
+    ac = body.get("is_on_ac_power")
+    if ac is not None:
+        assert isinstance(ac, bool), f"is_on_ac_power must be bool, got {type(ac)}"
+    lpm = body.get("low_power_mode_enabled")
+    if lpm is not None:
+        assert isinstance(lpm, bool), f"low_power_mode_enabled must be bool, got {type(lpm)}"
+
+
+async def test_system_stats_has_version_and_product(client: httpx.AsyncClient):
+    r = await client.get("/system/stats")
+    body = r.json()
+    # iPhone includes product + version in system/stats; ME-21 and Python backend may not
+    product = body.get("product")
+    version = body.get("version")
+    if product is not None:
+        assert product == "iHomeNerd", f"product={product}"
+    if version is not None:
+        assert isinstance(version, str), "version must be string"
+
+
+# ---------------------------------------------------------------------------
 # GET / (root)
 # ---------------------------------------------------------------------------
 
