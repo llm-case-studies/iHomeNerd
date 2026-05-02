@@ -1,6 +1,6 @@
 """Capability registry — what this Nerd can do.
 
-Probes Ollama for available models and maps them to capabilities
+Probes the configured LLM provider for available models and maps them to capabilities
 using tier-based resolution.
 """
 
@@ -9,7 +9,7 @@ from __future__ import annotations
 import socket
 from dataclasses import dataclass, field
 
-from . import ollama, tts, asr, vision, persistence
+from . import llm, tts, asr, vision, persistence
 
 
 @dataclass
@@ -22,13 +22,21 @@ class Capability:
     extra: dict = field(default_factory=dict)
 
 
-async def discover() -> list[Capability]:
-    """Probe Ollama and build the capability list based on available models."""
-    await ollama.check_health()
+async def discover(llm_health: dict | None = None) -> list[Capability]:
+    """Probe the LLM provider and build the capability list based on available models."""
+    if llm_health is None:
+        llm_health = await llm.check_health()
 
     def _cap(name: str, tier: str, core: bool = True) -> Capability:
-        model = ollama.resolve(tier)
-        return Capability(name=name, available=model is not None, tier=tier, model=model, core=core)
+        model = llm.resolve(tier)
+        extra = {
+            "backend": llm_health.get("backend", llm.backend_name()),
+            "provider": llm_health.get("provider", llm.provider_name()),
+            "endpoint": "/v1/chat",
+        }
+        if model and llm.provider_name() == "mlx":
+            extra["loaded_pack_name"] = model
+        return Capability(name=name, available=model is not None, tier=tier, model=model, core=core, extra=extra)
 
     return [
         # Core capabilities
@@ -83,17 +91,24 @@ async def discover() -> list[Capability]:
     ]
 
 
-async def capabilities_response() -> dict:
+async def capabilities_response(llm_health: dict | None = None) -> dict:
     """Build the /capabilities JSON response."""
-    caps = await discover()
-    ollama_health = await ollama.check_health()
+    if llm_health is None:
+        llm_health = await llm.check_health()
+    caps = await discover(llm_health)
 
     return {
         "product": "iHomeNerd",
         "version": "0.1.0",
         "api_version": 1,
         "hostname": socket.gethostname(),
-        "ollama": ollama_health["ok"],
+        "ollama": llm_health.get("ollama", {}).get("ok", False),
+        "llm": {
+            "ok": llm_health["ok"],
+            "provider": llm_health.get("provider", llm.provider_name()),
+            "backend": llm_health.get("backend", llm.backend_name()),
+            "model": llm_health.get("chatModel"),
+        },
         "capabilities": {
             c.name: {
                 "available": c.available,

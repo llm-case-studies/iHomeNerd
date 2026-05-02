@@ -12,7 +12,7 @@ import logging
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from .. import ollama
+from .. import llm
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,8 @@ NEW_MODELS = {"gemma4:e2b", "gemma4:e4b"}
 @router.get("/resources")
 async def get_resources():
     """List available apps and models for the image builder."""
-    # Get actually available models from Ollama
-    health = await ollama.check_health()
+    # Get actually available models from the configured LLM provider.
+    health = await llm.check_health()
     available_models = health.get("models", [])
 
     models = []

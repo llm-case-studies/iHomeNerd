@@ -30,6 +30,7 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_ihomenerd._tcp</string>
+		<string>_ihomenerd-setup._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>iHN Home discovers and pairs with your iHomeNerd gateway and nodes on your local network. It does not send your data to outside services.</string>

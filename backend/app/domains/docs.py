@@ -1,6 +1,6 @@
 """Docs domain — local document RAG pipeline.
 
-Ingest local folders (PDF, TXT, MD, CSV), chunk text, embed with Ollama,
+Ingest local folders (PDF, TXT, MD, CSV), chunk text, embed with the local provider,
 and answer questions with source citations.
 """
 
@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from .. import ollama, docstore, vision
+from .. import llm, docstore, vision
 
 logger = logging.getLogger(__name__)
 
@@ -117,9 +117,9 @@ async def ingest_folder(req: IngestRequest):
         for page_num, text in pages:
             text_chunks = docstore.chunk_text(text)
             for chunk_text in text_chunks:
-                # Generate embedding via Ollama
+                # Generate embedding via the provider layer.
                 try:
-                    embedding = await ollama.embed(chunk_text)
+                    embedding = await llm.embed(chunk_text)
                 except Exception as e:
                     logger.warning("Embedding failed for chunk in %s: %s", filepath.name, e)
                     embedding = None
@@ -154,14 +154,14 @@ async def ask_docs(req: AskRequest):
     1. Embed the question
     2. Vector-search across selected collections
     3. Build a context prompt with top chunks
-    4. Generate an answer with Ollama
+    4. Generate an answer with the configured LLM provider
     """
     if not req.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
     # Step 1: Embed the question
     try:
-        query_embedding = await ollama.embed(req.question)
+        query_embedding = await llm.embed(req.question)
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Embedding model not available: {e}")
 
@@ -190,7 +190,7 @@ async def ask_docs(req: AskRequest):
             "Answer concisely and cite which source(s) you used."
         )
 
-        answer = await ollama.generate(prompt, tier="medium")
+        answer = await llm.generate(prompt, tier="medium")
     else:
         answer = "I couldn't find any relevant information in your selected collections. Try adding more documents or rephrasing your question."
 
@@ -206,7 +206,7 @@ async def ask_docs(req: AskRequest):
         for chunk in chunks
     ]
 
-    model = ollama.resolve("medium")
+    model = llm.resolve("medium")
 
     return {
         "answer": answer.strip(),

@@ -109,6 +109,46 @@ find_ollama_cli() {
     return 1
 }
 
+python_is_311_or_newer() {
+    local candidate="$1"
+    "$candidate" - <<'PY' >/dev/null 2>&1
+import sys
+raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
+PY
+}
+
+find_python311() {
+    local candidates=()
+    if [[ -n "${IHN_PYTHON_BIN:-}" ]]; then
+        candidates+=("${IHN_PYTHON_BIN}")
+    fi
+    candidates+=(
+        python3.13
+        python3.12
+        python3.11
+        /opt/homebrew/bin/python3.13
+        /opt/homebrew/bin/python3.12
+        /opt/homebrew/bin/python3.11
+        /usr/local/bin/python3.13
+        /usr/local/bin/python3.12
+        /usr/local/bin/python3.11
+        python3
+    )
+
+    local candidate
+    for candidate in "${candidates[@]}"; do
+        if command -v "$candidate" >/dev/null 2>&1 && python_is_311_or_newer "$candidate"; then
+            command -v "$candidate"
+            return 0
+        fi
+        if [[ -x "$candidate" ]] && python_is_311_or_newer "$candidate"; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
 load_launch_agent() {
     local label="$1"
     local plist_path="$2"
@@ -155,17 +195,30 @@ fi
 ok "Disk: ${DISK_AVAIL}GB available"
 
 command -v curl >/dev/null 2>&1 || fail "curl is required."
-command -v python3 >/dev/null 2>&1 || fail "python3 is required."
-python3 - <<'PY' >/dev/null 2>&1
+PYTHON_BIN="$(find_python311 || true)"
+[[ -n "$PYTHON_BIN" ]] || fail "Python 3.11+ is required. Install Homebrew Python with: brew install python@3.12"
+"$PYTHON_BIN" - <<'PY' >/dev/null 2>&1
 import venv
 print("ok")
 PY
-ok "Python 3 with venv support is ready"
+PYTHON_VERSION="$("$PYTHON_BIN" - <<'PY'
+import sys
+print(".".join(map(str, sys.version_info[:3])))
+PY
+)"
+ok "Python ${PYTHON_VERSION} with venv support is ready (${PYTHON_BIN})"
 
 step "Choosing the right starter model pack"
 
+MAC_LLM_BACKEND="${IHN_MAC_LLM_BACKEND:-ollama}"
+MLX_MODEL="${IHN_MLX_MODEL:-mlx-community/gemma-4-e2b-it-4bit}"
+MLX_SERVER_PORT="${IHN_MLX_SERVER_PORT:-11435}"
 MODELS_TO_PULL=()
-if [[ "$ARCH" == "arm64" && $RAM_GB -ge 24 ]]; then
+if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
+    [[ "$ARCH" == "arm64" ]] || fail "Native MLX backend requires an Apple Silicon Mac (arm64)."
+    MODELS_TO_PULL=()
+    MODEL_DESC="MLX native chat (${MLX_MODEL})"
+elif [[ "$ARCH" == "arm64" && $RAM_GB -ge 24 ]]; then
     MODELS_TO_PULL=("gemma4:e2b" "nomic-embed-text")
     MODEL_DESC="Gemma 4 (2B) + embeddings"
 elif [[ $RAM_GB -ge 16 ]]; then
@@ -235,6 +288,9 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PA
 export IHN_DATA_DIR="${INSTALL_DIR}"
 export IHN_LAN_MODE=1
 export IHN_OLLAMA_URL="http://127.0.0.1:11434"
+export IHN_LLM_PROVIDER="${MAC_LLM_BACKEND}"
+export IHN_MLX_MODEL="${MLX_MODEL}"
+export IHN_MLX_SERVER_URL="http://127.0.0.1:${MLX_SERVER_PORT}"
 export IHN_CA_CERT_PATH="${HOME_CA_DIR}/ca.crt"
 export IHN_CA_KEY_PATH="${HOME_CA_DIR}/ca.key"
 export IHN_CERT_LAN_IP="${LAN_IP}"
@@ -247,9 +303,14 @@ ok "Runtime launcher prepared for ${LAN_IP} (${HOSTNAME_LIST})"
 
 step "Installing Python environment"
 
-python3 -m venv "${INSTALL_DIR}/backend/.venv"
+"$PYTHON_BIN" -m venv "${INSTALL_DIR}/backend/.venv"
 "${INSTALL_DIR}/backend/.venv/bin/pip" install --upgrade pip >/dev/null
 "${INSTALL_DIR}/backend/.venv/bin/pip" install "${INSTALL_DIR}/backend"
+if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
+    say "Installing MLX runtime for Apple Silicon..."
+    "${INSTALL_DIR}/backend/.venv/bin/pip" install mlx-lm
+    ok "MLX runtime is ready"
+fi
 ok "Python environment is ready"
 
 step "Registering launchd services"
@@ -281,6 +342,42 @@ EOF
 
 load_launch_agent "com.ihomenerd.brain" "${LAUNCH_AGENTS_DIR}/com.ihomenerd.brain.plist"
 ok "iHomeNerd launchd agent loaded"
+
+if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
+    cat > "${INSTALL_DIR}/run-mlx.sh" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH"
+exec "${INSTALL_DIR}/backend/.venv/bin/python" -m mlx_lm.server --host 127.0.0.1 --port "${MLX_SERVER_PORT}" --model "${MLX_MODEL}"
+EOF
+    chmod +x "${INSTALL_DIR}/run-mlx.sh"
+
+    cat > "${LAUNCH_AGENTS_DIR}/com.ihomenerd.mlx.plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.ihomenerd.mlx</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${INSTALL_DIR}/run-mlx.sh</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/ihomenerd-mlx.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/ihomenerd-mlx.err</string>
+</dict>
+</plist>
+EOF
+
+    load_launch_agent "com.ihomenerd.mlx" "${LAUNCH_AGENTS_DIR}/com.ihomenerd.mlx.plist"
+    ok "MLX launchd agent loaded on 127.0.0.1:${MLX_SERVER_PORT}"
+fi
 
 OLLAMA_CLI="$(find_ollama_cli || true)"
 if [[ -n "$OLLAMA_CLI" ]]; then
@@ -318,15 +415,23 @@ EOF
     load_launch_agent "com.ihomenerd.ollama" "${LAUNCH_AGENTS_DIR}/com.ihomenerd.ollama.plist"
     ok "Ollama launchd agent loaded"
 
-    say "Pulling starter models into Ollama..."
-    for model in "${MODELS_TO_PULL[@]}"; do
-        say "Pulling ${model}..."
-        "${OLLAMA_CLI}" pull "$model" 2>&1 | tail -1
-        ok "${model} ready"
-    done
+    if [[ ${#MODELS_TO_PULL[@]} -gt 0 ]]; then
+        say "Pulling starter models into Ollama..."
+        for model in "${MODELS_TO_PULL[@]}"; do
+            say "Pulling ${model}..."
+            "${OLLAMA_CLI}" pull "$model" 2>&1 | tail -1
+            ok "${model} ready"
+        done
+    else
+        ok "No Ollama starter models requested for ${MAC_LLM_BACKEND} mode"
+    fi
 else
     warn "Ollama was not found on this Mac."
-    warn "Install the Ollama app, then re-run this script or let the gateway manage this node as a light controller first."
+    if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
+        warn "Continuing with native MLX mode. Document RAG embeddings may still need Ollama later."
+    else
+        warn "Install the Ollama app, then re-run this script or let the gateway manage this node as a light controller first."
+    fi
 fi
 
 step "Almost there"
@@ -349,6 +454,13 @@ fi
 
 if echo "$HEALTH_PAYLOAD" | grep -q '"ok":true'; then
     ok "Model backend is reachable too"
+elif [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
+    if curl -fsS "http://127.0.0.1:${MLX_SERVER_PORT}/v1/models" >/dev/null 2>&1; then
+        ok "MLX sidecar is reachable too"
+        ok "iHN is configured to route text chat through MLX"
+    else
+        warn "The Brain is up, but the MLX sidecar is not ready yet."
+    fi
 else
     warn "The Brain is up, but Ollama is not ready yet."
 fi

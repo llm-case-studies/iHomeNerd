@@ -20,7 +20,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import httpx
 
-from .. import ollama
+from .. import llm
 
 logger = logging.getLogger(__name__)
 
@@ -806,7 +806,7 @@ async def _scan_file_analysis(target: str) -> dict:
 async def _llm_analyze(prompt: str, logs: list[str]) -> list[dict]:
     """Ask the LLM to produce structured findings."""
     try:
-        raw = await ollama.generate(prompt, tier="medium")
+        raw = await llm.generate(prompt, tier="medium")
         # Try to parse JSON from the response
         # Strip markdown code fences if present
         cleaned = raw.strip()
