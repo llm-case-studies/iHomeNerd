@@ -40,19 +40,29 @@ Full report: `testing/results/IPHONE_WHISPER_ASR_BASELINE_2026-04-30.md`
 
 Test: "Say hello in 3 words." → "Hello, how can I help?"
 
-### 2.2 iPhone (MLX)
+### 2.2 iPhone (MLX — Qwen + Gemma)
 
-| Field | Value |
-|-------|-------|
-| Endpoint | `POST /v1/chat` (prompt format) |
-| Backend | `mlx_ios` |
-| Model | Unknown (MLX engine, needs model download) |
-| Status | ⚠️ **Model not loaded** — "MLX inference failed: Model not loaded." |
+Both models tested. Only one active at a time (last loaded wins).
+No `model` parameter in the API yet — switching requires loading via the app.
 
-The endpoint validates input and routes to MLX, but the model hasn't been
-downloaded/prewarmed yet. Similar to the Whisper cold-start pattern —
-first use triggers model download. Needs a user interaction or prewarm
-call to load the Gemma/Qwen weights.
+| Metric | Qwen 2.5-1.5B | Gemma 4 |
+|--------|:---:|:---:|
+| Model ID | `Qwen2.5-1.5B-Instruct-4bit` | `gemma-4-e2b-it-4bit` |
+| Quantization | 4-bit | 4-bit |
+| Speed (tok/s) | **32** | 21 |
+| Math (17×24) | 408 ✅ | 408 ✅ |
+| Code (is_prime) | — | ✅ (6k±1 optimization) |
+| Spanish | ¡Hola! ✅ | — |
+| Active | ⚠️ Overwritten by Gemma | ✅ Currently active |
+
+**Key finding:** Qwen is 50% faster (32 vs 21 tok/s). Gemma produced
+more complete code. The `qwen/system-stats-device-state` branch has
+`MLXEngine.swift` with model switching support — once merged, the API
+should accept a `model` parameter. For now, last-loaded model wins.
+
+**Model switch crash risk:** The `qwen` branch includes a
+[model-switch crash recipe](https://github.com/llm-case-studies/iHomeNerd/blob/qwen/system-stats-device-state/docs/copilot-handoffs/2026-05-01_kimi_mlx-model-switch-crash.md)
+— consecutive loads of different 4-bit models may crash MLX.
 
 ---
 
@@ -64,6 +74,6 @@ call to load the Gemma/Qwen weights.
 | `speech_to_text` | ✅ (whisper) | ✅ (transcription) |
 | `transcribe_audio` | ✅ (multipart) | ✅ (json-base64) |
 | `analyze_image` | ✅ (VNRecognizeTextRequest) | ✅ (android_mlkit) |
-| `chat` | ⚠️ (model not loaded) | ✅ (gemma-4) |
+| `chat` | ✅ Qwen 32tok/s + Gemma 21tok/s (MLX) | ✅ Gemma 4 (LiteRT) | iPhone: only one active at a time, no API model switch yet |
 | `compare_pinyin` | — | ✅ |
 | `normalize_pinyin` | — | ✅ |
