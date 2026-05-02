@@ -394,38 +394,40 @@ async def test_ocr_endpoint(client: httpx.AsyncClient, ocr_cap):
         png_bytes = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
 
     transport = ocr_cap.get("upload_transport", "")
-    mime = "image/png"
+    mime = ocr_cap.get("preferred_upload_mime_type", "image/png")
+    paths = ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr")
 
-    # Try JSON base64 first (ME-21 Android style)
-    if "json" in transport or not transport:
-        b64 = base64.b64encode(png_bytes).decode()
-        for path in ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr"):
-            r = await client.post(path, json={"imageBase64": b64, "mimeType": mime})
+    # Try multipart first if capability says so (iPhone style)
+    if "multipart" in transport:
+        boundary = "----ocrboundary"
+        body = (
+            f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"test.png\"\r\n"
+            f"Content-Type: {mime}\r\n\r\n"
+        ).encode() + png_bytes + f"\r\n--{boundary}--\r\n".encode()
+
+        for path in paths:
+            r = await client.post(path, content=body,
+                headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
             if r.status_code != 404:
-                # Accept 200 (success) or 400 (bad image but valid endpoint)
                 assert r.status_code in (200, 400), \
                     f"{path} returned {r.status_code}: {r.text[:200]}"
                 if r.status_code == 200:
                     result = r.json()
-                    assert "text" in result, f"response missing 'text' key: {list(result.keys())[:5]}"
+                    assert "text" in result, f"response missing 'text' key"
                 return
 
-    # Try multipart (iPhone style)
-    boundary = "----ocrboundary"
-    body = (
-        f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"test.png\"\r\n"
-        f"Content-Type: {mime}\r\n\r\n"
-    ).encode() + png_bytes + f"\r\n--{boundary}--\r\n".encode()
-
-    for path in ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr"):
-        r = await client.post(path, content=body, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
-        if r.status_code != 404:
-            assert r.status_code in (200, 400), \
-                f"{path} returned {r.status_code}: {r.text[:200]}"
-            if r.status_code == 200:
-                result = r.json()
-                assert "text" in result, f"response missing 'text' key"
-            return
+    # Try JSON base64 (ME-21 Android style, or fallback)
+    if "json" in transport or not transport:
+        b64 = base64.b64encode(png_bytes).decode()
+        for path in paths:
+            r = await client.post(path, json={"imageBase64": b64, "mimeType": mime})
+            if r.status_code != 404:
+                assert r.status_code in (200, 400), \
+                    f"{path} returned {r.status_code}: {r.text[:200]}"
+                if r.status_code == 200:
+                    result = r.json()
+                    assert "text" in result, f"response missing 'text' key"
+                return
 
     pytest.skip("no OCR endpoint found")
 
@@ -434,20 +436,24 @@ async def test_ocr_endpoint_rejects_empty(client: httpx.AsyncClient, ocr_cap):
     if ocr_cap is None:
         pytest.skip("no analyze_image capability")
 
-    # JSON base64 with empty image
-    for path in ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr"):
-        r = await client.post(path, json={"imageBase64": ""})
-        if r.status_code != 404:
-            # 400 or 415 are both valid rejection codes
-            assert r.status_code in (400, 415, 422), \
-                f"{path} should reject empty body (400/415/422), got {r.status_code}"
-            return
+    transport = ocr_cap.get("upload_transport", "")
+    paths = ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr")
 
-    # Multipart with empty
-    boundary = "----emptyboundary"
-    empty = f"--{boundary}\r\n\r\n--{boundary}--\r\n".encode()
-    for path in ("/v1/vision/ocr", "/v1/analyze-image", "/v1/ocr"):
-        r = await client.post(path, content=empty, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+    # Try the transport the capability advertises first
+    if "multipart" in transport:
+        boundary = "----emptyboundary"
+        empty = f"--{boundary}\r\n\r\n--{boundary}--\r\n".encode()
+        for path in paths:
+            r = await client.post(path, content=empty,
+                headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+            if r.status_code != 404:
+                assert r.status_code in (400, 415, 422), \
+                    f"{path} should reject empty body, got {r.status_code}"
+                return
+
+    # Try JSON
+    for path in paths:
+        r = await client.post(path, json={"imageBase64": ""})
         if r.status_code != 404:
             assert r.status_code in (400, 415, 422), \
                 f"{path} should reject empty body, got {r.status_code}"
