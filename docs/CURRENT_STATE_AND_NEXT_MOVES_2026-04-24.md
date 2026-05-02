@@ -424,14 +424,28 @@ Run: `pytest backend/tests/ -v` against any node via `IHN_BASE_URL` / `IHN_BOOTS
 
 | Blocker | Owner | What |
 |---------|-------|------|
-| ~~iPhone ASR REST endpoint~~ | ~~Claude~~ | **RESOLVED** — `POST /v1/transcribe-audio` deployed (multipart), 100/100 Azure clips auto-injected |
-| Whisper tier flip | Claude | `WhisperBundle.setReady(true)` not triggered by HTTP endpoint path — tier stays `parallel` |
-| iPhone system/stats endpoint | Claude | 5/45 tests fail on this — last missing endpoint |
+| iPhone OCR endpoint timeout | Claude | `/v1/vision/ocr` times out on larger images — works on ME-21 with the same test |
+| iPhone bootstrap port :17778 down | Claude | Connection refused — regression from NodeRuntime changes in `b3459c7` |
 | Python backend on Linux | Codex | Local backend crashes on start — avahi/DNS-related |
 
-### 8.6 iPhone Whisper ASR baseline (NEW)
+### 8.6 iPhone Whisper ASR baseline (2026-04-30)
 
-- **100/100 Azure fixture clips auto-injected** via Claude's new multipart endpoint
+- **100/100 Azure fixture clips auto-injected** via Claude's multipart endpoint
 - All 10 languages transcribed natively (vs ME-21 Moonshine: only EN/ES)
 - Zero HTTP errors, zero 503s (vs ME-21: 9/100 503 errors)
 - Full report: `testing/results/IPHONE_WHISPER_ASR_BASELINE_2026-04-30.md`
+
+### 8.7 Chat — Qwen on iPhone, Gemma on ME-21 (2026-05-01)
+
+| Platform | Model | Status | Tok/s | Notes |
+|----------|-------|:------:|:-----:|-------|
+| iPhone | Qwen 2.5-1.5B-Instruct-4bit (MLX) | ✅ | 32 | Math (408 correct), Spanish, fast |
+| ME-21 | Gemma 4 (LiteRT GPU) | ✅ | — | Prompt test passed |
+
+### 8.8 Pending branch: `qwen/system-stats-device-state`
+
+Qwen branch adds thermal/battery/AC/low-power fields to system/stats,
+dedicated `test_chat_contract.py` (111 lines), `MLXEngine.swift` (218 lines),
+`HuggingFaceMLXBridge.swift`. Handoff docs reorganised under
+`docs/copilot-handoffs/`. Merge pending — needs conflict resolution
+with our contract test changes.
