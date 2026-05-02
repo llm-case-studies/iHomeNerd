@@ -215,4 +215,51 @@ actor MLXEngine {
         // For now, returning nil is fine, or we can make it an async capability probe in the future.
         return nil
     }
+
+    // MARK: - Public catalog (for /v1/models and the iOS UI)
+
+    struct PublicAvailableModel: Sendable {
+        let id: String
+        let displayName: String
+        let downloadSizeMB: Int
+        let ramWhenLoadedMB: Int
+        let parameterSize: String
+        let quantization: String
+        let note: String
+    }
+
+    nonisolated static var availableModels: [PublicAvailableModel] {
+        [
+            PublicAvailableModel(
+                id: LLMRegistry.qwen2_5_1_5b.name,
+                displayName: "Qwen 2.5 Instruct",
+                downloadSizeMB: 960,
+                ramWhenLoadedMB: 1250,
+                parameterSize: "1.5B parameters",
+                quantization: "4-bit",
+                note: "Balanced small chat model"
+            ),
+            PublicAvailableModel(
+                id: LLMRegistry.gemma4_e2b_it_4bit.name,
+                displayName: "Gemma 4 E2B Instruct",
+                downloadSizeMB: 1500,
+                ramWhenLoadedMB: 2000,
+                parameterSize: "2B parameters",
+                quantization: "4-bit",
+                note: "Google Gemma family"
+            ),
+        ]
+    }
+
+    func loadModelById(_ id: String) async throws {
+        let configuration: ModelConfiguration
+        if id == LLMRegistry.qwen2_5_1_5b.name {
+            configuration = LLMRegistry.qwen2_5_1_5b
+        } else if id == LLMRegistry.gemma4_e2b_it_4bit.name {
+            configuration = LLMRegistry.gemma4_e2b_it_4bit
+        } else {
+            throw MLXError.modelLoadFailed("unknown model id: \(id)")
+        }
+        try await loadFromHub(configuration: configuration)
+    }
 }

@@ -65,8 +65,21 @@ final class NodeRuntime: ObservableObject {
     static let product = "iHomeNerd"
     static let version = "0.1.0-dev-ios"
 
+    private static let hostingEnabledKey = "ihn.node.hostingEnabled"
+
+    /// Re-applies the last persisted hosting toggle. Call once on app launch.
+    /// If the user had hosting on when the app last quit, this resumes it.
+    func startIfPreviouslyHosting() {
+        if UserDefaults.standard.bool(forKey: Self.hostingEnabledKey) {
+            start()
+        }
+    }
+
     func start() {
         guard !isRunning else { return }
+        // Record intent before any work so a failed start still resumes
+        // hosting on the next launch (the user clearly wanted it on).
+        UserDefaults.standard.set(true, forKey: Self.hostingEnabledKey)
         lastError = nil
 
         UIDevice.current.isBatteryMonitoringEnabled = true
@@ -264,6 +277,7 @@ final class NodeRuntime: ObservableObject {
     }
 
     func stop() {
+        UserDefaults.standard.set(false, forKey: Self.hostingEnabledKey)
         listener?.cancel()
         listener = nil
         bootstrapListener?.cancel()
@@ -350,6 +364,24 @@ final class NodeRuntime: ObservableObject {
         if request.method == "POST", request.path == "/v1/chat" {
             Task.detached {
                 let response = await handleChat(request: request, snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
+        if request.method == "GET", request.path == "/v1/models" {
+            Task.detached {
+                let response = await handleListModels(snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
+        if request.method == "POST", request.path == "/v1/models/load" {
+            Task.detached {
+                let response = await handleLoadModel(request: request, snapshot: snapshot)
                 connection.send(content: response, completion: .contentProcessed { _ in
                     connection.cancel()
                 })
@@ -486,6 +518,63 @@ final class NodeRuntime: ObservableObject {
         } catch {
             return HTTPResponse.json(
                 ["detail": "OCR failed: \(error.localizedDescription)"],
+                status: 502
+            )
+        }
+    }
+
+    nonisolated private static func handleListModels(snapshot: RuntimeSnapshot) async -> Data {
+        let available = MLXEngine.availableModels.map { m -> [String: Any] in
+            [
+                "id": m.id,
+                "name": m.displayName,
+                "download_size_mb": m.downloadSizeMB,
+                "ram_when_loaded_mb": m.ramWhenLoadedMB,
+                "parameter_size": m.parameterSize,
+                "quantization": m.quantization,
+                "note": m.note,
+            ]
+        }
+        let loaded = await MLXEngine.shared.loadedModelName()
+        let payload: [String: Any] = [
+            "available": available,
+            "loaded": loaded as Any? ?? NSNull(),
+            "backend": "mlx_ios",
+        ]
+        return HTTPResponse.json(payload)
+    }
+
+    nonisolated private static func handleLoadModel(request: HTTPRequest,
+                                                    snapshot: RuntimeSnapshot) async -> Data {
+        guard let dict = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any],
+              let modelId = dict["model_id"] as? String, !modelId.isEmpty else {
+            return HTTPResponse.json(["detail": "expected JSON with 'model_id' key"], status: 400)
+        }
+        let t0 = Date()
+        do {
+            try await MLXEngine.shared.loadModelById(modelId)
+            let elapsed = Date().timeIntervalSince(t0)
+            let payload: [String: Any] = [
+                "loaded": await MLXEngine.shared.loadedModelName() ?? modelId,
+                "load_time_seconds": round(elapsed * 100) / 100,
+                "backend": "mlx_ios",
+            ]
+            return HTTPResponse.json(payload)
+        } catch MLXEngine.MLXError.outOfMemory {
+            return HTTPResponse.json(
+                ["detail": "MLX out of memory: device RAM is insufficient for this model."],
+                status: 503
+            )
+        } catch let MLXEngine.MLXError.modelLoadFailed(detail) {
+            // Unknown model id is a client error; everything else is upstream/engine.
+            let isUnknownId = detail.lowercased().hasPrefix("unknown model id")
+            return HTTPResponse.json(
+                ["detail": "MLX model load failed: \(detail)"],
+                status: isUnknownId ? 400 : 502
+            )
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "MLX model load failed: \(error.localizedDescription)"],
                 status: 502
             )
         }

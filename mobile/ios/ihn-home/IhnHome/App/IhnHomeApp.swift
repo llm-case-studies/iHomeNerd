@@ -11,6 +11,7 @@ struct IhnHomeApp: App {
                 .environmentObject(state)
                 .environmentObject(runtime)
                 .preferredColorScheme(.dark)
+                .task { runtime.startIfPreviouslyHosting() }
         }
     }
 }
