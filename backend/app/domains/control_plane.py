@@ -120,12 +120,20 @@ DOCKER_READY="false"
 CURL_READY="false"
 SUDO_NOPASS="false"
 PYTHON3_READY="false"
+PYTHON_VERSION=""
+PYTHON_GE_311="false"
 PYTHON_VENV_READY="false"
 PYTHON_VENV_ERROR=""
+BREW_READY="false"
 OLLAMA_CLI=""
 OLLAMA_READY="false"
 GPU_NAME=""
 GPU_VRAM_MB=""
+APPLE_SILICON="false"
+MAC_CHIP=""
+MLX_READY="false"
+MLX_LM_READY="false"
+MLX_METAL_READY="false"
 RUNTIME_KIND=""
 IHN_RUNNING="false"
 
@@ -138,6 +146,10 @@ elif [ "$OS" = "darwin" ]; then
   DISTRO="macos"
   IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true)"
   RAM_BYTES="$(sysctl -n hw.memsize 2>/dev/null || true)"
+  if [ "$ARCH" = "arm64" ]; then
+    APPLE_SILICON="true"
+  fi
+  MAC_CHIP="$(system_profiler SPHardwareDataType 2>/dev/null | awk -F': ' '/Chip:/ {print $2; exit}')"
 fi
 
 if command -v curl >/dev/null 2>&1; then
@@ -145,6 +157,16 @@ if command -v curl >/dev/null 2>&1; then
 fi
 if command -v python3 >/dev/null 2>&1; then
   PYTHON3_READY="true"
+  PYTHON_VERSION="$(python3 - <<'PY' 2>/dev/null || true
+import sys
+print(".".join(map(str, sys.version_info[:3])))
+PY
+)"
+  PYTHON_GE_311="$(python3 - <<'PY' 2>/dev/null || true
+import sys
+print("true" if sys.version_info >= (3, 11) else "false")
+PY
+)"
   PYTHON_VENV_OUTPUT="$(python3 - <<'PY' 2>&1 || true
 import venv
 print("ok")
@@ -155,6 +177,35 @@ PY
   else
     PYTHON_VENV_ERROR="$(printf '%s' "$PYTHON_VENV_OUTPUT" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
   fi
+  MLX_PROBE="$(python3 - <<'PY' 2>/dev/null || true
+import importlib.util
+
+mlx_ready = importlib.util.find_spec("mlx") is not None
+mlx_lm_ready = importlib.util.find_spec("mlx_lm") is not None
+metal_ready = False
+if mlx_ready:
+    try:
+        import mlx.core as mx
+        metal = getattr(mx, "metal", None)
+        if metal is not None and hasattr(metal, "is_available"):
+            metal_ready = bool(metal.is_available())
+        else:
+            info = getattr(mx, "device_info", lambda: {})()
+            metal_ready = bool(info)
+    except Exception:
+        metal_ready = False
+
+print(f"MLX_READY={'true' if mlx_ready else 'false'}")
+print(f"MLX_LM_READY={'true' if mlx_lm_ready else 'false'}")
+print(f"MLX_METAL_READY={'true' if metal_ready else 'false'}")
+PY
+)"
+  MLX_READY="$(printf '%s\n' "$MLX_PROBE" | awk -F= '/^MLX_READY=/ {print $2; exit}')"
+  MLX_LM_READY="$(printf '%s\n' "$MLX_PROBE" | awk -F= '/^MLX_LM_READY=/ {print $2; exit}')"
+  MLX_METAL_READY="$(printf '%s\n' "$MLX_PROBE" | awk -F= '/^MLX_METAL_READY=/ {print $2; exit}')"
+fi
+if command -v brew >/dev/null 2>&1; then
+  BREW_READY="true"
 fi
 if command -v docker >/dev/null 2>&1; then
   DOCKER_VERSION="$(docker --version 2>/dev/null | sed 's/Docker version //; s/,.*//')"
@@ -203,12 +254,20 @@ printf 'DOCKER_READY=%s\n' "$DOCKER_READY"
 printf 'CURL_READY=%s\n' "$CURL_READY"
 printf 'SUDO_NOPASS=%s\n' "$SUDO_NOPASS"
 printf 'PYTHON3_READY=%s\n' "$PYTHON3_READY"
+printf 'PYTHON_VERSION=%s\n' "$PYTHON_VERSION"
+printf 'PYTHON_GE_311=%s\n' "$PYTHON_GE_311"
 printf 'PYTHON_VENV_READY=%s\n' "$PYTHON_VENV_READY"
 printf 'PYTHON_VENV_ERROR=%s\n' "$PYTHON_VENV_ERROR"
+printf 'BREW_READY=%s\n' "$BREW_READY"
 printf 'OLLAMA_CLI=%s\n' "$OLLAMA_CLI"
 printf 'OLLAMA_READY=%s\n' "$OLLAMA_READY"
 printf 'GPU_NAME=%s\n' "$GPU_NAME"
 printf 'GPU_VRAM_MB=%s\n' "$GPU_VRAM_MB"
+printf 'APPLE_SILICON=%s\n' "$APPLE_SILICON"
+printf 'MAC_CHIP=%s\n' "$MAC_CHIP"
+printf 'MLX_READY=%s\n' "${MLX_READY:-false}"
+printf 'MLX_LM_READY=%s\n' "${MLX_LM_READY:-false}"
+printf 'MLX_METAL_READY=%s\n' "${MLX_METAL_READY:-false}"
 printf 'RUNTIME_KIND=%s\n' "$RUNTIME_KIND"
 printf 'IHN_RUNNING=%s\n' "$IHN_RUNNING"
 '''
@@ -224,7 +283,13 @@ def _runtime_guess(os_name: str, docker_ready: bool, runtime_kind: str) -> str:
     return "host_process"
 
 
-def _recommended_roles(gpu_name: str, ram_bytes: int) -> list[str]:
+def _apple_silicon(os_name: str, arch: str) -> bool:
+    return os_name == "darwin" and arch == "arm64"
+
+
+def _recommended_roles(gpu_name: str, ram_bytes: int, os_name: str = "", arch: str = "") -> list[str]:
+    if _apple_silicon(os_name, arch) and ram_bytes >= 8 * 1024**3:
+        return ["gateway", "llm-worker", "automation", "docs"]
     if gpu_name:
         return ["llm-worker", "vision-worker"]
     if ram_bytes >= 16 * 1024**3:
@@ -232,7 +297,19 @@ def _recommended_roles(gpu_name: str, ram_bytes: int) -> list[str]:
     return ["light-specialist", "automation"]
 
 
-def _recommended_models(gpu_vram_mb: int, ram_bytes: int) -> list[str]:
+def _recommended_models(gpu_vram_mb: int, ram_bytes: int, os_name: str = "", arch: str = "") -> list[str]:
+    if _apple_silicon(os_name, arch):
+        if ram_bytes >= 24 * 1024**3:
+            return [
+                "mlx-community/gemma-4-e2b-it-4bit",
+                "mlx-community/Qwen2.5-7B-Instruct-4bit",
+            ]
+        if ram_bytes >= 16 * 1024**3:
+            return [
+                "mlx-community/gemma-4-e2b-it-4bit",
+                "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
+            ]
+        return ["mlx-community/Qwen2.5-1.5B-Instruct-4bit"]
     if gpu_vram_mb >= 8000:
         return ["gemma4:e4b", "gemma3:12b", "llama3:8b"]
     if gpu_vram_mb >= 4000:
@@ -242,7 +319,13 @@ def _recommended_models(gpu_vram_mb: int, ram_bytes: int) -> list[str]:
     return ["gemma3:1b", "llama3.2:1b"]
 
 
-def _recommended_strengths(gpu_name: str, ram_bytes: int) -> list[str]:
+def _recommended_strengths(gpu_name: str, ram_bytes: int, os_name: str = "", arch: str = "") -> list[str]:
+    if _apple_silicon(os_name, arch):
+        return [
+            "native Apple MLX chat hosting",
+            "always-on routing and orchestration",
+            "document ingestion and background tools",
+        ]
     if gpu_name:
         return ["larger local reasoning models", "multimodal and image-heavy workloads"]
     if ram_bytes >= 16 * 1024**3:
@@ -288,9 +371,15 @@ def _run_preflight(req: PreflightRequest) -> dict[str, Any]:
     curl_ready = kv.get("CURL_READY") == "true"
     sudo_nopass = kv.get("SUDO_NOPASS") == "true"
     python3_ready = kv.get("PYTHON3_READY") == "true"
+    python_ge_311 = kv.get("PYTHON_GE_311") == "true"
     python_venv_ready = kv.get("PYTHON_VENV_READY") == "true"
     python_venv_error = kv.get("PYTHON_VENV_ERROR", "")
+    brew_ready = kv.get("BREW_READY") == "true"
     ollama_ready = kv.get("OLLAMA_READY") == "true"
+    apple_silicon = kv.get("APPLE_SILICON") == "true"
+    mlx_ready = kv.get("MLX_READY") == "true"
+    mlx_lm_ready = kv.get("MLX_LM_READY") == "true"
+    mlx_metal_ready = kv.get("MLX_METAL_READY") == "true"
     runtime_kind = _runtime_guess(os_name, docker_ready, kv.get("RUNTIME_KIND", ""))
 
     blockers: list[str] = []
@@ -308,6 +397,10 @@ def _run_preflight(req: PreflightRequest) -> dict[str, Any]:
             blockers.append("curl is not available on the target")
         if not python3_ready:
             blockers.append("python3 is not available on the target")
+        elif not python_ge_311:
+            blockers.append(
+                f"Python 3.11+ is required on macOS targets; found {kv.get('PYTHON_VERSION') or 'unknown'}"
+            )
         if not python_venv_ready:
             if "invalid active developer path" in python_venv_error.lower():
                 blockers.append("Xcode Command Line Tools are missing or broken on the target")
@@ -339,16 +432,27 @@ def _run_preflight(req: PreflightRequest) -> dict[str, Any]:
         "sudoNoPass": sudo_nopass,
         "curlReady": curl_ready,
         "python3Ready": python3_ready,
+        "pythonVersion": kv.get("PYTHON_VERSION", ""),
+        "pythonGe311": python_ge_311,
         "pythonVenvReady": python_venv_ready,
         "pythonVenvError": python_venv_error,
+        "brewReady": brew_ready,
         "ollamaCli": kv.get("OLLAMA_CLI", ""),
         "ollamaReady": ollama_ready,
+        "appleSilicon": apple_silicon,
+        "macChip": kv.get("MAC_CHIP", ""),
+        "mlx": {
+            "ready": mlx_ready,
+            "lmReady": mlx_lm_ready,
+            "metalReady": mlx_metal_ready,
+            "recommendedBackend": "mlx_macos" if apple_silicon else "",
+        },
         "gpu": {"name": gpu_name, "vramMb": gpu_vram_mb} if gpu_name else None,
         "runtimeKind": runtime_kind,
         "ihnRunning": kv.get("IHN_RUNNING") == "true",
-        "recommendedRoles": _recommended_roles(gpu_name, ram_bytes),
-        "recommendedStrengths": _recommended_strengths(gpu_name, ram_bytes),
-        "recommendedModels": _recommended_models(gpu_vram_mb, ram_bytes),
+        "recommendedRoles": _recommended_roles(gpu_name, ram_bytes, os_name, kv.get("ARCH", "")),
+        "recommendedStrengths": _recommended_strengths(gpu_name, ram_bytes, os_name, kv.get("ARCH", "")),
+        "recommendedModels": _recommended_models(gpu_vram_mb, ram_bytes, os_name, kv.get("ARCH", "")),
         "support": {
             "promote": promote_supported,
             "manage": manage_supported,

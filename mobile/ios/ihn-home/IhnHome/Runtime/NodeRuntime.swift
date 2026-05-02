@@ -27,6 +27,7 @@ private struct RuntimeSnapshot: Sendable {
 
 private struct BootstrapSnapshot: Sendable {
     let hostname: String
+    let ips: [String]
     let caPEM: String
     let caFingerprint: String
     let leafFingerprint: String
@@ -40,6 +41,7 @@ final class NodeRuntime: ObservableObject {
     @Published private(set) var advertisedHostname: String = ""
     @Published private(set) var lanAddresses: [String] = []
     @Published private(set) var port: Int = 17777
+    @Published private(set) var bootstrapPort: Int = 17778
     @Published private(set) var fingerprintSHA256: String = ""
     @Published private(set) var caFingerprintSHA256: String = ""
     @Published private(set) var signingPreflight: String = ""
@@ -59,6 +61,7 @@ final class NodeRuntime: ObservableObject {
     static let listenPort: NWEndpoint.Port = 17777
     static let bootstrapPort: NWEndpoint.Port = 17778
     static let serviceType = "_ihomenerd._tcp"
+    static let setupServiceType = "_ihomenerd-setup._tcp"
     static let product = "iHomeNerd"
     static let version = "0.1.0-dev-ios"
 
@@ -202,6 +205,7 @@ final class NodeRuntime: ObservableObject {
         // before they ever try to TLS-handshake against :17777.
         let bootstrap = BootstrapSnapshot(
             hostname: host,
+            ips: ips,
             caPEM: ca.certificatePEM,
             caFingerprint: ca.fingerprintSHA256,
             leafFingerprint: identity.fingerprintSHA256,
@@ -218,6 +222,17 @@ final class NodeRuntime: ObservableObject {
             lastError = "bootstrap listen: \(error)"
             return
         }
+        bootstrapListener.service = NWListener.Service(
+            name: "iHomeNerd Mac setup on \(host)",
+            type: Self.setupServiceType,
+            domain: nil,
+            txtRecord: NWTXTRecord([
+                "role": "mac-setup",
+                "hostname": "\(host).local",
+                "version": Self.version,
+                "path": "/setup/mac",
+            ])
+        )
         bootstrapListener.stateUpdateHandler = { [weak self] state in
             Task { @MainActor in
                 switch state {
@@ -795,6 +810,10 @@ final class NodeRuntime: ObservableObject {
             return HTTPResponse.json(trustStatusJson(snapshot))
         case ("GET", "/setup/ihomenerd.mobileconfig"):
             return HTTPResponse.mobileconfig(snapshot.mobileconfig)
+        case ("GET", "/setup/mac"):
+            return HTTPResponse.html(macSetupHTML(snapshot, request: request))
+        case ("GET", "/setup/mac/manifest"):
+            return HTTPResponse.json(macSetupManifest(snapshot, request: request))
         case ("GET", "/"):
             return HTTPResponse.html(bootstrapIndexHTML(snapshot))
         default:
@@ -821,12 +840,123 @@ final class NodeRuntime: ObservableObject {
         <h1>Trust setup — iHomeNerd on \(s.hostname)</h1>
         <p>Install the Home CA so this device trusts the iHomeNerd nodes on your LAN. The fingerprint below should match what the host shows on its Node screen.</p>
         <p class="fp">CA SHA-256 \(elided)</p>
+        <a class="btn" href="/setup/mac"><b>Mac:</b> set up an M-series Mac brain</a>
         <a class="btn" href="/setup/ihomenerd.mobileconfig"><b>iOS / iPadOS:</b> install configuration profile</a>
         <a class="btn" href="/setup/ca.crt"><b>macOS / Linux / Windows:</b> download CA cert (PEM)</a>
         <p>After installing on iOS, open Settings → General → VPN &amp; Device Management → tap the iHomeNerd profile → Install. Then Settings → General → About → Certificate Trust Settings → enable full trust.</p>
         <p>Other endpoints: <code>/setup/ca.crt</code> · <code>/setup/trust-status</code> · <code>/setup/ihomenerd.mobileconfig</code></p>
         </body></html>
         """
+    }
+
+    nonisolated private static func macSetupManifest(_ s: BootstrapSnapshot, request: HTTPRequest) -> [String: Any] {
+        let base = requestBaseURL(snapshot: s, request: request)
+        return [
+            "product": product,
+            "version": version,
+            "setupRole": "iphone_concierge",
+            "status": "installer_pending",
+            "hostname": s.hostname,
+            "setupUrl": "\(base)/setup/mac",
+            "manifestUrl": "\(base)/setup/mac/manifest",
+            "homeCa": [
+                "fingerprintSha256": s.caFingerprint,
+                "certUrl": "\(base)/setup/ca.crt",
+            ] as [String: Any],
+            "mac": [
+                "recommendedBackend": "mlx_macos",
+                "requiresAppleSilicon": true,
+                "installerTrust": "developer_id_notarized_or_mac_app_store",
+            ] as [String: Any],
+            "pairing": [
+                "requiresUserApproval": true,
+                "oneTimeToken": false,
+                "caKeyHandoff": false,
+                "csrSigning": false,
+            ] as [String: Any],
+        ]
+    }
+
+    nonisolated private static func macSetupHTML(_ s: BootstrapSnapshot, request: HTTPRequest) -> String {
+        let base = requestBaseURL(snapshot: s, request: request)
+        let certURL = "\(base)/setup/ca.crt"
+        let manifestURL = "\(base)/setup/mac/manifest"
+        let model = "mlx-community/gemma-4-e2b-it-4bit"
+        let previewCommand = """
+        curl -fsSL https://raw.githubusercontent.com/llm-case-studies/iHomeNerd/main/install-ihomenerd-macos.sh -o /tmp/install-ihomenerd-macos.sh
+        IHN_MAC_LLM_BACKEND=mlx IHN_MLX_MODEL=\(model) IHN_SETUP_SOURCE_URL=\(base) bash /tmp/install-ihomenerd-macos.sh
+        """
+        return """
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Set up a Mac brain with iHomeNerd</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>
+        body{font-family:-apple-system,system-ui,sans-serif;background:#0e0e10;color:#f3f4f6;padding:24px;max-width:720px;margin:0 auto;}
+        h1{font-size:32px;line-height:1.05;margin:8px 0 12px;font-weight:700;letter-spacing:-0.03em;}
+        h2{font-size:18px;margin:26px 0 8px;}
+        p,li{color:#a1a1aa;font-size:15px;line-height:1.5;}
+        .eyebrow{color:#7dd3fc;font-size:12px;text-transform:uppercase;letter-spacing:.16em;font-weight:700;}
+        .card{border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px;margin:14px 0;}
+        .good{border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.08);}
+        .warn{border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.08);}
+        a.btn{display:inline-block;background:#2563eb;color:white;text-decoration:none;padding:12px 14px;border-radius:8px;margin:6px 8px 6px 0;font-weight:600;}
+        a.secondary{background:#27272a;color:#f3f4f6;border:1px solid #3f3f46;}
+        code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+        pre{white-space:pre-wrap;word-break:break-word;background:#09090b;border:1px solid #27272a;border-radius:10px;padding:12px;font-size:12px;color:#d4d4d8;}
+        .fp{font-size:12px;word-break:break-all;color:#a1a1aa;}
+        </style></head>
+        <body>
+        <div class="eyebrow">iHN Home on iPhone</div>
+        <h1>Set up this Mac as your home brain</h1>
+        <p>This page is served by the iHN Home app running on \(htmlEscape(s.hostname)). Start here when your iPhone is the first node and you want an M-series Mac to become the always-on iHomeNerd brain.</p>
+
+        <div class="card good">
+          <h2>Trusted handoff</h2>
+          <p>The setup begins from the App Store iPhone app and this local page. The Mac still needs normal macOS trust: a Mac App Store app or a Developer ID signed and notarized installer.</p>
+          <p class="fp">Home CA SHA-256 \(htmlEscape(elideFingerprint(s.caFingerprint)))</p>
+        </div>
+
+        <div class="card warn">
+          <h2>Implementation status</h2>
+          <p>The iPhone concierge surface is live. Pairing approval, one-time token handoff, and the signed/notarized Mac installer are next. This page intentionally does not expose the Home CA private key.</p>
+        </div>
+
+        <h2>Developer preview</h2>
+        <p>For source-tree testing only, the future Mac installer path will use these environment switches for native MLX:</p>
+        <pre>\(htmlEscape(previewCommand))</pre>
+
+        <p>
+          <a class="btn" href="\(htmlEscape(manifestURL))">View setup manifest</a>
+          <a class="btn secondary" href="\(htmlEscape(certURL))">Download Home CA cert</a>
+        </p>
+
+        <h2>What happens next</h2>
+        <ol>
+          <li>The iPhone approves this Mac.</li>
+          <li>The Mac runs a trusted iHN installer.</li>
+          <li>The Mac starts a launchd brain service using native MLX on Apple Silicon.</li>
+          <li>The iPhone keeps acting as controller and portable node.</li>
+        </ol>
+        </body></html>
+        """
+    }
+
+    nonisolated private static func requestBaseURL(snapshot: BootstrapSnapshot, request: HTTPRequest) -> String {
+        if let host = request.headers["host"], !host.isEmpty {
+            return "http://\(host)"
+        }
+        if let ip = snapshot.ips.first {
+            return "http://\(ip):\(snapshot.port)"
+        }
+        return "http://\(snapshot.hostname).local:\(snapshot.port)"
+    }
+
+    nonisolated private static func htmlEscape(_ raw: String) -> String {
+        raw
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
     }
 
     nonisolated private static func elideFingerprint(_ raw: String) -> String {

@@ -93,6 +93,7 @@ targets:
           runs locally; no audio leaves the device.
         NSBonjourServices:
           - _ihomenerd._tcp
+          - _ihomenerd-setup._tcp
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         ITSAppUsesNonExemptEncryption: false
