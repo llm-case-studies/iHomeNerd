@@ -159,4 +159,39 @@ Kimi's recipe at `docs/MLX_MODEL_SWITCH_MEMORY_RECIPE.md`. Key insight: ARC drop
 3. `074600e` agent-attention-bus discussion doc — provenance? (Likely from the parallel session.)
 4. Cleanup: `add_mlxhf.rb` and `pr_body.txt` untracked leftovers — remove?
 
+---
+
+## 8. Session 2 wrap-up (late 2026-05-01)
+
+Resumed from compaction. All four §7 questions resolved with the user.
+
+### §7 resolutions
+
+1. **Qwen merge** → **defer.** Codex is still in flight on Mac-setup work in the same working tree. Plan: let Codex finish, then split work by branches. No line-overlap verified for the eventual merge — Qwen edits `NodeRuntime.swift` at ~line 66 (`start()`) and ~672 (`systemStatsJson`); Codex edits at ~27, 40, 59, 202, 218, 795, 821, 829. `git merge --no-ff qwen/system-stats-device-state` will be clean once tree is.
+2. **Keep `ae52f8b`** → **yes, and proceed with implementation** (don't escalate to Nemotron). Claude reviewed Qwen's four open questions and was confident on all four:
+   - Q1 (detail prefixes): **keep** `"Inference failed:" / "Transcription failed:" / "OCR failed:"` — zero-risk backward-compat with contract tests; new `code` field is the structured channel.
+   - Q2 (status codes): **adopt 503** for `engineNotReady` and `outOfMemory`. 502 is "bad gateway" (upstream/proxy semantics); 503 is "service unavailable" (transient resource state). Aligns iOS with Python.
+   - Q3 (file location): **`Runtime/`** — co-located with consumers.
+   - Q4 (`NodeIdentityError` / `IhnAPIError`): **defer** — different lifecycles.
+   - **Naming nit:** rename `IhnError` → `IhnEngineError`. The doc explicitly scopes it to engines; the name should reflect that so callers don't expect networking/identity coverage.
+3. **`074600e`** → Codex's panel-discussion seed on agent-attention-bus. Alex started it with Codex (the concept is a panel discussion among copilots). Leave the commit in place.
+4. **Cleanup** → done. Deleted `pr_body.txt` (Gemini OCR PR body residue) and `mobile/ios/ihn-home/add_mlxhf.rb` (Codex Xcode-package script — work already integrated into `project.yml`).
+
+### What landed this session
+
+- Two leftover untracked files deleted (above).
+- `~/.claude/projects/-Users-alex-Projects-iHomeNerd/memory/feedback_qwen_first_outcome.md` written. Key insight: **Qwen *and* Kimi both shipped unsolicited bonus docs on first handoff** — future briefs need a louder fence ("absolutely no extra files outside the §7 escape hatch; design ideas go in §7 Notes, not as a tracked doc").
+- `MEMORY.md` index updated.
+- TaskList **#1** created: "Implement IhnEngineError taxonomy on its own branch." All four design decisions + the rename are inlined in the task description so the next session can implement without re-deriving.
+
+### Blocked on Codex (queued)
+
+- Merge `qwen/system-stats-device-state` into `feature/mlx-llm-engine`.
+- Implement task #1 (`IhnEngineError`) on a fresh branch off `feature/mlx-llm-engine` once Codex's work merges. Files: NEW `Runtime/IhnEngineError.swift` + `HTTPResponse.error(_:)` factory; replace `MLXError` / `WhisperError` / `OCRError`; update `NodeRuntime.swift` handlers.
+- Flip Qwen row in `docs/copilot-handoffs/INDEX.md` to **completed** after merge lands.
+
+### Admin
+
+- **Claude Code CLI upgrade pending.** Running 2.1.116; 2.1.118 available on Homebrew. It's a Cask — Alex's `brew upgrade claude-code` may not have matched cleanly depending on brew version. After closing this session: `brew upgrade --cask claude-code`, then start a new session. Config in `~/.claude/` is unaffected.
+
 End of handoff.
