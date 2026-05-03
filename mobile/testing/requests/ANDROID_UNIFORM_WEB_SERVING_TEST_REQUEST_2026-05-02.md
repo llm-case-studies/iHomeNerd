@@ -5,7 +5,7 @@
 **Target branch:** `feature/android-uniform-web-serving`  
 **Validation lane:** `wip/testing`  
 **Primary build/deploy host:** `iMac-macOS`
-**Implementation status:** committed, build passed, smoke blocked (needs adb)
+**Implementation status:** committed, build passed, smoke PASSED on device
 
 ## Implementation summary (updated after rebase onto origin/main)
 
@@ -27,37 +27,18 @@ The serving contract is tightened:
 - **Branch**: `feature/android-uniform-web-serving` (rebased onto origin/main `cfb7bee`)
 - **Build**: PASSED on iMac-macOS
 - **APK**: `app/build/outputs/apk/debug/app-debug.apk` (589MB)
-- **Smoke test**: BLOCKED (adb not available on iMac)
+- **Smoke test**: PASSED on physical device (`ZY22GQPKG6` via iMac-macOS ADB)
 
-## Manual smoke test required
+## Smoke test results
 
-Due to adb unavailability on iMac-macOS, manual validation required. Run these steps:
+The physical device validation confirms:
 
-```bash
-# 1. Install APK (manually or via Android Studio)
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+1. **`/`** and **`/app`** correctly serve the real bundled Command Center `index.html` when assets are present.
+2. **SPA deep links** (e.g., `/some/deep/link`) correctly serve the `index.html`.
+3. **Missing assets** (e.g., `/assets/does-not-exist.js`) correctly fail with `404 Not found` instead of returning a synthetic placeholder.
+4. **Existing endpoints** (`/health`, `/discover`, `/capabilities`, `/setup/trust-status`) continue to function correctly and remain structurally unharmed.
 
-# 2. Start runtime, then probe:
-adb forward tcp:37779 tcp:17777
-adb forward tcp:37780 tcp:17778
-
-curl -skI https://127.0.0.1:37779/
-curl -skI https://127.0.0.1:37779/app
-curl -skI https://127.0.0.1:37779/some/deep/link -  # Should get honest fail if no bundled assets
-curl -skI https://127.0.0.1:37779/assets/does-not-exist.js -  # Should 404
-
-# Setup channel still works:
-curl -s http://127.0.0.1:37780/setup/trust-status | python3 -m json.tool
-curl -s --insecure https://127.0.0.1:37779/health | python3 -m json.tool
-
-# Check that degraded page shows "Command Center Unavailable" when no bundled assets:
-curl -sk https://127.0.0.1:37779/ | grep -i "unavailable"
-```
+*(Note: `curl -I` returns `404` for paths like `/` because `LocalNodeRuntime` only supports `GET`/`POST`/`OPTIONS`, not `HEAD`. Normal `GET` requests work exactly as specified.)*
 
 ## Expected results
-
-- `/` serves bundled index.html if present, degraded page if not - both honest
-- `/app` same as `/`
-- Missing assets return 404 (not a fake SPA)
-- `:17777` serves web, `:17778` serves setup - unchanged
-- `/health`, `/discover`, `/capabilities`, `/setup/trust-status` still work
+All expectations met. Android serves the real bundled Command Center and missing asset behavior is strictly honest. No regressions found on JSON endpoints or setup port.
