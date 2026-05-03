@@ -1,0 +1,24 @@
+{
+    "homeCa": {
+        "certUrl": "http://192.168.0.220:17778/setup/ca.crt",
+        "fingerprintSha256": "50:67:99:18:61:C9:5E:3F:1A:01:18:62:2B:13:F7:3A:BC:98:3F:1B:E1:C2:48:43:BE:C5:9B:DF:0F:16:3F:D5"
+    },
+    "hostname": "iphone",
+    "mac": {
+        "installerTrust": "developer_id_notarized_or_mac_app_store",
+        "recommendedBackend": "mlx_macos",
+        "requiresAppleSilicon": true
+    },
+    "manifestUrl": "http://192.168.0.220:17778/setup/mac/manifest",
+    "pairing": {
+        "caKeyHandoff": false,
+        "csrSigning": false,
+        "oneTimeToken": false,
+        "requiresUserApproval": true
+    },
+    "product": "iHomeNerd",
+    "setupRole": "iphone_concierge",
+    "setupUrl": "http://192.168.0.220:17778/setup/mac",
+    "status": "installer_pending",
+    "version": "0.1.0-dev-ios"
+}

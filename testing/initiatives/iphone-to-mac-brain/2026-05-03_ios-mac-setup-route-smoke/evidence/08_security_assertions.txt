@@ -1,0 +1,10 @@
+  [PASS] caKeyHandoff is false
+  [PASS] csrSigning is false
+  [PASS] oneTimeToken is false
+  [PASS] requiresUserApproval is true
+  [PASS] no private key in manifest
+  [PASS] certUrl is ca.crt (not ca.key)
+  [PASS] setupRole is iphone_concierge
+  [PASS] status is installer_pending
+  [PASS] recommendedBackend is mlx_macos
+  [PASS] requiresAppleSilicon is true

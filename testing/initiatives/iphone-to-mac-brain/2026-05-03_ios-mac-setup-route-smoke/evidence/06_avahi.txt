@@ -1,0 +1,12 @@
++ enp4s0f0 IPv6 iHomeNerd Mac setup on iphone                 _ihomenerd-setup._tcp local
++ enp4s0f0 IPv4 iHomeNerd Mac setup on iphone                 _ihomenerd-setup._tcp local
+= enp4s0f0 IPv6 iHomeNerd Mac setup on iphone                 _ihomenerd-setup._tcp local
+   hostname = [Alexs-iPhone-2.local]
+   address = [192.168.0.220]
+   port = [17778]
+   txt = ["role=mac-setup" "hostname=iphone.local" "path=/setup/mac" "version=0.1.0-dev-ios"]
+= enp4s0f0 IPv4 iHomeNerd Mac setup on iphone                 _ihomenerd-setup._tcp local
+   hostname = [Alexs-iPhone-2.local]
+   address = [192.168.0.220]
+   port = [17778]
+   txt = ["role=mac-setup" "hostname=iphone.local" "path=/setup/mac" "version=0.1.0-dev-ios"]

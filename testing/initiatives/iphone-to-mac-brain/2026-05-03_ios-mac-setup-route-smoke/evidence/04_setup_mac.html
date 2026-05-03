@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Set up a Mac brain with iHomeNerd</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;background:#0e0e10;color:#f3f4f6;padding:24px;max-width:720px;margin:0 auto;}
+h1{font-size:32px;line-height:1.05;margin:8px 0 12px;font-weight:700;letter-spacing:-0.03em;}
+h2{font-size:18px;margin:26px 0 8px;}
+p,li{color:#a1a1aa;font-size:15px;line-height:1.5;}
+.eyebrow{color:#7dd3fc;font-size:12px;text-transform:uppercase;letter-spacing:.16em;font-weight:700;}
+.card{border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px;margin:14px 0;}
+.good{border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.08);}
+.warn{border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.08);}
+a.btn{display:inline-block;background:#2563eb;color:white;text-decoration:none;padding:12px 14px;border-radius:8px;margin:6px 8px 6px 0;font-weight:600;}
+a.secondary{background:#27272a;color:#f3f4f6;border:1px solid #3f3f46;}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+pre{white-space:pre-wrap;word-break:break-word;background:#09090b;border:1px solid #27272a;border-radius:10px;padding:12px;font-size:12px;color:#d4d4d8;}
+.fp{font-size:12px;word-break:break-all;color:#a1a1aa;}
+</style></head>
+<body>
+<div class="eyebrow">iHN Home on iPhone</div>
+<h1>Set up this Mac as your home brain</h1>
+<p>This page is served by the iHN Home app running on iphone. Start here when your iPhone is the first node and you want an M-series Mac to become the always-on iHomeNerd brain.</p>
+
+<div class="card good">
+  <h2>Trusted handoff</h2>
+  <p>The setup begins from the App Store iPhone app and this local page. The Mac still needs normal macOS trust: a Mac App Store app or a Developer ID signed and notarized installer.</p>
+  <p class="fp">Home CA SHA-256 50:67:99:18 … 0F:16:3F:D5</p>
+</div>
+
+<div class="card warn">
+  <h2>Implementation status</h2>
+  <p>The iPhone concierge surface is live. Pairing approval, one-time token handoff, and the signed/notarized Mac installer are next. This page intentionally does not expose the Home CA private key.</p>
+</div>
+
+<h2>Developer preview</h2>
+<p>For source-tree testing only, the future Mac installer path will use these environment switches for native MLX:</p>
+<pre>curl -fsSL https://raw.githubusercontent.com/llm-case-studies/iHomeNerd/main/install-ihomenerd-macos.sh -o /tmp/install-ihomenerd-macos.sh
+IHN_MAC_LLM_BACKEND=mlx IHN_MLX_MODEL=mlx-community/gemma-4-e2b-it-4bit IHN_SETUP_SOURCE_URL=http://192.168.0.220:17778 bash /tmp/install-ihomenerd-macos.sh</pre>
+
+<p>
