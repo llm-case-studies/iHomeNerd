@@ -1276,7 +1276,12 @@ object LocalNodeRuntime {
         serveBundledCommandCenterAsset(path)?.let { return it }
 
         return if (shouldServeCommandCenterSpa(path)) {
-            commandCenterIndexResponse()
+            val bundledIndex = serveBundledCommandCenterAsset("/index.html")
+            if (bundledIndex != null) {
+                commandCenterIndexResponse()
+            } else {
+                textResponse(503, "Command Center not available - web assets not bundled")
+            }
         } else {
             textResponse(404, "Not found")
         }
@@ -1284,7 +1289,7 @@ object LocalNodeRuntime {
 
     private fun commandCenterIndexResponse(): HttpResponse {
         return serveBundledCommandCenterAsset("/index.html")
-            ?: htmlResponse(commandCenterHtml())
+            ?: htmlResponse(degradedCommandCenterHtml())
     }
 
     private fun serveBundledCommandCenterAsset(path: String): HttpResponse? {
@@ -1412,6 +1417,40 @@ object LocalNodeRuntime {
                 <p><code>ni3 hao3</code> vs <code>ni3 hao2</code></p>
                 <p>Tone mismatches: <strong>${compareDemo.toneMismatches}</strong> · Similarity: <strong>${"%.2f".format(compareDemo.similarity)}</strong></p>
                 <p class="muted">JSON endpoint: <code>/v1/pronunco/compare-pinyin</code></p>
+              </div>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    private fun degradedCommandCenterHtml(): String {
+        val state = _state.value
+        return """
+            <!doctype html>
+            <html>
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Command Center Unavailable</title>
+              <style>
+                body { font-family: system-ui, sans-serif; background:#1a1a1a; color:#eef1f8; margin:0; padding:24px; text-align:center; }
+                .card { background:#2a2a2a; border:1px solid #4a4a4a; border-radius:12px; padding:32px; margin:24px auto; max-width:400px; }
+                h1 { color:#ff6b6b; }
+                code { background:#3a3a3a; padding:4px 8px; border-radius:4px; }
+                .hint { color:#9aa3b5; margin-top:16px; }
+                .status { color:#51cf66; }
+              </style>
+            </head>
+            <body>
+              <div class="card">
+                <h1>Command Center Unavailable</h1>
+                <p>The bundled web interface is not available on this device.</p>
+                <p class="status">Runtime: ${if (state.running) "running" else "stopped"}</p>
+                <p class="hint">The Command Center app must be bundled with the APK at build time.</p>
+              </div>
+              <div class="card">
+                <p>Use <code>/capabilities</code> or <code>/health</code> for JSON status.</p>
+                <p class="hint">Setup and bootstrap remain at http://${state.localIp ?: "127.0.0.1"}:${SETUP_PORT}/setup</p>
               </div>
             </body>
             </html>
