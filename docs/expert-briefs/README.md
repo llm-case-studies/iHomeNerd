@@ -54,3 +54,4 @@ tester a runnable request.
 
 - `examples/2026-05-02_android-server-profile-surface/`
 - `examples/2026-05-02_android-model-catalog/`
+- `examples/2026-05-02_android-uniform-web-serving/`
