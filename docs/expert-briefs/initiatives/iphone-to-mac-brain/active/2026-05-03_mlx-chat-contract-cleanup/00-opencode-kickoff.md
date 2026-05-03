@@ -51,7 +51,10 @@ Do not edit iOS, installer, frontend, or unrelated backend domains.
 Before handoff:
 1. Run the focused pytest command from the brief.
 2. Run or document the fake MLX sidecar smoke from the test request.
-3. Fill testing/initiatives/iphone-to-mac-brain/2026-05-03_mlx-chat-contract-cleanup/result.md.
-4. Commit your changes on feature/iphone-to-mac-brain/mlx-chat-contract-cleanup.
-5. Push the branch.
+3. Treat the test request as the minimum validation floor. If your
+   implementation reveals extra edge cases or failure modes, add those cases to
+   testing/initiatives/iphone-to-mac-brain/2026-05-03_mlx-chat-contract-cleanup/request.md.
+4. Fill testing/initiatives/iphone-to-mac-brain/2026-05-03_mlx-chat-contract-cleanup/result.md.
+5. Commit your changes on feature/iphone-to-mac-brain/mlx-chat-contract-cleanup.
+6. Push the branch.
 ```

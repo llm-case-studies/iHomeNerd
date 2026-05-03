@@ -69,6 +69,20 @@ Both paths returned `mac-mini-m1.local` when invoked with the shared household
 SSH key. Prefer `mac-mini` or `mac-mini-m1.local` over raw IPs because the Mac
 mini uses DHCP and has already moved between LAN addresses.
 
+## Smoke Expectations By Sprint Type
+
+Use the smoke level that matches the sprint:
+
+- Backend contract sprints, such as `/v1/chat` shape cleanup, can reach
+  smoke-ready with focused tests plus local API probes and fake sidecar/error
+  smokes. They do not need an iPhone build unless the brief says so.
+- Mac MLX sidecar sprints need a real MLX runtime on `mac-mini`, because the
+  sidecar itself is the subject.
+- iOS route, pairing, or setup UI sprints need real iPhone build, install,
+  launch, and route probes from the device.
+- Installer or promotion sprints need the relevant macOS preflight/install path
+  on `mac-mini`, with any signing, Gatekeeper, or keychain blocker recorded.
+
 ## Near-Term Milestones
 
 1. Live iPhone route smoke for `/setup/mac` and `/setup/mac/manifest`.

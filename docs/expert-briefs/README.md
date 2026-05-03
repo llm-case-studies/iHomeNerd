@@ -162,14 +162,38 @@ The build/deploy host is not automatically the testing lane.
 
 Coding work is not ready for the testing lane just because the diff looks good.
 
-Before handing off to testing, the coding owner should get to a **smoke-ready**
-state:
+## Smoke-Test Vocabulary
+
+A smoke test is the fastest end-to-end proof that the touched surface can run
+in its intended runtime. It is not full validation, and it is not always a real
+device test.
+
+Use the smallest smoke level that honestly exercises the sprint's risk:
+
+- **Focused checks:** unit or narrow pytest/build checks. Useful, but not a
+  smoke test by themselves unless the sprint is purely library/internal.
+- **Local API smoke:** start the service and hit the changed endpoint with
+  representative success and failure requests.
+- **Fake-dependency smoke:** emulate an external dependency to prove request,
+  response, and error contracts. Valid for backend contract work when the real
+  dependency is not the sprint's subject.
+- **Real-dependency smoke:** use the real sidecar, model runtime, device, or
+  network service. Required when the sprint changes integration with that
+  dependency.
+- **Real-device smoke:** build, install, launch, and probe on actual hardware.
+  Required for mobile UI/runtime, installer, pairing, device route, or
+  build/deploy sprints.
+- **Validation:** independent rerun by the validation host with evidence. This
+  happens after the coding owner reaches smoke-ready or records the blocker.
+
+Before handing off to testing, the coding owner should get to a smoke-ready
+state appropriate to the sprint:
 
 1. branch builds
-2. deploy path works on the proper build host
-3. app installs
-4. app launches
-5. the changed surface responds honestly
+2. target runtime starts, or the exact startup blocker is recorded
+3. changed surface responds honestly
+4. representative success and failure paths were probed
+5. required build/deploy/device path works when the sprint needs one
 6. no obvious regression appears on the touched runtime path
 
 Only after that should the formal validation request move to `wip/testing`.
@@ -184,6 +208,12 @@ Every coding expert effort should end with:
 
 That last item matters. Do not stop at "implementation done." Leave the next
 tester a runnable request.
+
+Treat the initial `request.md` as a **minimum validation floor**, not a closed
+checklist. If implementation work exposes additional risk, edge cases, or
+failure modes, update the same testing request with the extra cases before
+handoff. Do not create a parallel request unless the validation scope has become
+a separate sprint.
 
 If the sprint cannot reach smoke-ready state, the result note should say so
 explicitly and leave the exact blocker and next commands.
