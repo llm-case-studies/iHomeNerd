@@ -76,14 +76,36 @@ async def test_translate_target_required(client: httpx.AsyncClient):
 # ---------------------------------------------------------------------------
 
 
-async def test_chat_returns_200(client: httpx.AsyncClient):
+async def test_chat_returns_200_with_messages(client: httpx.AsyncClient):
     r = await client.post("/v1/chat", json={"messages": [{"role": "user", "content": "Say hello in one word."}]})
     if r.status_code == 503:
         pytest.skip("Ollama not available — chat endpoint unavailable")
     assert r.status_code == 200, f"got {r.status_code}: {r.text[:300]}"
 
 
-async def test_chat_has_response_field(client: httpx.AsyncClient):
+async def test_chat_returns_200_with_prompt(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"prompt": "Say hello in one word."})
+    if r.status_code == 503:
+        pytest.skip("Ollama not available — chat endpoint unavailable")
+    assert r.status_code == 200, f"got {r.status_code}: {r.text[:300]}"
+
+
+async def test_chat_response_shape(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"prompt": "Hi"})
+    if r.status_code == 503:
+        pytest.skip("Ollama not available")
+    assert r.status_code == 200
+    body = r.json()
+    assert body.get("role") == "assistant", f"role must be assistant: {body}"
+    for key in ("content", "response", "text"):
+        assert key in body, f"missing '{key}' in chat: {list(body.keys())}"
+        assert isinstance(body[key], str), f"'{key}' must be str"
+    assert isinstance(body.get("model"), str), "model must be str"
+    assert body.get("backend") in ("ollama", "mlx_macos"), f"unexpected backend: {body.get('backend')}"
+    assert body.get("provider") in ("ollama", "mlx"), f"unexpected provider: {body.get('provider')}"
+
+
+async def test_chat_has_legacy_response_field(client: httpx.AsyncClient):
     r = await client.post("/v1/chat", json={"messages": [{"role": "user", "content": "Hi"}]})
     if r.status_code == 503:
         pytest.skip("Ollama not available")
@@ -93,9 +115,25 @@ async def test_chat_has_response_field(client: httpx.AsyncClient):
     assert isinstance(body["response"], str), "response must be str"
 
 
-async def test_chat_messages_required(client: httpx.AsyncClient):
+async def test_chat_missing_input_returns_400(client: httpx.AsyncClient):
     r = await client.post("/v1/chat", json={})
-    assert r.status_code in (422, 500, 400), f"expected error for missing messages, got {r.status_code}"
+    assert r.status_code == 400, f"expected 400 for missing input, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
+async def test_chat_empty_prompt_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"prompt": ""})
+    assert r.status_code == 400, f"expected 400 for empty prompt, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
+async def test_chat_prompt_non_string_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"prompt": 123})
+    assert r.status_code == 400, f"expected 400 for non-string prompt, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
 
 
 # ---------------------------------------------------------------------------

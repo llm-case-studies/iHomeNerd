@@ -3,9 +3,15 @@
 Transcription (Whisper) deferred to Phase 2.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
-from ..llm import generate, chat as llm_chat
+from ..llm import (
+    generate,
+    chat as llm_chat,
+    provider_name,
+    backend_name,
+    resolve,
+)
 
 router = APIRouter(prefix="/v1", tags=["language"])
 
@@ -29,11 +35,34 @@ async def translate(request: dict) -> dict:
 async def chat_endpoint(request: dict) -> dict:
     """General-purpose local chat.
 
-    Body: { "messages": [{"role": "user", "content": "..."}] }
+    Body: { "prompt": "..." } or { "messages": [{"role": "user", "content": "..."}] }
     """
-    messages = request["messages"]
-    result = await llm_chat(messages, tier="medium")
-    return {"response": result}
+    prompt = request.get("prompt")
+    messages = request.get("messages")
+
+    if prompt and isinstance(prompt, str) and prompt.strip():
+        messages = [{"role": "user", "content": prompt}]
+    elif not messages:
+        raise HTTPException(
+            status_code=400,
+            detail="Request must include a non-empty 'prompt' string or 'messages' array.",
+        )
+
+    try:
+        result = await llm_chat(messages, tier="medium")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    model = resolve("medium")
+    return {
+        "role": "assistant",
+        "content": result,
+        "response": result,
+        "text": result,
+        "model": model,
+        "backend": backend_name(),
+        "provider": provider_name(),
+    }
 
 
 @router.post("/summarize")
