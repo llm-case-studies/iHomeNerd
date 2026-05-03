@@ -38,6 +38,37 @@ Already landed on `main`:
 - MLX sidecar routing through `mlx_macos`
 - `/health`, `/capabilities`, and `/discover` provider metadata
 
+## Lessons from Android Sprints
+
+Carry these rules into the iPhone-to-Mac work:
+
+- **Treat the Mac build as the artifact authority.** For iOS, the branch alone is not enough; record the exact commit, built artifact identity, and any sidecar/runtime prerequisites used for smoke.
+- **Keep the three hosts explicit in every sprint.** Name the implementation host (Acer-HL), Apple build/deploy host (mac-mini), and validation/evidence host (iMac-Debian) in the execution fence.
+- **Require smoke before validation handoff.** A coding sprint is not ready for testers until it builds on the Mac, installs on the iPhone, launches, and the touched route or contract responds honestly.
+- **Separate product sprints from evidence sprints.** Route-smoke, sidecar-availability, and stale-build checks are valid initiative work even when they do not change product code.
+- **Suspect artifact drift before declaring regressions.** If phone behavior differs, verify commit, prerequisite assets, app freshness, and MLX sidecar state before assuming the code changed.
+- **Write machine-only blockers into the request.** If Xcode signing, device trust, or MLX availability is a precondition, put it in the sprint request so the next tester does not rediscover it the hard way.
+
+## Host Access Contract
+
+Use these host roles unless a sprint says otherwise:
+
+- `Acer-HL`: OpenCode implementation host for focused backend or non-Xcode work.
+- `mac-mini` / `mac-mini-m1.local`: Apple Silicon build/deploy host for iOS,
+  macOS, Xcode signing, and local MLX runtime smoke.
+- `iMac-Debian`: validation and evidence host.
+
+SSH should be key-based between the sprint hosts. Verified on 2026-05-03:
+
+```bash
+ssh Acer-HL.local 'ssh -o BatchMode=yes mac-mini hostname'
+ssh iMac-Debian.local 'ssh -o BatchMode=yes mac-mini hostname'
+```
+
+Both paths returned `mac-mini-m1.local` when invoked with the shared household
+SSH key. Prefer `mac-mini` or `mac-mini-m1.local` over raw IPs because the Mac
+mini uses DHCP and has already moved between LAN addresses.
+
 ## Near-Term Milestones
 
 1. Live iPhone route smoke for `/setup/mac` and `/setup/mac/manifest`.
@@ -52,4 +83,3 @@ Already landed on `main`:
 - `docs/IPHONE_TO_MAC_BRAIN_SETUP_VISION_2026-05-01.md`
 - `docs/APPLE_SILICON_NATIVE_MLX_HOSTING_2026-05-01.md`
 - `mobile/testing/requests/IPHONE_TO_MAC_BRAIN_SETUP_AND_MLX_PROVIDER_TEST_REQUEST_2026-05-02.md`
-

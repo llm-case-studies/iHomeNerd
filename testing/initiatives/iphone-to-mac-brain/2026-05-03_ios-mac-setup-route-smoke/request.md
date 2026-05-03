@@ -22,6 +22,35 @@ device after a fresh install from current `main`.
 3. Start hosting if it does not auto-start.
 4. Keep the app foregrounded and screen unlocked.
 
+## SSH Build/Deploy Path
+
+Validation normally runs from `iMac-Debian`, but iOS build and device deploy
+must run through the Apple build host:
+
+```bash
+ssh -o BatchMode=yes mac-mini hostname
+```
+
+Expected:
+
+```text
+mac-mini-m1.local
+```
+
+From a synced repo on the validation host, the established iOS Makefile path is:
+
+```bash
+cd mobile/ios/ihn-home
+read -rs IHN_KEYCHAIN_PW
+export IHN_KEYCHAIN_PW
+make remote-device-launch MAC_HOST=mac-mini MAC_USER=alex
+```
+
+If signing, keychain unlock, device trust, or Xcode provisioning blocks the
+install, record that as the result rather than skipping the build/deploy step.
+If the app is installed manually from Xcode on `mac-mini`, record the exact
+commit and device identity before running the probes below.
+
 ## Probe Commands
 
 ```bash
@@ -87,4 +116,3 @@ Put raw command output, screenshots, or browser captures under:
 ```text
 testing/initiatives/iphone-to-mac-brain/2026-05-03_ios-mac-setup-route-smoke/evidence/
 ```
-

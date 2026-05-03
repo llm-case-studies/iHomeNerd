@@ -76,6 +76,9 @@ Before handing off:
 4. Confirm the Mac setup screen shows at least one usable setup URL.
 5. Run the validator request under `testing/initiatives/.../request.md`.
 
+If validation is driven from `iMac-Debian`, use the SSH build/deploy path in
+the validator request to run the Xcode lane on `mac-mini`.
+
 ## Deliverables
 
 Required:
@@ -93,4 +96,3 @@ Required:
 - Manifest claims `oneTimeToken`, `caKeyHandoff`, and `csrSigning` are false.
 - No CA private key URL or key material appears in HTML or JSON.
 - Existing `/setup/ca.crt` and `/setup/trust-status` still work.
-
