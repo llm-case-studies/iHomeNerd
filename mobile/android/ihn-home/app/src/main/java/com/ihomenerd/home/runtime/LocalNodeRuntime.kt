@@ -602,6 +602,7 @@ object LocalNodeRuntime {
                     method == "GET" && path == "/cluster/nodes" -> jsonResponse(clusterJson())
                     method == "GET" && path == "/system/stats" -> jsonResponse(systemStatsJson())
                     method == "GET" && path == "/setup/trust-status" -> jsonResponse(trustStatusJson())
+                    method == "GET" && path == "/v1/models" -> jsonResponse(modelsCatalogJson())
                     method == "GET" && path == "/v1/mobile/model-packs" -> jsonResponse(modelPacksJson())
                     method == "GET" && path == "/v1/voices" -> jsonResponse(ttsVoicesJson())
                     method == "POST" && path == "/v1/mobile/model-packs/load" -> {
@@ -1156,6 +1157,104 @@ object LocalNodeRuntime {
                     put(capability, status.available)
                 }
             }
+    }
+
+    private fun modelsCatalogJson(): JSONObject {
+        val state = _state.value
+        val statuses = capabilityStatuses(state)
+        val modelsArray = JSONArray()
+
+        state.packs.forEach { pack ->
+            val packStatuses = statuses.filter { it.packId == pack.id }
+            val isExperimental = pack.note.contains("experimental", ignoreCase = true) ||
+                pack.note.contains("preview", ignoreCase = true)
+
+            packStatuses.forEach { status ->
+                val modelEntry = JSONObject()
+                    .put("id", "${pack.id}:${status.profile.name}")
+                    .put("object", "model")
+                    .put("created", state.startedAtMillis ?: 0)
+                    .put("owned_by", "ihomenerd-android")
+                    .put("pack_id", pack.id)
+                    .put("pack_name", pack.name)
+                    .put("pack_kind", pack.kind)
+                    .put("capability", status.profile.name)
+                    .put("capability_title", status.profile.title)
+                    .put("backend", status.profile.backend)
+                    .put("implementation", status.profile.implementation)
+                    .put("tier", status.profile.tier)
+                    .put("load_state", status.loadState)
+                    .put("loaded", status.available)
+                    .put("loadable", status.loadable)
+                    .put("experimental", isExperimental)
+                    .put("offline", status.profile.offline)
+                    .put("streaming", status.profile.streaming)
+                    .put("languages", JSONArray(status.profile.languages))
+                    .put("latency_class", status.profile.latencyClass)
+                    .put("quality_modes", JSONArray(status.profile.modes.map { modeJson(it, status.available) }))
+                    .put("note", listOf(status.profile.note, status.packNote).filter { it.isNotBlank() }.distinct().joinToString(" "))
+
+                if (status.profile.name == "chat") {
+                    appContext?.let { ctx ->
+                        modelEntry.put("model_file", AndroidChatEngine.availableModelSummary(ctx) ?: JSONObject.NULL)
+                        AndroidChatEngine.activeBackendName()?.let { backendName ->
+                            modelEntry.put("active_backend", backendName)
+                        }
+                    }
+                }
+
+                if (status.profile.name == "transcribe_audio") {
+                    appContext?.let { ctx ->
+                        val backends = AndroidAsrEngine.availableBackendChoices(ctx)
+                        modelEntry.put("backend_choices", JSONArray(backends.map { b ->
+                            JSONObject()
+                                .put("id", b.id)
+                                .put("title", b.title)
+                                .put("backend", b.backend)
+                                .put("languages", JSONArray(b.languages))
+                        }))
+                    }
+                }
+
+                modelsArray.put(modelEntry)
+            }
+        }
+
+        val loadedCount = state.packs.count { it.loaded }
+        val loadableCount = state.packs.count { !it.loaded && it.loadable }
+        val experimentalCount = state.packs.count { pack ->
+            pack.note.contains("experimental", ignoreCase = true) || pack.note.contains("preview", ignoreCase = true)
+        }
+
+        return JSONObject()
+            .put("product", PRODUCT)
+            .put("version", VERSION)
+            .put("node", state.nodeName)
+            .put("os", "android")
+            .put("runtime_running", state.running)
+            .put("total_packs", state.packs.size)
+            .put("loaded_packs", loadedCount)
+            .put("loadable_packs", loadableCount)
+            .put("experimental_packs", experimentalCount)
+            .put("data", modelsArray)
+            .put(
+                "summary",
+                JSONObject()
+                    .put("loaded", JSONArray(state.packs.filter { it.loaded }.map { it.name }))
+                    .put("loadable", JSONArray(state.packs.filter { !it.loaded && it.loadable }.map { it.name }))
+                    .put("unavailable", JSONArray(state.packs.filter { !it.loaded && !it.loadable }.map { it.name }))
+                    .put("experimental", JSONArray(state.packs.filter { pack ->
+                        pack.note.contains("experimental", ignoreCase = true) || pack.note.contains("preview", ignoreCase = true)
+                    }.map { it.name }))
+                    .put(
+                        "capability_map",
+                        JSONObject().apply {
+                            statuses.filter { it.available }.forEach { status ->
+                                put(status.profile.name, status.profile.backend)
+                            }
+                        }
+                    )
+            )
     }
 
     private fun modelPacksJson(): JSONObject {

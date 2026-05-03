@@ -508,6 +508,44 @@ private fun ModelsScreen(
             )
         }
 
+        if (localRuntimeState.running) {
+            item {
+                CardShell {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SmallOverline("Runtime model catalog")
+                        Text(
+                            text = "GET /v1/models",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        val catalogUrl = localRuntimeState.localIp?.let { ip ->
+                            "https://$ip:${localRuntimeState.port}/v1/models"
+                        } ?: "https://127.0.0.1:${localRuntimeState.port}/v1/models"
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = catalogUrl,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                        val loadedCount = localRuntimeState.packs.count { it.loaded }
+                        val loadableCount = localRuntimeState.packs.count { !it.loaded && it.loadable }
+                        Text(
+                            text = "$loadedCount loaded · $loadableCount loadable · ${localRuntimeState.packs.size} total packs",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+        }
+
         if (snapshot == null) {
             item {
                 EmptyStateCard(
