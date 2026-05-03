@@ -4,7 +4,7 @@
 
 ## Summary
 
-- branch / commit tested: `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup` at `add52b4`
+- branch / commit tested: `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup` at `cd16348`
 - implementation host: `Acer-HL`
 - validation host: `iMac-Debian` (full integration pending — see Follow-Up)
 - verdict: implementation complete; all contract gaps closed; local 400/502 smoke and fake MLX sidecar smoke all pass
