@@ -1,0 +1,33 @@
+Mac Mini Preflight — 2026-05-03
+=================================
+
+SSH: ssh -o BatchMode=yes mac-mini hostname
+  -> mac-mini-m1.local
+
+Git status & HEAD:
+  ## main...origin/main
+  7f84a8d5fe825f38d485cdc8232c127608bd14b9
+
+Architecture:
+  arm64 (Apple Silicon)
+
+macOS version:
+  ProductName:    macOS
+  ProductVersion: 26.4.1
+  BuildVersion:   25E253
+
+System python3:
+  /usr/bin/python3
+  Python 3.9.6
+
+Homebrew:
+  brew not found
+
+mlx_lm.server:
+  mlx_lm.server not found
+
+Backend .venv:
+  Path exists: ~/Projects/iHomeNerd/backend/.venv
+  Python version: 3.12.13
+  Source: /Users/alex/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3
+  Note: .venv/bin/python is a symlink through codex runtime

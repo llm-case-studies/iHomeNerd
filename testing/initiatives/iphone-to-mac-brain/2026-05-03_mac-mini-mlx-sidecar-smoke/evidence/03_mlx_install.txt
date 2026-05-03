@@ -1,0 +1,25 @@
+MLX Sidecar Venv Installation — 2026-05-03
+=============================================
+
+Location: ~/.ihomenerd/runtime/mlx-sidecar-venv
+Python: backend/.venv/bin/python -> Python 3.12.13
+
+Commands:
+  mkdir -p ~/.ihomenerd/runtime
+  backend/.venv/bin/python -m venv ~/.ihomenerd/runtime/mlx-sidecar-venv
+  ~/.ihomenerd/runtime/mlx-sidecar-venv/bin/python -m pip install --upgrade pip
+    pip 25.0.1 -> 26.1
+  ~/.ihomenerd/runtime/mlx-sidecar-venv/bin/python -m pip install mlx-lm==0.31.3
+
+Key packages installed:
+  mlx-0.31.2
+  mlx-lm-0.31.3
+  mlx-metal-0.31.2
+  transformers-5.7.0
+  numpy-2.4.4
+
+mlx_lm.server --help:
+  Usage confirmed. HTTP server mode available.
+  Default host: 127.0.0.1, default port: 8080
+
+Venv is isolated from backend .venv — no product code modified.

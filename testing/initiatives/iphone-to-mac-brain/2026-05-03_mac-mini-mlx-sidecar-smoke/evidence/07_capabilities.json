@@ -1,0 +1,2 @@
+See evidence/07a_capabilities_full.json for the complete /capabilities payload.
+Key fields verified: provider=mlx, backend=mlx_macos on all chat capabilities.
