@@ -34,7 +34,7 @@ This sprint should tighten the iOS serving contract instead of redesigning the a
 Read these first:
 
 - `docs/ARCHITECTURE_NODE_PARITY.md` (on `feature/uniform-web-ui`) — §2 (menu vs lab), §6 (per-platform state)
-- `docs/expert-briefs/examples/2026-05-02_android-uniform-web-serving/` — the Android analogue this sprint mirrors
+- `docs/expert-briefs/reference/2026-05-02_android-uniform-web-serving/` — the Android analogue this sprint mirrors
 - `docs/expert-briefs/README.md` — sprint workflow rules
 - `docs/MOBILE_STRATEGY_2026-04-24.md`
 

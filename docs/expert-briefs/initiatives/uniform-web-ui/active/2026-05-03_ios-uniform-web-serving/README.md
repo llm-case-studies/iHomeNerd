@@ -40,4 +40,4 @@ The validator request for this sprint lives in:
 
 ## Reference: the Android analogue
 
-When in doubt, read `docs/expert-briefs/examples/2026-05-02_android-uniform-web-serving/` first. The iOS sprint tries to deliver the same browser-visible contract from a different runtime, so the Android sprint's brief, result note, and testing request are useful templates.
+When in doubt, read `docs/expert-briefs/reference/2026-05-02_android-uniform-web-serving/` first. The iOS sprint tries to deliver the same browser-visible contract from a different runtime, so the Android sprint's brief, result note, and testing request are useful templates.

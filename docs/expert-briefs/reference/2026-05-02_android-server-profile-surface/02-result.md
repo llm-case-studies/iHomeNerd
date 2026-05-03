@@ -24,7 +24,7 @@
 - `mobile/android/ihn-home/app/src/main/java/com/ihomenerd/home/ui/IhnHomeApp.kt`
 - `mobile/android/ihn-home/app/src/main/java/com/ihomenerd/home/data/IhnGatewayRepository.kt` (new — recovered from iMac build host)
 - `mobile/testing/requests/ANDROID_SERVER_PROFILE_SURFACE_TEST_REQUEST_2026-05-02.md`
-- `docs/expert-briefs/examples/2026-05-02_android-server-profile-surface/02-result.md` (this file)
+- `docs/expert-briefs/reference/2026-05-02_android-server-profile-surface/02-result.md` (this file)
 
 ## Build and smoke test results
 

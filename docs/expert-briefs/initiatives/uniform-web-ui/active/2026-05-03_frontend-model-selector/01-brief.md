@@ -29,7 +29,7 @@ This sprint should keep the panel small, contract-conformant, and styling-consis
 Read these first:
 
 - `docs/ARCHITECTURE_NODE_PARITY.md` (on `feature/uniform-web-ui`) — §3 (menu item anatomy), §4 (lifecycle)
-- `docs/expert-briefs/examples/2026-05-02_android-model-catalog/` — the Android-side model catalog sprint; tells you how the Android node's `/v1/models` payload is shaped
+- `docs/expert-briefs/reference/2026-05-02_android-model-catalog/` — the Android-side model catalog sprint; tells you how the Android node's `/v1/models` payload is shaped
 - `docs/expert-briefs/README.md` — sprint workflow rules
 
 Relevant frontend sources:
