@@ -24,6 +24,10 @@ This initiative exists to make that split real in code.
 - `active/2026-05-03_frontend-model-selector/`
 - `active/2026-05-03_ios-uniform-web-serving/`
 
+## Foundation Doc
+
+- `docs/ARCHITECTURE_NODE_PARITY.md` — the menu vs. lab framing in full, plus the why-ladder, demand catalog, capability anatomy, honest-advertisement principle, and per-platform state matrix. The new sprints under `active/` cite this as their fence.
+
 ## References
 
 - `docs/expert-briefs/reference/2026-05-02_android-uniform-web-serving/`
