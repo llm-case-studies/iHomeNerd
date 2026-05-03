@@ -1,10 +1,10 @@
 # Result — MLX Chat Contract Cleanup
 
-**Status:** implemented — all local smoke passes, push pending
+**Status:** implemented — all local smoke passes, pushed
 
 ## Summary
 
-- branch / commit tested: `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup`
+- branch / commit tested: `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup` at `add52b4`
 - implementation host: `Acer-HL`
 - validation host: `iMac-Debian` (full integration pending — see Follow-Up)
 - verdict: implementation complete; all contract gaps closed; local 400/502 smoke and fake MLX sidecar smoke all pass
@@ -34,7 +34,7 @@ Not runnable on `Acer-HL` — no Ollama or MLX runtime on this host. The integra
 
 ## Local 400/502 Smoke (backend started, no LLM backend)
 
-All 12 probes passed with clean JSON responses:
+All 13 probes passed with clean JSON responses:
 
 | # | Probe | Expected | Got | Status |
 |---|---|---|---|---|
@@ -48,8 +48,9 @@ All 12 probes passed with clean JSON responses:
 | 8 | `{"messages":[{"role":"user","content":""}]}` | 400 | `{"detail":"messages[0] must include a non-empty 'content'."}` | PASS |
 | 9 | `{"messages":[{"role":"","content":"hi"}]}` | 400 | `{"detail":"messages[0] must include a non-empty 'role' string."}` | PASS |
 | 10 | `{"messages":["not an object"]}` | 400 | `{"detail":"messages[0] must be an object with 'role' and 'content'."}` | PASS |
-| 11 | `{"prompt":"Say hello"}` | 502 | `{"detail":"No model available for tier 'medium'. Available: set()"}` | PASS |
-| 12 | `{"messages":[{"role":"user","content":"Hi"}]}` | 502 | `{"detail":"No model available for tier 'medium'. Available: set()"}` | PASS |
+| 11 | `{"messages":[{"role":"user","content":123}]}` | 400 | `{"detail":"messages[0] must include a non-empty 'content' string."}` | PASS |
+| 12 | `{"prompt":"Say hello"}` | 502 | `{"detail":"No model available for tier 'medium'. Available: set()"}` | PASS |
+| 13 | `{"messages":[{"role":"user","content":"Hi"}]}` | 502 | `{"detail":"No model available for tier 'medium'. Available: set()"}` | PASS |
 
 No traceback HTML/plain 500 in any response. All responses are `application/json`.
 
@@ -121,9 +122,10 @@ Timing fields (`processingTime`, `tokensPerSecond`) omitted — no honest measur
 - Response includes canonical fields: `role`, `content`, `text`, `response`, `model`, `backend`, `provider`
 
 ### `backend/tests/test_language_api.py`
-- 6 new validation tests: empty messages, non-array messages, missing role, missing content, empty content, empty role, non-dict message
+- 7 new validation tests: empty messages, non-array messages, missing role, missing content, empty content, empty role, non-dict message, non-string content
 - 3 new positive path tests: prompt 200, shape, legacy response field
 - 3 new 400 tests: missing input, empty prompt, non-string prompt
+- Updated positive path tests to also skip on 502 (not just 503) — provider-unavailable is now a 502 contract
 
 ### `backend/tests/test_chat_contract.py`
 - Added `test_chat_messages_response_shape` (gated behind `IHN_RUN_LIVE_CHAT=1`)

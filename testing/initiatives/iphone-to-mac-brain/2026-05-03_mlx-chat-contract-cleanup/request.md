@@ -113,12 +113,18 @@ curl -sk -i -X POST https://127.0.0.1:17790/v1/chat \
 curl -sk -i -X POST https://127.0.0.1:17790/v1/chat \
   -H 'Content-Type: application/json' \
   -d '{}'
+
+# Additional 400 validation: non-string message content
+curl -sk -i -X POST https://127.0.0.1:17790/v1/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":123}]}'
 ```
 
 Expected:
 
 - no-sidecar request returns HTTP 502 with JSON `detail`
 - missing prompt/messages returns HTTP 400 with JSON `detail`
+- non-string message content returns HTTP 400 with JSON `detail`
 - neither response is a traceback HTML/plain 500
 
 ## Result Path

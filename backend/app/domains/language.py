@@ -71,10 +71,10 @@ async def chat_endpoint(request: dict) -> dict:
                 detail=f"messages[{i}] must include a non-empty 'role' string.",
             )
         content = msg.get("content")
-        if content is None or (isinstance(content, str) and not content.strip()):
+        if content is None or not isinstance(content, str) or not content.strip():
             raise HTTPException(
                 status_code=400,
-                detail=f"messages[{i}] must include a non-empty 'content'.",
+                detail=f"messages[{i}] must include a non-empty 'content' string.",
             )
 
     try:

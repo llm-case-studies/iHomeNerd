@@ -78,22 +78,22 @@ async def test_translate_target_required(client: httpx.AsyncClient):
 
 async def test_chat_returns_200_with_messages(client: httpx.AsyncClient):
     r = await client.post("/v1/chat", json={"messages": [{"role": "user", "content": "Say hello in one word."}]})
-    if r.status_code == 503:
-        pytest.skip("Ollama not available — chat endpoint unavailable")
+    if r.status_code in (503, 502):
+        pytest.skip("LLM provider not available — chat endpoint unavailable")
     assert r.status_code == 200, f"got {r.status_code}: {r.text[:300]}"
 
 
 async def test_chat_returns_200_with_prompt(client: httpx.AsyncClient):
     r = await client.post("/v1/chat", json={"prompt": "Say hello in one word."})
-    if r.status_code == 503:
-        pytest.skip("Ollama not available — chat endpoint unavailable")
+    if r.status_code in (503, 502):
+        pytest.skip("LLM provider not available — chat endpoint unavailable")
     assert r.status_code == 200, f"got {r.status_code}: {r.text[:300]}"
 
 
 async def test_chat_response_shape(client: httpx.AsyncClient):
     r = await client.post("/v1/chat", json={"prompt": "Hi"})
-    if r.status_code == 503:
-        pytest.skip("Ollama not available")
+    if r.status_code in (503, 502):
+        pytest.skip("LLM provider not available")
     assert r.status_code == 200
     body = r.json()
     assert body.get("role") == "assistant", f"role must be assistant: {body}"
@@ -107,8 +107,8 @@ async def test_chat_response_shape(client: httpx.AsyncClient):
 
 async def test_chat_has_legacy_response_field(client: httpx.AsyncClient):
     r = await client.post("/v1/chat", json={"messages": [{"role": "user", "content": "Hi"}]})
-    if r.status_code == 503:
-        pytest.skip("Ollama not available")
+    if r.status_code in (503, 502):
+        pytest.skip("LLM provider not available")
     assert r.status_code == 200
     body = r.json()
     assert "response" in body, f"missing 'response' in chat: {list(body.keys())}"
@@ -181,6 +181,13 @@ async def test_chat_message_empty_role_returns_400(client: httpx.AsyncClient):
 async def test_chat_message_non_dict_returns_400(client: httpx.AsyncClient):
     r = await client.post("/v1/chat", json={"messages": ["not an object"]})
     assert r.status_code == 400, f"expected 400 for non-dict message, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
+async def test_chat_message_non_string_content_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"messages": [{"role": "user", "content": 123}]})
+    assert r.status_code == 400, f"expected 400 for non-string content, got {r.status_code}: {r.text[:300]}"
     body = r.json()
     assert "detail" in body, "400 response must include 'detail'"
 
