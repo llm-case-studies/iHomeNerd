@@ -24,9 +24,10 @@ contract-clear, and safe for the Mac brain path.
 
 - Repo: `iHomeNerd`
 - Implementation host: `Acer-HL`
-- Base branch: `origin/main`
-- Working branch: `feature/mlx-chat-contract-cleanup`
-- Merge target: `main`
+- Base branch: `origin/feature/expert-brief-initiative-structure` until this
+  sprint pack is merged to `main`; then use `origin/main`
+- Working branch: `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup`
+- Merge target: `main` after the sprint-pack docs branch lands
 - Build host: backend local
 - Validation host: `iMac-Debian` / `testing/initiatives/iphone-to-mac-brain/2026-05-03_mlx-chat-contract-cleanup/`
 
@@ -114,7 +115,7 @@ testing/initiatives/iphone-to-mac-brain/2026-05-03_mlx-chat-contract-cleanup/req
 
 Required:
 
-1. implementation on `feature/mlx-chat-contract-cleanup`
+1. implementation on `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup`
 2. focused tests committed with the code
 3. result note at:
    `testing/initiatives/iphone-to-mac-brain/2026-05-03_mlx-chat-contract-cleanup/result.md`
@@ -138,4 +139,3 @@ Push back before implementing if you think:
 - response model/provider metadata belongs in `/capabilities` only
 
 That judgment is useful. Do not silently choose a different contract.
-

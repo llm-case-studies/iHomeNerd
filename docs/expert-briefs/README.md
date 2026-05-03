@@ -60,10 +60,31 @@ Suggested block:
 - Repo: `iHomeNerd`
 - Implementation host: `Acer-HL`
 - Base branch: `origin/main`
-- Working branch: `feature/<topic>`
+- Working branch: `feature/<initiative>/<sprint-slug>`
 - Merge target: `main`
 - Build/deploy host: `iMac-macOS`
 - Validation host: `iMac-Debian` / `wip/testing`
+```
+
+## Branch Naming
+
+Use initiative-scoped branch names so branch lists group naturally across
+OpenCode, Codex, GitHub, and local shells:
+
+- `feature/<initiative>/<sprint-slug>` for product/code sprints
+- `docs/<initiative>/<topic>` for coordination or architecture-only changes
+- `validation/<initiative>/<sprint-slug>` for evidence-only validation work
+- `fix/<initiative>/<short-bug>` for small corrective branches
+- `wip/<host>/<topic>` only for local scratch branches that should not be
+  reviewed as product work
+
+Examples:
+
+```text
+feature/iphone-to-mac-brain/mlx-chat-contract-cleanup
+feature/uniform-web-ui/android-web-serving
+validation/iphone-to-mac-brain/ios-mac-setup-route-smoke
+docs/expert-briefs/initiative-structure
 ```
 
 ## Reviewer-first rule

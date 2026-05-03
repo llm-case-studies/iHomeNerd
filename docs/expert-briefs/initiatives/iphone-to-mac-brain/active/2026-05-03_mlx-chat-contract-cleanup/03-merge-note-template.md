@@ -2,7 +2,7 @@
 
 ## Branch
 
-- working branch: `feature/mlx-chat-contract-cleanup`
+- working branch: `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup`
 - merge target: `main`
 
 ## Validation Outcome
@@ -20,4 +20,3 @@
 ## Follow-Up
 
 - next sprint:
-

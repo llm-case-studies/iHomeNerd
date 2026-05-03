@@ -19,7 +19,8 @@ pairing approval, certificate handoff, or installer redesign.
 - Repo: `iHomeNerd`
 - Implementation host: `mac-mini` or other Xcode-capable host
 - Base branch: `origin/main`
-- Working branch: `wip/testing` or a disposable validation branch
+- Working branch: `validation/iphone-to-mac-brain/ios-mac-setup-route-smoke`
+  or `wip/testing` if the validation lane is already standardized there
 - Merge target: none unless a tiny test/doc fix is required
 - Build/deploy host: `mac-mini`
 - Validation host: `iMac-Debian` / `testing/initiatives/iphone-to-mac-brain/2026-05-03_ios-mac-setup-route-smoke/`

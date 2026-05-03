@@ -3,7 +3,7 @@
 **Date issued:** 2026-05-03
 **Initiative:** `iphone-to-mac-brain`
 **Sprint:** `2026-05-03_mlx-chat-contract-cleanup`
-**Target branch:** `feature/mlx-chat-contract-cleanup`
+**Target branch:** `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup`
 
 ## What You Are Validating
 
@@ -134,4 +134,3 @@ Put logs or raw command captures under:
 ```text
 testing/initiatives/iphone-to-mac-brain/2026-05-03_mlx-chat-contract-cleanup/evidence/
 ```
-

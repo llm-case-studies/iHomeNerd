@@ -16,7 +16,11 @@ Read first:
 
 Branch:
 git fetch origin
-git switch -c feature/mlx-chat-contract-cleanup origin/main
+git switch -c feature/iphone-to-mac-brain/mlx-chat-contract-cleanup origin/feature/expert-brief-initiative-structure
+
+If `origin/main` already contains this sprint pack, use `origin/main` as the
+base instead. Do not start from an older Android branch or a host-local `wip`
+branch.
 
 Your fence:
 - backend/app/domains/language.py
@@ -34,4 +38,3 @@ Do not edit iOS, installer, frontend, or unrelated backend domains.
 
 Before handoff, run the focused tests from the brief and fill the result file.
 ```
-
