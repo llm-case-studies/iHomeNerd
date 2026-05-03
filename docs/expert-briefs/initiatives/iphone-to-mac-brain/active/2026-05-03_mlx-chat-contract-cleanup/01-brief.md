@@ -97,6 +97,16 @@ Do **not** turn this into:
 
 ## Build and Smoke Expectations
 
+For this sprint, smoke means backend-local contract proof:
+
+- focused backend tests
+- local `/v1/chat` 400/502 probes
+- fake MLX sidecar success probes for both `prompt` and `messages`
+
+Do not wait for an iPhone 12 Pro Max build/deploy for this sprint. Real iPhone
+build/install/route smoke belongs to `2026-05-03_ios-mac-setup-route-smoke`
+and later pairing/setup UI sprints.
+
 Run focused backend checks:
 
 ```bash
