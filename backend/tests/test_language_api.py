@@ -136,6 +136,55 @@ async def test_chat_prompt_non_string_returns_400(client: httpx.AsyncClient):
     assert "detail" in body, "400 response must include 'detail'"
 
 
+async def test_chat_empty_messages_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"messages": []})
+    assert r.status_code == 400, f"expected 400 for empty messages, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
+async def test_chat_messages_non_array_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"messages": "not an array"})
+    assert r.status_code == 400, f"expected 400 for non-array messages, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
+async def test_chat_message_missing_role_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"messages": [{"content": "hi"}]})
+    assert r.status_code == 400, f"expected 400 for missing role, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
+async def test_chat_message_missing_content_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"messages": [{"role": "user"}]})
+    assert r.status_code == 400, f"expected 400 for missing content, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
+async def test_chat_message_empty_content_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"messages": [{"role": "user", "content": ""}]})
+    assert r.status_code == 400, f"expected 400 for empty content, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
+async def test_chat_message_empty_role_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"messages": [{"role": "", "content": "hi"}]})
+    assert r.status_code == 400, f"expected 400 for empty role, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
+async def test_chat_message_non_dict_returns_400(client: httpx.AsyncClient):
+    r = await client.post("/v1/chat", json={"messages": ["not an object"]})
+    assert r.status_code == 400, f"expected 400 for non-dict message, got {r.status_code}: {r.text[:300]}"
+    body = r.json()
+    assert "detail" in body, "400 response must include 'detail'"
+
+
 # ---------------------------------------------------------------------------
 # /v1/summarize
 # ---------------------------------------------------------------------------

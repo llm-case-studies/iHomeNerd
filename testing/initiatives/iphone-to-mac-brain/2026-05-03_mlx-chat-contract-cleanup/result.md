@@ -1,82 +1,140 @@
 # Result — MLX Chat Contract Cleanup
 
-**Status:** implemented
+**Status:** implemented — all local smoke passes, push pending
 
 ## Summary
 
 - branch / commit tested: `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup`
 - implementation host: `Acer-HL`
-- validation host: `iMac-Debian` (smoke pending — see Follow-Up)
-- verdict: implementation complete, unit tests pass, local 400/502 verified
+- validation host: `iMac-Debian` (full integration pending — see Follow-Up)
+- verdict: implementation complete; all contract gaps closed; local 400/502 smoke and fake MLX sidecar smoke all pass
 
 ## Focused Tests
 
-- `test_llm_provider.py`: **3 passed** (unit tests for provider layer)
-- `test_language_api.py`: 11 tests written (6 new for chat contract; need live backend with Ollama/MLX for integration pass)
-- `test_chat_contract.py`: 5 tests (added `test_chat_messages_response_shape`; gated behind `IHN_RUN_LIVE_CHAT=1`)
-
-### Unit test run (no server needed)
+### Unit tests (no server needed)
 
 ```
-python3 -m pytest tests/test_llm_provider.py -q
+cd backend && python3 -m pytest tests/test_llm_provider.py -q
 3 passed
 ```
 
-### Local 400/502 smoke (with server, no LLM backend)
+- `test_openai_model_payload_parser_accepts_data_shape`
+- `test_mlx_resolve_prefers_configured_model`
+- `test_openai_content_parts_are_normalized_to_text`
+
+### Integration tests (require live backend with Ollama/MLX)
+
+Not runnable on `Acer-HL` — no Ollama or MLX runtime on this host. The integration tests in `test_language_api.py` and `test_chat_contract.py` are HTTP-based and need a running server with a working LLM backend.
+
+| Test suite | Count | Result |
+|---|---|---|
+| `test_llm_provider.py` | 3 | **3 passed** |
+| `test_language_api.py` | 17 | require live server (all ConnectError — no backend running) |
+| `test_chat_contract.py` | 5 | 4 skipped (no `IHN_RUN_LIVE_CHAT`), 1 requires live server |
+
+## Local 400/502 Smoke (backend started, no LLM backend)
+
+All 12 probes passed with clean JSON responses:
+
+| # | Probe | Expected | Got | Status |
+|---|---|---|---|---|
+| 1 | `{}` | 400 | `{"detail":"Request must include a non-empty 'prompt' string or 'messages' array."}` | PASS |
+| 2 | `{"prompt":""}` | 400 | same detail | PASS |
+| 3 | `{"prompt":123}` | 400 | same detail | PASS |
+| 4 | `{"messages":[]}` | 400 | same detail | PASS |
+| 5 | `{"messages":"not an array"}` | 400 | `{"detail":"'messages' must be an array of role/content objects."}` | PASS |
+| 6 | `{"messages":[{"content":"hi"}]}` | 400 | `{"detail":"messages[0] must include a non-empty 'role' string."}` | PASS |
+| 7 | `{"messages":[{"role":"user"}]}` | 400 | `{"detail":"messages[0] must include a non-empty 'content'."}` | PASS |
+| 8 | `{"messages":[{"role":"user","content":""}]}` | 400 | `{"detail":"messages[0] must include a non-empty 'content'."}` | PASS |
+| 9 | `{"messages":[{"role":"","content":"hi"}]}` | 400 | `{"detail":"messages[0] must include a non-empty 'role' string."}` | PASS |
+| 10 | `{"messages":["not an object"]}` | 400 | `{"detail":"messages[0] must be an object with 'role' and 'content'."}` | PASS |
+| 11 | `{"prompt":"Say hello"}` | 502 | `{"detail":"No model available for tier 'medium'. Available: set()"}` | PASS |
+| 12 | `{"messages":[{"role":"user","content":"Hi"}]}` | 502 | `{"detail":"No model available for tier 'medium'. Available: set()"}` | PASS |
+
+No traceback HTML/plain 500 in any response. All responses are `application/json`.
+
+## Fake MLX Sidecar Smoke
+
+### Setup
+- Terminal A: fake MLX sidecar (`/tmp/ihn_fake_mlx_sidecar.py`) on port 11435
+- Terminal B: iHomeNerd backend with `IHN_LLM_PROVIDER=mlx`, port 17790
+
+### Results
 
 | Probe | Outcome | Notes |
 |---|---|---|
-| 400: empty body `{}` | 400 `{"detail":"Request must include a non-empty 'prompt' string or 'messages' array."}` | clean JSON |
-| 400: non-string prompt `{"prompt":123}` | 400 same detail | clean JSON |
-| 400: empty prompt `{"prompt":""}` | 400 same detail | clean JSON |
-| 502: valid prompt, no Ollama | 502 `{"detail":"No model available for tier 'medium'. Available: set()"}` | RuntimeError caught, clean JSON, no traceback |
+| `/health` provider metadata | 200 | `ok: true`, `provider: mlx`, `backend: mlx_macos`, model resolved |
+| `/v1/chat` with `prompt` | 200 | Full canonical response (see below) |
+| `/v1/chat` with `messages` | 200 | Full canonical response (see below) |
+| no-sidecar 502 | 502 | `{"detail":"LLM provider unreachable: All connection attempts failed"}` — `httpx.ConnectError` caught, clean JSON |
+| invalid body 400 | 400 | `{"detail":"Request must include a non-empty 'prompt' string or 'messages' array."}` |
 
-## Response Shape
-
-The `/v1/chat` endpoint now returns:
+### Prompt Response
 
 ```json
 {
   "role": "assistant",
-  "content": "<result text>",
-  "response": "<result text>",
-  "text": "<result text>",
-  "model": "gemma4:e4b",
-  "backend": "ollama",
-  "provider": "ollama"
+  "content": "[FAKE MLX] Say hello in three words.",
+  "response": "[FAKE MLX] Say hello in three words.",
+  "text": "[FAKE MLX] Say hello in three words.",
+  "model": "mlx-community/gemma-4-e2b-it-4bit",
+  "backend": "mlx_macos",
+  "provider": "mlx"
 }
 ```
 
-- `content`: present (same as result)
-- `text`: present (same as result)
-- `response`: present (legacy field, same as result)
+### Messages Response
+
+```json
+{
+  "role": "assistant",
+  "content": "[FAKE MLX] Say hello in four words.",
+  "response": "[FAKE MLX] Say hello in four words.",
+  "text": "[FAKE MLX] Say hello in four words.",
+  "model": "mlx-community/gemma-4-e2b-it-4bit",
+  "backend": "mlx_macos",
+  "provider": "mlx"
+}
+```
+
+## Response Shape
+
+- `content`: present (same as result text)
+- `text`: present (same as result text)
+- `response`: present (legacy field, same as result text)
+- `role`: `"assistant"`
 - `backend`: `"ollama"` or `"mlx_macos"` from `llm.backend_name()`
 - `provider`: `"ollama"` or `"mlx"` from `llm.provider_name()`
+- `model`: resolved model name from `llm.resolve("medium")`
 
-Timing fields (`processingTime`, `tokensPerSecond`) are omitted from Python for now, as specified in the brief.
+Timing fields (`processingTime`, `tokensPerSecond`) omitted — no honest measurement available on Python path.
 
 ## Changes Made
 
 ### `backend/app/domains/language.py`
-- Imported `HTTPException`, `provider_name`, `backend_name`, `resolve`
-- Chat endpoint now accepts both `prompt` (string) and `messages` (array)
-- `prompt` is normalized to `messages = [{"role": "user", "content": prompt}]`
-- Missing/invalid input returns HTTP 400 with JSON `detail`
-- `RuntimeError` from LLM layer (no model, MLX unreachable) returns HTTP 502 with JSON `detail`
+- Imported `HTTPException`, `httpx`, `provider_name`, `backend_name`, `resolve`
+- Chat endpoint accepts both `prompt` (string) and `messages` (array)
+- `prompt` normalizes to `messages = [{"role": "user", "content": prompt}]`
+- **Deep messages validation (gap 1)**: validates messages is a list, each message is a dict with non-empty `role` and `content` strings
+- Missing/invalid input returns HTTP 400 with specific JSON `detail`
+- **Transport error handling (gap 2)**: catches `RuntimeError`, `httpx.ConnectError`, `httpx.TimeoutException`, `httpx.HTTPStatusError` and returns HTTP 502 with JSON `detail`
 - Response includes canonical fields: `role`, `content`, `text`, `response`, `model`, `backend`, `provider`
 
 ### `backend/tests/test_language_api.py`
-- Renamed `test_chat_returns_200` → `test_chat_returns_200_with_messages`
-- Added `test_chat_returns_200_with_prompt`
-- Added `test_chat_response_shape` (checks all canonical fields)
-- Added `test_chat_has_legacy_response_field` (preserves existing check)
-- Replaced `test_chat_messages_required` with `test_chat_missing_input_returns_400`
-- Added `test_chat_empty_prompt_returns_400`
-- Added `test_chat_prompt_non_string_returns_400`
+- 6 new validation tests: empty messages, non-array messages, missing role, missing content, empty content, empty role, non-dict message
+- 3 new positive path tests: prompt 200, shape, legacy response field
+- 3 new 400 tests: missing input, empty prompt, non-string prompt
 
 ### `backend/tests/test_chat_contract.py`
 - Added `test_chat_messages_response_shape` (gated behind `IHN_RUN_LIVE_CHAT=1`)
 
 ## Follow-Up
 
-- next recommended sprint: run the fake MLX sidecar smoke from `request.md` on the validation host (`iMac-Debian`) with Ollama available to verify the full 200 response shape and cross-platform contract
+- next recommended sprint: run the full `request.md` smoke on `iMac-Debian` (validation host) with Ollama available to verify:
+  1. All integration tests pass (`test_language_api.py`, `test_chat_contract.py`)
+  2. Fake MLX sidecar smoke with both prompt and messages
+  3. No-sidecar 502 error path
+
+## Known Blockers
+
+- **No Ollama/MLX on Acer-HL**: integration tests in `test_language_api.py` and `test_chat_contract.py` cannot run without a live LLM backend. The tests are designed to connect to a running server and need either Ollama or a real/fake MLX sidecar. The code logic for 400 and 502 paths was verified with manual HTTP smoke.
