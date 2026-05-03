@@ -50,7 +50,7 @@ Every coding expert effort should end with:
 That last item matters. Do not stop at "implementation done." Leave the next
 tester a runnable request.
 
-## Current reference example
+## Current reference examples
 
 - `examples/2026-05-02_android-server-profile-surface/`
-
+- `examples/2026-05-02_android-model-catalog/`
