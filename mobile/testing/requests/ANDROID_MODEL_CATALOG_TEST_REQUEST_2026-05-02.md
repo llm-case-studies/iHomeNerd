@@ -1,7 +1,7 @@
 # Android Model Catalog Test Request
 
 **Date:** 2026-05-02  
-**Requester:** Alex / Codex  
+**Requester:** Alex / OpenCode  
 **Target branch:** `feature/android-model-catalog`  
 **Validation lane:** `wip/testing`  
 **Primary build/deploy host:** `iMac-macOS`
@@ -20,15 +20,62 @@ The important truth to validate is not "how pretty is the tab?" but:
 - does it distinguish loaded vs loadable vs unavailable/experimental?
 - can a tester or client map capabilities to actual local packs/backends?
 
+## Pre-smoke status (OpenCode, 2026-05-02)
+
+The following was already validated during implementation:
+
+- **Build**: `./gradlew assembleDebug` succeeded on iMac-macOS (36 tasks, 6s)
+- **Install**: APK installed successfully on Motorola Edge 2021 (ZY22GQPKG6)
+- **Launch**: App launched with local runtime, no crash
+- **Runtime**: Both :17777 and :17778 serving confirmed
+
+### Pre-validated endpoint results
+
+| Endpoint | Status | Notes |
+|---|---|---|
+| `GET /v1/models` | 200 OK | 6 entries, 5 packs, truthful load_state/backend/experimental |
+| `GET /health` | 200 OK | `ok: true`, 5 capabilities, `server_readiness` present |
+| `GET /capabilities` | 200 OK | 5 true, 1 false (translate_text) |
+| `GET /discover` | 200 OK | role: brain, 4 models listed |
+| `GET /setup/trust-status` (:17778) | 200 OK | `status: trusted` |
+
+### `/v1/models` summary from smoke
+
+```json
+{
+  "total_packs": 5,
+  "loaded_packs": 4,
+  "loadable_packs": 1,
+  "experimental_packs": 1,
+  "summary": {
+    "loaded": ["PronunCo Pinyin Tools", "Android TTS Local", "Android Gemma Chat Local", "Android ASR Local"],
+    "loadable": ["Translate Small (preview)"],
+    "unavailable": [],
+    "experimental": ["Android Gemma Chat Local"],
+    "capability_map": {
+      "chat": "android_gemma_local",
+      "compare_pinyin": "kotlin_local",
+      "normalize_pinyin": "kotlin_local",
+      "synthesize_speech": "android_tts_service",
+      "transcribe_audio": "sherpa_onnx_moonshine"
+    }
+  }
+}
+```
+
+**Note**: The branch commit exists locally on both Acer-HL and iMac-macOS but could not be pushed to origin (no GitHub auth on either machine). The next validator should either:
+1. Push the branch from a machine with GitHub credentials, or
+2. Rebuild from the synced source files on iMac-macOS (already committed there as `8ab5671`)
+
 ## Candidate devices
 
 - `Galaxy Z Fold6`
 - `Moto-Razr`
-- fallback / comparison: `M-E-21`
+- fallback / comparison: `M-E-21` (Motorola Edge 2021, ZY22GQPKG6) — **already smoke-tested**
 
 ## Preconditions
 
-- target branch is available on the Android build/deploy host
+- target branch is available on the Android build/deploy host (or source files are synced on iMac-macOS)
 - device is attached and visible through `adb`
 - app can be rebuilt and reinstalled from `iMac-macOS`
 
@@ -39,7 +86,7 @@ Reference:
 ## Build / deploy path
 
 ```bash
-ssh alex@192.168.0.117
+ssh iMac-macOS
 source ~/.local/share/ihomenerd-android/env.sh
 cd ~/Projects/iHomeNerd/mobile/android/ihn-home
 git fetch origin
@@ -48,6 +95,8 @@ git checkout feature/android-model-catalog
 adb devices
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
+
+If the branch is not yet pushed to origin, the commit `8ab5671` already exists on the iMac's local checkout.
 
 If multiple devices are connected, use serial-targeted installs.
 
@@ -108,12 +157,13 @@ In the app, open the `Models` tab and verify:
 - loaded vs loadable state is understandable
 - experimental packs are not presented as fully ready if they are not
 - the tab remains useful when connected to the local Android runtime
+- a "Runtime model catalog" card shows the `GET /v1/models` URL when runtime is running
 
 ### 6. Smoke-test load/unload if applicable
 
 If the sprint touched local pack load/unload behavior:
 
-1. load a pack that is supposed to be loadable
+1. load a pack that is supposed to be loadable (e.g., `translate-small-preview`)
 2. refresh the model catalog
 3. confirm the state changed truthfully
 4. unload it again and verify reversal
