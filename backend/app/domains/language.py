@@ -5,7 +5,7 @@ Transcription (Whisper) deferred to Phase 2.
 
 from fastapi import APIRouter
 
-from ..ollama import generate, chat as ollama_chat
+from ..llm import generate, chat as llm_chat
 
 router = APIRouter(prefix="/v1", tags=["language"])
 
@@ -32,7 +32,7 @@ async def chat_endpoint(request: dict) -> dict:
     Body: { "messages": [{"role": "user", "content": "..."}] }
     """
     messages = request["messages"]
-    result = await ollama_chat(messages, tier="medium")
+    result = await llm_chat(messages, tier="medium")
     return {"response": result}
 
 

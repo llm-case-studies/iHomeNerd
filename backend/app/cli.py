@@ -6,15 +6,15 @@ import argparse
 import asyncio
 import sys
 
-from . import ollama
+from . import llm
 from .capabilities import capabilities_response
 
 
 async def cmd_status():
-    health = await ollama.check_health()
+    health = await llm.check_health()
     caps = await capabilities_response()
     print(f"iHomeNerd {caps['version']} on {caps['hostname']}")
-    print(f"Ollama: {'connected' if health['ok'] else 'offline'}")
+    print(f"LLM ({health.get('backend', llm.backend_name())}): {'connected' if health['ok'] else 'offline'}")
     if health.get("models"):
         print(f"Models: {', '.join(health['models'])}")
     available = [k for k, v in caps["capabilities"].items() if v["available"]]
@@ -30,7 +30,7 @@ async def cmd_translate(text: str, target: str, source: str = "auto"):
 
 
 async def cmd_chat(text: str):
-    result = await ollama.chat([{"role": "user", "content": text}])
+    result = await llm.chat([{"role": "user", "content": text}])
     print(result)
 
 

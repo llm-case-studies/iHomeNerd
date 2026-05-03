@@ -94,3 +94,6 @@ Apps like [PronunCo](https://github.com/llm-case-studies/pronunco) and TelPro-Br
 
 - `docs/PRODUCT_SPEC.md` — full product spec
 - `docs/WEB_PRICING_AND_LAUNCH_PLAN.md` — web and pricing strategy
+- `docs/MOBILE_STRATEGY_2026-04-24.md` — native mobile direction
+- `docs/HOME_AND_MOBILE_VISION_ROADMAP_2026-04-24.md` — Home, travel, and take-home roadmap
+- `mobile/docs/CLAUDE_DESIGN_IHN_HOME_BRIEF_2026-04-24.md` — ready-to-use design brief for Claude Design

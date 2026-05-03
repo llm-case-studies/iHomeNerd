@@ -1,6 +1,281 @@
 // In dev: Vite proxy forwards /health, /capabilities, /v1/* to localhost:17777
 // In prod: FastAPI serves both static files and API on the same origin
 const BASE_URL = '';
+const SYNTHETIC_FALLBACK_PORTS = new Set(['3000', '4173', '5173']);
+
+export interface CapabilityDetail {
+  available?: boolean;
+  model?: string;
+  backend?: string;
+  tier?: string;
+  core?: boolean;
+  [key: string]: any;
+}
+
+export interface NodeCapabilities {
+  [key: string]: any;
+  _detail?: {
+    product?: string;
+    version?: string;
+    hostname?: string;
+    capabilities?: Record<string, CapabilityDetail>;
+    error?: string;
+  };
+}
+
+export interface PreparedAndroidAsrUpload {
+  blob: Blob;
+  mimeType: string;
+}
+
+export interface TranscribeAudioResponse {
+  text: string;
+  language?: string | null;
+  backend?: string | null;
+  model?: string | null;
+  audio_bytes?: number;
+}
+
+interface TranscribeAudioOptions {
+  transport?: 'multipart' | 'json-base64';
+  mimeType?: string;
+  language?: string | null;
+}
+
+function runtimeLocation() {
+  if (typeof window === 'undefined') return null;
+  return window.location;
+}
+
+function runtimePort(defaultPort: number = 17777): number {
+  const location = runtimeLocation();
+  const parsed = Number(location?.port || defaultPort);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : defaultPort;
+}
+
+function runtimeHostname(): string {
+  return runtimeLocation()?.hostname || 'unknown-node';
+}
+
+function runtimeBaseUrl(): string {
+  const location = runtimeLocation();
+  return location ? `${location.protocol}//${location.host}` : 'this node';
+}
+
+export function allowsSyntheticFallbacks(): boolean {
+  const location = runtimeLocation();
+  return location ? SYNTHETIC_FALLBACK_PORTS.has(location.port) : false;
+}
+
+export function getCapabilityDetail(
+  capabilities: NodeCapabilities | null | undefined,
+  key: string,
+): CapabilityDetail | null {
+  return capabilities?._detail?.capabilities?.[key] ?? null;
+}
+
+export function isCapabilityAvailable(
+  capabilities: NodeCapabilities | null | undefined,
+  key: string,
+): boolean {
+  const detail = getCapabilityDetail(capabilities, key);
+  if (detail && typeof detail.available === 'boolean') return detail.available;
+  return capabilities?.[key] === true;
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+async function decodeAudioBlob(blob: Blob): Promise<AudioBuffer> {
+  const AudioContextCtor =
+    window.AudioContext ||
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextCtor) {
+    throw new Error('This browser cannot decode recorded audio for Android ASR.');
+  }
+  const audioContext = new AudioContextCtor();
+  try {
+    const arrayBuffer = await blob.arrayBuffer();
+    return await audioContext.decodeAudioData(arrayBuffer.slice(0));
+  } finally {
+    await audioContext.close();
+  }
+}
+
+function downmixToMono(audioBuffer: AudioBuffer): Float32Array {
+  const channelCount = Math.max(1, audioBuffer.numberOfChannels);
+  const mono = new Float32Array(audioBuffer.length);
+  for (let channelIndex = 0; channelIndex < channelCount; channelIndex += 1) {
+    const channel = audioBuffer.getChannelData(channelIndex);
+    for (let sampleIndex = 0; sampleIndex < channel.length; sampleIndex += 1) {
+      mono[sampleIndex] += channel[sampleIndex] / channelCount;
+    }
+  }
+  return mono;
+}
+
+function resampleMonoPcm(monoInput: Float32Array, sourceSampleRate: number, targetSampleRate: number): Float32Array {
+  if (sourceSampleRate === targetSampleRate) {
+    return monoInput.slice();
+  }
+  const durationSeconds = monoInput.length / sourceSampleRate;
+  const targetLength = Math.max(1, Math.round(durationSeconds * targetSampleRate));
+  const result = new Float32Array(targetLength);
+  const ratio = sourceSampleRate / targetSampleRate;
+
+  for (let index = 0; index < targetLength; index += 1) {
+    const start = Math.floor(index * ratio);
+    const end = Math.min(monoInput.length, Math.floor((index + 1) * ratio));
+    if (end <= start) {
+      const sourcePosition = index * ratio;
+      const leftIndex = Math.floor(sourcePosition);
+      const rightIndex = Math.min(monoInput.length - 1, leftIndex + 1);
+      const weight = sourcePosition - leftIndex;
+      result[index] =
+        monoInput[leftIndex] * (1 - weight) +
+        monoInput[rightIndex] * weight;
+      continue;
+    }
+    let total = 0;
+    for (let sampleIndex = start; sampleIndex < end; sampleIndex += 1) {
+      total += monoInput[sampleIndex];
+    }
+    result[index] = total / (end - start);
+  }
+
+  return result;
+}
+
+function trimAndNormalizePcm(samples: Float32Array, sampleRate: number): Float32Array {
+  if (samples.length === 0) return samples;
+  const silenceThreshold = 0.0035;
+  const guardSamples = Math.round(sampleRate * 0.08);
+  let start = 0;
+  while (start < samples.length && Math.abs(samples[start]) < silenceThreshold) {
+    start += 1;
+  }
+  let end = samples.length - 1;
+  while (end > start && Math.abs(samples[end]) < silenceThreshold) {
+    end -= 1;
+  }
+  if (start >= end) {
+    start = 0;
+    end = samples.length - 1;
+  } else {
+    start = Math.max(0, start - guardSamples);
+    end = Math.min(samples.length - 1, end + guardSamples);
+  }
+
+  const trimmed = samples.slice(start, end + 1);
+  let peak = 0;
+  for (let index = 0; index < trimmed.length; index += 1) {
+    peak = Math.max(peak, Math.abs(trimmed[index]));
+  }
+  if (peak <= 0 || peak >= 0.85) {
+    return trimmed;
+  }
+
+  const gain = Math.min(12, 0.85 / peak);
+  const normalized = new Float32Array(trimmed.length);
+  for (let index = 0; index < trimmed.length; index += 1) {
+    normalized[index] = Math.max(-1, Math.min(1, trimmed[index] * gain));
+  }
+  return normalized;
+}
+
+function floatPcmToWavBlob(samples: Float32Array, sampleRate: number): Blob {
+  const channelCount = 1;
+  const pcmBytes = new Int16Array(samples.length);
+  for (let index = 0; index < samples.length; index += 1) {
+    const sample = Math.max(-1, Math.min(1, samples[index]));
+    pcmBytes[index] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+  }
+
+  const dataSize = pcmBytes.length * 2;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  const writeString = (offset: number, value: string) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, channelCount, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * channelCount * 2, true);
+  view.setUint16(32, channelCount * 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  let offset = 44;
+  for (const sample of pcmBytes) {
+    view.setInt16(offset, sample, true);
+    offset += 2;
+  }
+
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+export async function prepareAndroidAsrUpload(
+  audioBlob: Blob,
+  preferredMimeType: string = 'audio/wav',
+): Promise<PreparedAndroidAsrUpload> {
+  const normalizedPreferredMime = preferredMimeType.toLowerCase();
+  if (!normalizedPreferredMime.includes('wav')) {
+    const sourceType = (audioBlob.type || '').toLowerCase();
+    if (sourceType.includes('webm') || sourceType.includes('ogg')) {
+      return {
+        blob: audioBlob,
+        mimeType: audioBlob.type || preferredMimeType,
+      };
+    }
+  }
+  const decoded = await decodeAudioBlob(audioBlob);
+  const mono = downmixToMono(decoded);
+  const resampled = resampleMonoPcm(mono, decoded.sampleRate, 24_000);
+  const samples = trimAndNormalizePcm(resampled, 24_000);
+  return {
+    blob: floatPcmToWavBlob(samples, 24_000),
+    mimeType: 'audio/wav',
+  };
+}
+
+function isReachabilityError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message === 'network response was not ok' ||
+    message.includes('failed to fetch') ||
+    message.includes('load failed') ||
+    message.includes('networkerror')
+  );
+}
+
+function backendUnavailableError(kind: string, cause?: unknown) {
+  const error = new Error(`${kind} is not available on ${runtimeBaseUrl()}.`);
+  Object.assign(error, {
+    code: 'backend_unavailable',
+    capability: kind,
+    cause,
+  });
+  return error;
+}
 
 export const api = {
   /**
@@ -13,6 +288,25 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for health', e);
+        return {
+          ok: false,
+          status: "unavailable",
+          product: "iHomeNerd",
+          version: "0.1.0",
+          hostname: runtimeHostname(),
+          ollama: false,
+          tts: false,
+          asr: false,
+          providers: [],
+          models: {},
+          binding: "0.0.0.0",
+          port: runtimePort(),
+          uptime: 0,
+          error: `Could not reach ${runtimeBaseUrl()}/health`,
+        };
+      }
       console.warn('Backend unavailable, using mock health data', e);
       return {
         ok: true,
@@ -47,6 +341,25 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for capabilities', e);
+        return {
+          chat: false,
+          translate_text: false,
+          transcribe_audio: false,
+          synthesize_speech: false,
+          investigate_network: false,
+          dialogue_agent: false,
+          query_documents: false,
+          _detail: {
+            product: "iHomeNerd",
+            version: "0.1.0",
+            hostname: runtimeHostname(),
+            capabilities: {},
+            error: `Could not reach ${runtimeBaseUrl()}/capabilities`,
+          }
+        };
+      }
       console.warn('Backend unavailable, using mock capabilities data', e);
       return {
         chat: true,
@@ -83,7 +396,17 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages, model, language })
       });
-      if (!res.ok) throw new Error('Network response was not ok');
+      if (!res.ok) {
+        const errorText = await res.text();
+        let detail = 'Network response was not ok';
+        try {
+          const parsed = JSON.parse(errorText);
+          detail = parsed.detail || parsed.error || detail;
+        } catch {
+          if (errorText.trim()) detail = errorText.trim();
+        }
+        throw new Error(detail);
+      }
       const data = await res.json();
       // Normalize: backend returns {response: "..."}, UI expects {role, content}
       return {
@@ -92,6 +415,10 @@ export const api = {
         model: data.model ?? 'gemma4:e2b',
       };
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for chat', e);
+        throw backendUnavailableError('chat', e);
+      }
       console.warn('Backend unavailable, using mock chat response', e);
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -148,6 +475,10 @@ export const api = {
         model: data.model ?? 'gemma4:e2b',
       };
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for translate', e);
+        throw backendUnavailableError('translate_text', e);
+      }
       console.warn('Backend unavailable, using mock translate response', e);
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 600));
@@ -164,17 +495,47 @@ export const api = {
    * POST /v1/transcribe-audio
    * Speech-to-text.
    */
-  async transcribeAudio(audioBlob: Blob) {
+  async transcribeAudio(audioBlob: Blob, options: TranscribeAudioOptions = {}): Promise<TranscribeAudioResponse> {
     try {
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'recording.webm');
-      const res = await fetch(`${BASE_URL}/v1/transcribe-audio`, {
-        method: 'POST',
-        body: formData
-      });
-      if (!res.ok) throw new Error('Network response was not ok');
+      const transport = options.transport ?? 'multipart';
+      const res = transport === 'json-base64'
+        ? await fetch(`${BASE_URL}/v1/transcribe-audio`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              audioBase64: await blobToBase64(audioBlob),
+              mimeType: options.mimeType ?? audioBlob.type ?? 'audio/webm',
+              language: options.language ?? null,
+            }),
+          })
+        : await (async () => {
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'recording.webm');
+            return fetch(`${BASE_URL}/v1/transcribe-audio`, {
+              method: 'POST',
+              body: formData
+            });
+          })();
+      if (!res.ok) {
+        const errorText = await res.text();
+        let detail = 'Network response was not ok';
+        try {
+          const parsed = JSON.parse(errorText);
+          detail = parsed.detail || parsed.error || detail;
+        } catch {
+          if (errorText.trim()) detail = errorText.trim();
+        }
+        throw new Error(detail);
+      }
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        if (!isReachabilityError(e)) {
+          throw e;
+        }
+        console.warn('Backend unavailable on hosted node for transcribe_audio', e);
+        throw backendUnavailableError('transcribe_audio', e);
+      }
       console.warn('Backend unavailable, using mock transcribe response', e);
       await new Promise(resolve => setTimeout(resolve, 1500));
       return {
@@ -189,20 +550,53 @@ export const api = {
    * POST /v1/synthesize-speech
    * Text-to-speech.
    */
-  async synthesizeSpeech(text: string, targetLang: string = 'en-US') {
+  async synthesizeSpeech(text: string, targetLang: string = 'en-US', voice: string | null = null) {
     try {
       const res = await fetch(`${BASE_URL}/v1/synthesize-speech`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, targetLang, speed: 1.0 })
+        body: JSON.stringify({ text, targetLang, voice, speed: 1.0 })
       });
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.blob();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for synthesize_speech', e);
+        throw backendUnavailableError('synthesize_speech', e);
+      }
       console.warn('Backend unavailable, using mock TTS response', e);
       await new Promise(resolve => setTimeout(resolve, 800));
       // Return an empty blob to trigger the browser TTS fallback in the UI
       return new Blob([], { type: 'audio/wav' });
+    }
+  },
+
+  /**
+   * GET /v1/voices
+   * List available local TTS voices.
+   */
+  async listVoices() {
+    try {
+      const res = await fetch(`${BASE_URL}/v1/voices`);
+      if (!res.ok) throw new Error('Network response was not ok');
+      return await res.json();
+    } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for voices', e);
+        return {
+          available: false,
+          voices: [],
+          error: `Could not reach ${runtimeBaseUrl()}/v1/voices`,
+        };
+      }
+      console.warn('Backend unavailable, using mock voices list', e);
+      return {
+        available: true,
+        voices: [
+          { name: 'en-us-demo', languageTag: 'en-US', quality: 400, latency: 200 },
+          { name: 'zh-cn-demo', languageTag: 'zh-CN', quality: 400, latency: 200 },
+        ],
+      };
     }
   },
 
@@ -216,11 +610,65 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for system stats', e);
+        return {
+          uptime_seconds: 0,
+          session_count: 0,
+          free_storage_bytes: 0,
+          total_storage_bytes: 0,
+          total_ram_bytes: 0,
+          app_memory_pss_bytes: 0,
+          process_cpu_percent: null,
+          thermal_status: null,
+          battery_percent: null,
+          battery_temp_c: null,
+          performance: {
+            cpu_cores: 0,
+            app_cpu_percent: null,
+            app_memory_pss_bytes: 0,
+            battery_temp_c: null,
+            thermal_status: null,
+            tts: {
+              request_count: 0,
+              last_duration_ms: null,
+              last_audio_bytes: 0,
+              last_voice: null,
+              last_language_tag: null,
+              last_seen: null,
+            },
+          },
+          connected_apps: [],
+          error: `Could not reach ${runtimeBaseUrl()}/system/stats`,
+        };
+      }
       console.warn('Backend unavailable, using mock system stats', e);
       return {
         uptime_seconds: 3600,
         session_count: 0,
-        storage_bytes: 0,
+        free_storage_bytes: 0,
+        total_storage_bytes: 0,
+        total_ram_bytes: 8 * 1024 ** 3,
+        app_memory_pss_bytes: 220 * 1024 ** 2,
+        process_cpu_percent: 6.2,
+        thermal_status: 'none',
+        battery_percent: 100,
+        battery_temp_c: 29.8,
+        performance: {
+          cpu_cores: 8,
+          app_cpu_percent: 6.2,
+          app_memory_pss_bytes: 220 * 1024 ** 2,
+          battery_temp_c: 29.8,
+          thermal_status: 'none',
+          tts: {
+            request_count: 1,
+            last_duration_ms: 420,
+            last_audio_bytes: 94000,
+            last_voice: 'en-us-x-iol-local',
+            last_language_tag: 'en-US',
+            last_seen: 'just now',
+          },
+        },
         connected_apps: [],
       };
     }
@@ -236,6 +684,19 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for cluster nodes', e);
+        return {
+          product: 'iHomeNerd',
+          gateway: {
+            hostname: runtimeHostname(),
+            ip: runtimeHostname(),
+            url: runtimeBaseUrl(),
+          },
+          nodes: [],
+          error: `Could not reach ${runtimeBaseUrl()}/cluster/nodes`,
+        };
+      }
       console.warn('Backend unavailable, using mock cluster data', e);
       return {
         product: 'iHomeNerd',
@@ -296,6 +757,13 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for control nodes', e);
+        return {
+          nodes: [],
+          error: `Could not reach ${runtimeBaseUrl()}/v1/control/nodes`,
+        };
+      }
       console.warn('Backend unavailable, using mock control-plane nodes', e);
       return {
         nodes: [
@@ -409,6 +877,13 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for sessions', e);
+        return {
+          sessions: [],
+          error: `Could not reach ${runtimeBaseUrl()}/sessions`,
+        };
+      }
       console.warn('Backend unavailable, using mock sessions', e);
       return { sessions: [] };
     }
@@ -424,6 +899,13 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for docs collections', e);
+        return {
+          collections: [],
+          error: `Could not reach ${runtimeBaseUrl()}/v1/docs/collections`,
+        };
+      }
       console.warn('Backend unavailable, using mock docs collections', e);
       await new Promise(resolve => setTimeout(resolve, 400));
       return {
@@ -474,6 +956,10 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for docs ask', e);
+        throw backendUnavailableError('query_documents', e);
+      }
       console.warn('Backend unavailable, using mock docs answer', e);
       await new Promise(resolve => setTimeout(resolve, 1500));
       return {
@@ -513,6 +999,10 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for docs ingest', e);
+        throw backendUnavailableError('ingest_folder', e);
+      }
       console.warn('Backend unavailable, using mock ingest response', e);
       // Simulate a long ingestion process
       await new Promise(resolve => setTimeout(resolve, 2500));
@@ -537,6 +1027,14 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for investigate environment', e);
+        return {
+          networks: [],
+          devices: [],
+          error: `Could not reach ${runtimeBaseUrl()}/v1/investigate/environment`,
+        };
+      }
       console.warn('Backend unavailable, using mock environment', e);
       await new Promise(resolve => setTimeout(resolve, 1200));
       return {
@@ -565,6 +1063,10 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for agents', e);
+        return [];
+      }
       console.warn('Backend unavailable, using mock agents', e);
       await new Promise(resolve => setTimeout(resolve, 800));
       return [
@@ -597,6 +1099,10 @@ export const api = {
       }
       return data;
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for agent task', e);
+        throw backendUnavailableError('dialogue_agent', e);
+      }
       console.warn('Backend unavailable, using mock agent task', e);
       
       let activities = [];
@@ -650,6 +1156,14 @@ export const api = {
       if (!res.ok) throw new Error('Network response was not ok');
       return await res.json();
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for builder resources', e);
+        return {
+          apps: [],
+          models: [],
+          error: `Could not reach ${runtimeBaseUrl()}/v1/builder/resources`,
+        };
+      }
       console.warn('Backend unavailable, using mock builder resources', e);
       await new Promise(resolve => setTimeout(resolve, 600));
       return {
@@ -689,6 +1203,10 @@ export const api = {
       }
       return data;
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for builder build', e);
+        throw backendUnavailableError('builder', e);
+      }
       console.warn('Backend unavailable, using mock build process', e);
       
       const logs = [
@@ -750,6 +1268,10 @@ export const api = {
       }
       return data;
     } catch (e) {
+      if (!allowsSyntheticFallbacks()) {
+        console.warn('Backend unavailable on hosted node for investigate scan', e);
+        throw backendUnavailableError('investigate_scan', e);
+      }
       console.warn('Backend unavailable, using mock scan response', e);
       
       let mockLogs: string[] = [];

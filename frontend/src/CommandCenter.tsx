@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Settings, MessageSquare, Mic, FileText, Languages, Search, Bot, Server, Package, Globe as GlobeIcon, HelpCircle } from 'lucide-react';
 import { ChatPanel } from './components/ChatPanel';
@@ -10,6 +10,7 @@ import { InvestigatePanel } from './components/InvestigatePanel';
 import { AgentsPanel } from './components/AgentsPanel';
 import { BuilderPanel } from './components/BuilderPanel';
 import { HelpModal } from './components/HelpModal';
+import { api, NodeCapabilities } from './lib/api';
 
 type TabId = 'chat' | 'talk' | 'docs' | 'translate' | 'investigate' | 'agents' | 'builder' | 'system';
 
@@ -34,17 +35,40 @@ export default function App() {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>('chat');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [capabilities, setCapabilities] = useState<NodeCapabilities | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCapabilities() {
+      try {
+        const data = await api.getCapabilities();
+        if (!cancelled) {
+          setCapabilities(data);
+        }
+      } catch (error) {
+        console.error('Failed to load capability map', error);
+      }
+    }
+
+    loadCapabilities();
+    const interval = window.setInterval(loadCapabilities, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const renderActivePanel = () => {
     switch (activeTab) {
       case 'chat':
-        return <ChatPanel />;
+        return <ChatPanel capabilities={capabilities} />;
       case 'translate':
-        return <TranslatePanel />;
+        return <TranslatePanel capabilities={capabilities} />;
       case 'system':
         return <SystemPanel />;
       case 'talk':
-        return <TalkPanel />;
+        return <TalkPanel capabilities={capabilities} />;
       case 'docs':
         return <DocsPanel />;
       case 'investigate':

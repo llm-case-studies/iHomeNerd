@@ -22,11 +22,12 @@ private struct RuntimeSnapshot: Sendable {
     let fingerprint: String
     let physicalRAM: UInt64
     let arch: String
-    let capabilities: CapabilitiesSnapshot
+    let startedAt: Date
 }
 
 private struct BootstrapSnapshot: Sendable {
     let hostname: String
+    let ips: [String]
     let caPEM: String
     let caFingerprint: String
     let leafFingerprint: String
@@ -40,6 +41,7 @@ final class NodeRuntime: ObservableObject {
     @Published private(set) var advertisedHostname: String = ""
     @Published private(set) var lanAddresses: [String] = []
     @Published private(set) var port: Int = 17777
+    @Published private(set) var bootstrapPort: Int = 17778
     @Published private(set) var fingerprintSHA256: String = ""
     @Published private(set) var caFingerprintSHA256: String = ""
     @Published private(set) var signingPreflight: String = ""
@@ -59,12 +61,28 @@ final class NodeRuntime: ObservableObject {
     static let listenPort: NWEndpoint.Port = 17777
     static let bootstrapPort: NWEndpoint.Port = 17778
     static let serviceType = "_ihomenerd._tcp"
+    static let setupServiceType = "_ihomenerd-setup._tcp"
     static let product = "iHomeNerd"
     static let version = "0.1.0-dev-ios"
 
+    private static let hostingEnabledKey = "ihn.node.hostingEnabled"
+
+    /// Re-applies the last persisted hosting toggle. Call once on app launch.
+    /// If the user had hosting on when the app last quit, this resumes it.
+    func startIfPreviouslyHosting() {
+        if UserDefaults.standard.bool(forKey: Self.hostingEnabledKey) {
+            start()
+        }
+    }
+
     func start() {
         guard !isRunning else { return }
+        // Record intent before any work so a failed start still resumes
+        // hosting on the next launch (the user clearly wanted it on).
+        UserDefaults.standard.set(true, forKey: Self.hostingEnabledKey)
         lastError = nil
+
+        UIDevice.current.isBatteryMonitoringEnabled = true
 
         let host = sanitizedHostname()
         let ips = LocalAddresses.ipv4()
@@ -145,8 +163,22 @@ final class NodeRuntime: ObservableObject {
             fingerprint: identity.fingerprintSHA256,
             physicalRAM: ProcessInfo.processInfo.physicalMemory,
             arch: Self.detectArch(),
-            capabilities: CapabilityHost.snapshot()
+            startedAt: Date()
         )
+
+        // Capability shape (tts/stt/whisper tier) is rebuilt live on every
+        // /capabilities, /discover, /health request — see
+        // CapabilityHost.snapshot() callers below. That way a Whisper warmup
+        // mid-session flips tier from "parallel" to "whisper" on the next
+        // request, no Node toggle required. The auto-prewarm below runs once
+        // per Node start so the model is resident by the time the first
+        // /v1/transcribe-audio call lands and we don't pay ~30s cold-start
+        // under a 503-prone request.
+        if WhisperBundle.isBundled {
+            Task.detached(priority: .utility) {
+                await WhisperEngine.shared.prepare()
+            }
+        }
 
         listener.stateUpdateHandler = { [weak self] state in
             Task { @MainActor in
@@ -186,6 +218,7 @@ final class NodeRuntime: ObservableObject {
         // before they ever try to TLS-handshake against :17777.
         let bootstrap = BootstrapSnapshot(
             hostname: host,
+            ips: ips,
             caPEM: ca.certificatePEM,
             caFingerprint: ca.fingerprintSHA256,
             leafFingerprint: identity.fingerprintSHA256,
@@ -202,6 +235,17 @@ final class NodeRuntime: ObservableObject {
             lastError = "bootstrap listen: \(error)"
             return
         }
+        bootstrapListener.service = NWListener.Service(
+            name: "iHomeNerd Mac setup on \(host)",
+            type: Self.setupServiceType,
+            domain: nil,
+            txtRecord: NWTXTRecord([
+                "role": "mac-setup",
+                "hostname": "\(host).local",
+                "version": Self.version,
+                "path": "/setup/mac",
+            ])
+        )
         bootstrapListener.stateUpdateHandler = { [weak self] state in
             Task { @MainActor in
                 switch state {
@@ -233,6 +277,7 @@ final class NodeRuntime: ObservableObject {
     }
 
     func stop() {
+        UserDefaults.standard.set(false, forKey: Self.hostingEnabledKey)
         listener?.cancel()
         listener = nil
         bootstrapListener?.cancel()
@@ -274,17 +319,14 @@ final class NodeRuntime: ObservableObject {
                                 snapshot: RuntimeSnapshot,
                                 queue: DispatchQueue,
                                 onRequest: @escaping () -> Void) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 16 * 1024) { data, _, isComplete, error in
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { data, _, isComplete, error in
             var buffer = accumulated
             if let data, !data.isEmpty {
                 buffer.append(data)
             }
             if let request = HTTPRequest.parse(buffer) {
                 onRequest()
-                let response = respond(to: request, snapshot: snapshot)
-                connection.send(content: response, completion: .contentProcessed { _ in
-                    connection.cancel()
-                })
+                dispatch(request: request, snapshot: snapshot, on: connection)
                 return
             }
             if error != nil || isComplete {
@@ -295,6 +337,63 @@ final class NodeRuntime: ObservableObject {
         }
     }
 
+    nonisolated private static func dispatch(request: HTTPRequest,
+                                             snapshot: RuntimeSnapshot,
+                                             on connection: NWConnection) {
+        // Async POST routes run on a Task and write back when the underlying
+        // engine call completes. Sync routes (GET /health etc.) respond
+        // immediately on the receive callback's queue.
+        if request.method == "POST", request.path == "/v1/transcribe-audio" {
+            Task.detached {
+                let response = await handleTranscribeAudio(request: request, snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
+        if request.method == "POST", request.path == "/v1/vision/ocr" {
+            Task.detached {
+                let response = await handleOCR(request: request, snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
+        if request.method == "POST", request.path == "/v1/chat" {
+            Task.detached {
+                let response = await handleChat(request: request, snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
+        if request.method == "GET", request.path == "/v1/models" {
+            Task.detached {
+                let response = await handleListModels(snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
+        if request.method == "POST", request.path == "/v1/models/load" {
+            Task.detached {
+                let response = await handleLoadModel(request: request, snapshot: snapshot)
+                connection.send(content: response, completion: .contentProcessed { _ in
+                    connection.cancel()
+                })
+            }
+            return
+        }
+        let response = respond(to: request, snapshot: snapshot)
+        connection.send(content: response, completion: .contentProcessed { _ in
+            connection.cancel()
+        })
+    }
+
     nonisolated private static func respond(to request: HTTPRequest, snapshot: RuntimeSnapshot) -> Data {
         switch (request.method, request.path) {
         case ("GET", "/discover"):
@@ -303,11 +402,234 @@ final class NodeRuntime: ObservableObject {
             return HTTPResponse.json(healthJson(snapshot))
         case ("GET", "/capabilities"):
             return HTTPResponse.json(capabilitiesJson(snapshot))
+        case ("GET", "/system/stats"):
+            return HTTPResponse.json(systemStatsJson(snapshot))
         case ("GET", "/"):
             return HTTPResponse.html(indexHTML(snapshot))
         default:
             return HTTPResponse.text(404, "Not found\n")
         }
+    }
+
+    nonisolated private static func handleTranscribeAudio(request: HTTPRequest,
+                                                          snapshot: RuntimeSnapshot) async -> Data {
+        guard let boundary = Multipart.boundary(from: request.headers["content-type"]) else {
+            return HTTPResponse.json(["detail": "expected multipart/form-data"], status: 400)
+        }
+        guard let parts = Multipart.parse(body: request.body, boundary: boundary) else {
+            return HTTPResponse.json(["detail": "could not parse multipart body"], status: 400)
+        }
+        guard let filePart = parts.first(where: { $0.name == "file" }), !filePart.data.isEmpty else {
+            return HTTPResponse.json(["detail": "missing or empty 'file' part"], status: 400)
+        }
+        let language: String? = parts.first(where: { $0.name == "language" })
+            .flatMap { String(data: $0.data, encoding: .utf8) }?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let langHint = whisperLangCode(language)
+
+        let ext: String? = {
+            guard let fn = filePart.filename else { return nil }
+            let pe = (fn as NSString).pathExtension
+            return pe.isEmpty ? nil : pe
+        }()
+
+        let samples: [Float]
+        let duration: Double
+        do {
+            let decoded = try WAVDecoder.toMono16kFloat(filePart.data, suggestedExtension: ext)
+            samples = decoded.samples
+            duration = decoded.duration
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "decode failed: \(error.localizedDescription)"],
+                status: 400
+            )
+        }
+
+        let t0 = Date()
+        do {
+            let result = try await WhisperEngine.shared.transcribe(audio: samples, language: langHint)
+            let elapsed = Date().timeIntervalSince(t0)
+            guard let r = result else {
+                return HTTPResponse.json(["detail": "transcription returned no result"], status: 502)
+            }
+            let payload: [String: Any] = [
+                "text": r.text,
+                "language": r.language,
+                "duration": round(duration * 100) / 100,
+                "segments": r.segments.map { seg in
+                    [
+                        "start": Double(round(seg.start * 100) / 100),
+                        "end": Double(round(seg.end * 100) / 100),
+                        "text": seg.text,
+                    ] as [String: Any]
+                },
+                "processingTime": round(elapsed * 100) / 100,
+                "model": WhisperBundle.modelName,
+                "backend": "whisperkit_ios",
+            ]
+            return HTTPResponse.json(payload)
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "transcription failed: \(error.localizedDescription)"],
+                status: 502
+            )
+        }
+    }
+
+    nonisolated private static func handleOCR(request: HTTPRequest,
+                                              snapshot: RuntimeSnapshot) async -> Data {
+        guard let boundary = Multipart.boundary(from: request.headers["content-type"]) else {
+            return HTTPResponse.json(["detail": "expected multipart/form-data"], status: 400)
+        }
+        guard let parts = Multipart.parse(body: request.body, boundary: boundary) else {
+            return HTTPResponse.json(["detail": "could not parse multipart body"], status: 400)
+        }
+        guard let filePart = parts.first(where: { $0.name == "file" }), !filePart.data.isEmpty else {
+            return HTTPResponse.json(["detail": "missing or empty 'file' part"], status: 400)
+        }
+        let language: String? = parts.first(where: { $0.name == "language" })
+            .flatMap { String(data: $0.data, encoding: .utf8) }?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let validHint: String?
+        if let hint = language, !hint.isEmpty, OCREngine.supportedRecognitionLanguages.contains(hint) {
+            validHint = hint
+        } else {
+            validHint = nil
+        }
+        
+        let t0 = Date()
+        do {
+            let result = try await OCREngine.recognize(imageData: filePart.data, languageHint: validHint)
+            let elapsed = Date().timeIntervalSince(t0)
+            
+            var payload: [String: Any] = [
+                "text": result.text,
+                "lineCount": result.lineCount,
+                "processingTime": round(elapsed * 100) / 100,
+                "model": "VNRecognizeTextRequest",
+                "backend": "vision_ios"
+            ]
+            if let lang = result.language {
+                payload["language"] = lang
+            }
+            return HTTPResponse.json(payload)
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "OCR failed: \(error.localizedDescription)"],
+                status: 502
+            )
+        }
+    }
+
+    nonisolated private static func handleListModels(snapshot: RuntimeSnapshot) async -> Data {
+        let available = MLXEngine.availableModels.map { m -> [String: Any] in
+            [
+                "id": m.id,
+                "name": m.displayName,
+                "download_size_mb": m.downloadSizeMB,
+                "ram_when_loaded_mb": m.ramWhenLoadedMB,
+                "parameter_size": m.parameterSize,
+                "quantization": m.quantization,
+                "note": m.note,
+            ]
+        }
+        let loaded = await MLXEngine.shared.loadedModelName()
+        let payload: [String: Any] = [
+            "available": available,
+            "loaded": loaded as Any? ?? NSNull(),
+            "backend": "mlx_ios",
+        ]
+        return HTTPResponse.json(payload)
+    }
+
+    nonisolated private static func handleLoadModel(request: HTTPRequest,
+                                                    snapshot: RuntimeSnapshot) async -> Data {
+        guard let dict = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any],
+              let modelId = dict["model_id"] as? String, !modelId.isEmpty else {
+            return HTTPResponse.json(["detail": "expected JSON with 'model_id' key"], status: 400)
+        }
+        let t0 = Date()
+        do {
+            try await MLXEngine.shared.loadModelById(modelId)
+            let elapsed = Date().timeIntervalSince(t0)
+            let payload: [String: Any] = [
+                "loaded": await MLXEngine.shared.loadedModelName() ?? modelId,
+                "load_time_seconds": round(elapsed * 100) / 100,
+                "backend": "mlx_ios",
+            ]
+            return HTTPResponse.json(payload)
+        } catch MLXEngine.MLXError.outOfMemory {
+            return HTTPResponse.json(
+                ["detail": "MLX out of memory: device RAM is insufficient for this model."],
+                status: 503
+            )
+        } catch let MLXEngine.MLXError.modelLoadFailed(detail) {
+            // Unknown model id is a client error; everything else is upstream/engine.
+            let isUnknownId = detail.lowercased().hasPrefix("unknown model id")
+            return HTTPResponse.json(
+                ["detail": "MLX model load failed: \(detail)"],
+                status: isUnknownId ? 400 : 502
+            )
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "MLX model load failed: \(error.localizedDescription)"],
+                status: 502
+            )
+        }
+    }
+
+    nonisolated private static func handleChat(request: HTTPRequest,
+                                              snapshot: RuntimeSnapshot) async -> Data {
+        guard let dict = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any],
+              let prompt = dict["prompt"] as? String else {
+            return HTTPResponse.json(["detail": "expected JSON with 'prompt' key"], status: 400)
+        }
+        
+        let t0 = Date()
+        do {
+            let result = try await MLXEngine.shared.generate(prompt: prompt)
+            let elapsed = Date().timeIntervalSince(t0)
+            
+            let payload: [String: Any] = [
+                "text": result.text,
+                "processingTime": round(elapsed * 100) / 100,
+                "tokensPerSecond": round(result.tokensPerSecond * 100) / 100,
+                "model": await MLXEngine.shared.loadedModelName() ?? "unknown",
+                "backend": "mlx_ios"
+            ]
+            return HTTPResponse.json(payload)
+        } catch {
+            return HTTPResponse.json(
+                ["detail": "MLX inference failed: \(error.localizedDescription)"],
+                status: 502
+            )
+        }
+    }
+
+    nonisolated private static func whisperLangCode(_ raw: String?) -> String? {
+        guard let raw, !raw.isEmpty else { return nil }
+        // BCP-47 → Whisper short code, mirrors backend/app/asr.py mapping so
+        // the contract is consistent across nodes.
+        let mapping: [String: String] = [
+            "en-US": "en", "en-GB": "en",
+            "zh-CN": "zh", "zh-TW": "zh",
+            "ja-JP": "ja",
+            "ko-KR": "ko",
+            "es-ES": "es", "es-MX": "es",
+            "fr-FR": "fr",
+            "de-DE": "de",
+            "it-IT": "it",
+            "pt-BR": "pt", "pt-PT": "pt",
+            "ru-RU": "ru",
+            "tr-TR": "tr",
+            "uk-UA": "uk",
+            "hi-IN": "hi",
+        ]
+        if let m = mapping[raw] { return m }
+        let short = String(raw.split(separator: "-").first ?? "").lowercased()
+        return short.count == 2 ? short : nil
     }
 
     // MARK: - JSON bodies (mirror the Android contract)
@@ -328,7 +650,7 @@ final class NodeRuntime: ObservableObject {
             "strengths": ["portable controller", "trust helper", "LAN node"],
             "accelerators": [],
             "ollama": false,
-            "capabilities": capabilityFlatNames(s.capabilities),
+            "capabilities": capabilityFlatNames(CapabilityHost.snapshot()),
             "network_ips": s.ips,
             "models": [],
         ]
@@ -344,7 +666,7 @@ final class NodeRuntime: ObservableObject {
             "ollama": false,
             "providers": ["ios_local"],
             "models": [:] as [String: String],
-            "available_capabilities": capabilityFlatNames(s.capabilities),
+            "available_capabilities": capabilityFlatNames(CapabilityHost.snapshot()),
             "binding": "0.0.0.0",
             "network_ips": s.ips,
             "port": s.port,
@@ -355,7 +677,7 @@ final class NodeRuntime: ObservableObject {
         // Mirrors Python backend's flat-booleans + _detail shape: top-level keys
         // are capability flags, _detail carries identity metadata + per-capability
         // sub-objects (voice lists, models, etc.).
-        let (flat, detailCaps) = capabilityMaps(s.capabilities)
+        let (flat, detailCaps) = capabilityMaps(CapabilityHost.snapshot())
         let detail: [String: Any] = [
             "hostname": s.hostname,
             "product": product,
@@ -414,13 +736,104 @@ final class NodeRuntime: ObservableObject {
             }
             detail["speech_to_text"] = sttDetail
         }
+        if c.transcribeAudio {
+            flat["transcribe_audio"] = true
+            detail["transcribe_audio"] = [
+                "available": true,
+                "backend": "whisperkit_ios",
+                "model": WhisperBundle.modelName,
+                "endpoint": "/v1/transcribe-audio",
+                "upload_transport": "multipart/form-data",
+                "preferred_upload_mime_type": "audio/wav",
+            ] as [String: Any]
+        }
+        if let ai = c.analyzeImage {
+            flat["analyze_image"] = true
+            detail["analyze_image"] = [
+                "available": true,
+                "ocr_supported": ai.ocrSupported,
+                "recognition_language_count": ai.recognitionLanguages.count,
+                "recognition_languages": ai.recognitionLanguages,
+                "endpoint": "/v1/vision/ocr",
+                "upload_transport": "multipart/form-data",
+                "preferred_upload_mime_type": "image/png",
+            ] as [String: Any]
+        }
+        if let ch = c.chat {
+            flat["chat"] = ch.available
+            
+            var chatDetail: [String: Any] = [
+                "available": ch.available,
+                "backend": "mlx_ios",
+                "endpoint": "/v1/chat"
+            ]
+            if let p = ch.loadedPackName {
+                chatDetail["loaded_pack_name"] = p
+            }
+            detail["chat"] = chatDetail
+        }
         return (flat, detail)
+    }
+
+    nonisolated private static func systemStatsJson(_ s: RuntimeSnapshot) -> [String: Any] {
+        let uptime = max(0, Date().timeIntervalSince(s.startedAt))
+
+        let thermalState: String = {
+            switch ProcessInfo.processInfo.thermalState {
+            case .nominal: return "nominal"
+            case .fair: return "fair"
+            case .serious: return "serious"
+            case .critical: return "critical"
+            @unknown default: return "unknown"
+            }
+        }()
+
+        let device = UIDevice.current
+        let batteryLevel: Float = device.batteryLevel
+        let batteryPercent: Any = batteryLevel < 0 ? NSNull() : Int(round(batteryLevel * 100))
+        let onACPower: Any = {
+            switch device.batteryState {
+            case .charging, .full: return true
+            case .unplugged: return false
+            case .unknown: return NSNull()
+            @unknown default: return NSNull()
+            }
+        }()
+        let lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+
+        return [
+            "uptime_seconds": round(uptime * 100) / 100,
+            "session_count": 0,
+            "app_memory_pss_bytes": appResidentBytes(),
+            "connected_apps": [] as [String],
+            "hostname": s.hostname,
+            "product": product,
+            "version": version,
+            "thermal_state": thermalState,
+            "battery_level_percent": batteryPercent,
+            "is_on_ac_power": onACPower,
+            "low_power_mode_enabled": lowPowerMode,
+        ]
+    }
+
+    nonisolated private static func appResidentBytes() -> UInt64 {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<integer_t>.size)
+        let kr = withUnsafeMutablePointer(to: &info) { ptr -> kern_return_t in
+            ptr.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+            }
+        }
+        return kr == KERN_SUCCESS ? info.resident_size : 0
     }
 
     nonisolated private static func capabilityFlatNames(_ c: CapabilitiesSnapshot) -> [String] {
         var names: [String] = []
         if c.textToSpeech != nil { names.append("text_to_speech") }
         if c.speechToText != nil { names.append("speech_to_text") }
+        if c.transcribeAudio { names.append("transcribe_audio") }
+        if c.analyzeImage != nil { names.append("analyze_image") }
+        if let ch = c.chat, ch.available { names.append("chat") }
         return names
     }
 
@@ -486,6 +899,10 @@ final class NodeRuntime: ObservableObject {
             return HTTPResponse.json(trustStatusJson(snapshot))
         case ("GET", "/setup/ihomenerd.mobileconfig"):
             return HTTPResponse.mobileconfig(snapshot.mobileconfig)
+        case ("GET", "/setup/mac"):
+            return HTTPResponse.html(macSetupHTML(snapshot, request: request))
+        case ("GET", "/setup/mac/manifest"):
+            return HTTPResponse.json(macSetupManifest(snapshot, request: request))
         case ("GET", "/"):
             return HTTPResponse.html(bootstrapIndexHTML(snapshot))
         default:
@@ -512,12 +929,123 @@ final class NodeRuntime: ObservableObject {
         <h1>Trust setup — iHomeNerd on \(s.hostname)</h1>
         <p>Install the Home CA so this device trusts the iHomeNerd nodes on your LAN. The fingerprint below should match what the host shows on its Node screen.</p>
         <p class="fp">CA SHA-256 \(elided)</p>
+        <a class="btn" href="/setup/mac"><b>Mac:</b> set up an M-series Mac brain</a>
         <a class="btn" href="/setup/ihomenerd.mobileconfig"><b>iOS / iPadOS:</b> install configuration profile</a>
         <a class="btn" href="/setup/ca.crt"><b>macOS / Linux / Windows:</b> download CA cert (PEM)</a>
         <p>After installing on iOS, open Settings → General → VPN &amp; Device Management → tap the iHomeNerd profile → Install. Then Settings → General → About → Certificate Trust Settings → enable full trust.</p>
         <p>Other endpoints: <code>/setup/ca.crt</code> · <code>/setup/trust-status</code> · <code>/setup/ihomenerd.mobileconfig</code></p>
         </body></html>
         """
+    }
+
+    nonisolated private static func macSetupManifest(_ s: BootstrapSnapshot, request: HTTPRequest) -> [String: Any] {
+        let base = requestBaseURL(snapshot: s, request: request)
+        return [
+            "product": product,
+            "version": version,
+            "setupRole": "iphone_concierge",
+            "status": "installer_pending",
+            "hostname": s.hostname,
+            "setupUrl": "\(base)/setup/mac",
+            "manifestUrl": "\(base)/setup/mac/manifest",
+            "homeCa": [
+                "fingerprintSha256": s.caFingerprint,
+                "certUrl": "\(base)/setup/ca.crt",
+            ] as [String: Any],
+            "mac": [
+                "recommendedBackend": "mlx_macos",
+                "requiresAppleSilicon": true,
+                "installerTrust": "developer_id_notarized_or_mac_app_store",
+            ] as [String: Any],
+            "pairing": [
+                "requiresUserApproval": true,
+                "oneTimeToken": false,
+                "caKeyHandoff": false,
+                "csrSigning": false,
+            ] as [String: Any],
+        ]
+    }
+
+    nonisolated private static func macSetupHTML(_ s: BootstrapSnapshot, request: HTTPRequest) -> String {
+        let base = requestBaseURL(snapshot: s, request: request)
+        let certURL = "\(base)/setup/ca.crt"
+        let manifestURL = "\(base)/setup/mac/manifest"
+        let model = "mlx-community/gemma-4-e2b-it-4bit"
+        let previewCommand = """
+        curl -fsSL https://raw.githubusercontent.com/llm-case-studies/iHomeNerd/main/install-ihomenerd-macos.sh -o /tmp/install-ihomenerd-macos.sh
+        IHN_MAC_LLM_BACKEND=mlx IHN_MLX_MODEL=\(model) IHN_SETUP_SOURCE_URL=\(base) bash /tmp/install-ihomenerd-macos.sh
+        """
+        return """
+        <!doctype html>
+        <html><head><meta charset="utf-8"><title>Set up a Mac brain with iHomeNerd</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>
+        body{font-family:-apple-system,system-ui,sans-serif;background:#0e0e10;color:#f3f4f6;padding:24px;max-width:720px;margin:0 auto;}
+        h1{font-size:32px;line-height:1.05;margin:8px 0 12px;font-weight:700;letter-spacing:-0.03em;}
+        h2{font-size:18px;margin:26px 0 8px;}
+        p,li{color:#a1a1aa;font-size:15px;line-height:1.5;}
+        .eyebrow{color:#7dd3fc;font-size:12px;text-transform:uppercase;letter-spacing:.16em;font-weight:700;}
+        .card{border:1px solid #27272a;background:#18181b;border-radius:12px;padding:16px;margin:14px 0;}
+        .good{border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.08);}
+        .warn{border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.08);}
+        a.btn{display:inline-block;background:#2563eb;color:white;text-decoration:none;padding:12px 14px;border-radius:8px;margin:6px 8px 6px 0;font-weight:600;}
+        a.secondary{background:#27272a;color:#f3f4f6;border:1px solid #3f3f46;}
+        code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+        pre{white-space:pre-wrap;word-break:break-word;background:#09090b;border:1px solid #27272a;border-radius:10px;padding:12px;font-size:12px;color:#d4d4d8;}
+        .fp{font-size:12px;word-break:break-all;color:#a1a1aa;}
+        </style></head>
+        <body>
+        <div class="eyebrow">iHN Home on iPhone</div>
+        <h1>Set up this Mac as your home brain</h1>
+        <p>This page is served by the iHN Home app running on \(htmlEscape(s.hostname)). Start here when your iPhone is the first node and you want an M-series Mac to become the always-on iHomeNerd brain.</p>
+
+        <div class="card good">
+          <h2>Trusted handoff</h2>
+          <p>The setup begins from the App Store iPhone app and this local page. The Mac still needs normal macOS trust: a Mac App Store app or a Developer ID signed and notarized installer.</p>
+          <p class="fp">Home CA SHA-256 \(htmlEscape(elideFingerprint(s.caFingerprint)))</p>
+        </div>
+
+        <div class="card warn">
+          <h2>Implementation status</h2>
+          <p>The iPhone concierge surface is live. Pairing approval, one-time token handoff, and the signed/notarized Mac installer are next. This page intentionally does not expose the Home CA private key.</p>
+        </div>
+
+        <h2>Developer preview</h2>
+        <p>For source-tree testing only, the future Mac installer path will use these environment switches for native MLX:</p>
+        <pre>\(htmlEscape(previewCommand))</pre>
+
+        <p>
+          <a class="btn" href="\(htmlEscape(manifestURL))">View setup manifest</a>
+          <a class="btn secondary" href="\(htmlEscape(certURL))">Download Home CA cert</a>
+        </p>
+
+        <h2>What happens next</h2>
+        <ol>
+          <li>The iPhone approves this Mac.</li>
+          <li>The Mac runs a trusted iHN installer.</li>
+          <li>The Mac starts a launchd brain service using native MLX on Apple Silicon.</li>
+          <li>The iPhone keeps acting as controller and portable node.</li>
+        </ol>
+        </body></html>
+        """
+    }
+
+    nonisolated private static func requestBaseURL(snapshot: BootstrapSnapshot, request: HTTPRequest) -> String {
+        if let host = request.headers["host"], !host.isEmpty {
+            return "http://\(host)"
+        }
+        if let ip = snapshot.ips.first {
+            return "http://\(ip):\(snapshot.port)"
+        }
+        return "http://\(snapshot.hostname).local:\(snapshot.port)"
+    }
+
+    nonisolated private static func htmlEscape(_ raw: String) -> String {
+        raw
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
     }
 
     nonisolated private static func elideFingerprint(_ raw: String) -> String {

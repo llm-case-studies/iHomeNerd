@@ -30,7 +30,7 @@ from .domains.persistence_router import router as persistence_router
 from .plugins.pronunco import router as pronunco_router
 from .plugins.pronunco_persistence import router as pronunco_persistence_router
 from .plugins import pronunco_persistence
-from . import ollama
+from . import llm
 from . import nodes as managed_nodes_registry
 from .discovery import advertise_start, advertise_stop, get_brain_info, browse_peers
 
@@ -45,14 +45,22 @@ _startup_time = time.time()
 
 @app.on_event("startup")
 async def _startup():
-    """Populate Ollama model cache and advertise on network."""
+    """Populate model cache and advertise on network."""
     global _startup_time
     _startup_time = time.time()
-    health = await ollama.check_health()
+    health = await llm.check_health()
     if health["ok"]:
-        logging.getLogger(__name__).info("Ollama ready: %s", health["models"])
+        logging.getLogger(__name__).info(
+            "%s ready: %s",
+            health.get("backend", llm.backend_name()),
+            health["models"],
+        )
     else:
-        logging.getLogger(__name__).warning("Ollama not reachable at startup: %s", health.get("error"))
+        logging.getLogger(__name__).warning(
+            "%s not reachable at startup: %s",
+            health.get("backend", llm.backend_name()),
+            health.get("error"),
+        )
     advertise_start()
     # Register app plugins with persistence service
     pronunco_persistence.register()
@@ -244,15 +252,23 @@ async def setup_test():
     return {"trusted": True, "product": "iHomeNerd"}
 
 
+@app.get("/setup/trust-status")
+async def setup_trust_status():
+    """Return Home CA and server certificate health for setup clients."""
+    from .certs import get_trust_status
+
+    return get_trust_status(_certs_dir)
+
+
 @app.get("/health")
 async def health():
-    """Health check — is the Nerd running, is Ollama reachable?
+    """Health check — is the Nerd running, is the LLM provider reachable?
 
     Returns both the iHomeNerd format and the fields PronunCo expects
     (ok, version, providers, models).
     """
-    ollama_health = await ollama.check_health()
-    caps_data = await capabilities_response()
+    llm_health = await llm.check_health()
+    caps_data = await capabilities_response(llm_health)
 
     # Build PronunCo-compatible models map
     models_map = {}
@@ -260,14 +276,23 @@ async def health():
         if info["available"] and info.get("model"):
             models_map[name] = info["model"]
 
+    provider = llm_health.get("provider", llm.provider_name())
+    provider_label = "gemma_local" if provider == "ollama" else llm_health.get("backend", llm.backend_name())
+
     return {
-        "ok": ollama_health["ok"],
+        "ok": llm_health["ok"],
         "status": "ok",
         "product": "iHomeNerd",
         "version": "0.1.0",
         "hostname": caps_data["hostname"],
-        "ollama": ollama_health["ok"],
-        "providers": ["gemma_local"] if ollama_health["ok"] else [],
+        "ollama": llm_health.get("ollama", {}).get("ok", False),
+        "llm": {
+            "ok": llm_health["ok"],
+            "provider": llm_health.get("provider", llm.provider_name()),
+            "backend": llm_health.get("backend", llm.backend_name()),
+            "model": llm_health.get("chatModel"),
+        },
+        "providers": [provider_label] if llm_health["ok"] else [],
         "models": models_map,
         "binding": "0.0.0.0" if settings.lan_mode else settings.host,
         "port": settings.port,
@@ -283,9 +308,11 @@ async def discover():
     caps_data = await capabilities_response()
     info = get_brain_info(caps_data["capabilities"])
     # Add live model info
-    ollama_health = await ollama.check_health()
-    info["ollama"] = ollama_health["ok"]
-    info["models"] = ollama_health.get("models", [])
+    llm_health = await llm.check_health()
+    info["ollama"] = llm_health.get("ollama", {}).get("ok", False)
+    info["llm_provider"] = llm_health.get("provider", llm.provider_name())
+    info["llm_backend"] = llm_health.get("backend", llm.backend_name())
+    info["models"] = llm_health.get("models", [])
     return info
 
 
@@ -543,6 +570,10 @@ def _build_setup_app():
     async def setup_test_redirect():
         return await setup_test()
 
+    @setup_app.get("/setup/trust-status")
+    async def setup_trust_status_redirect():
+        return await setup_trust_status()
+
     # Discovery + health on HTTP too — the extension needs these to find
     # brains before the user has installed the HTTPS CA certificate.
     @setup_app.get("/discover/peers")
@@ -564,6 +595,10 @@ def _build_setup_app():
     @setup_app.get("/cluster/nodes")
     async def setup_cluster_nodes():
         return await cluster_nodes()
+
+    @setup_app.get("/system/stats")
+    async def setup_system_stats():
+        return await system_stats()
 
     return setup_app
 

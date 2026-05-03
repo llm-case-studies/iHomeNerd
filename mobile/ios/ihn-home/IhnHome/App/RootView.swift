@@ -4,7 +4,7 @@ struct RootView: View {
     @State private var tab: Tab = .home
 
     enum Tab: Hashable {
-        case home, node, speak, listen, trust, travel
+        case home, node, macSetup, speak, listen, trust, models, chat
     }
 
     var body: some View {
@@ -20,6 +20,12 @@ struct RootView: View {
             }
             .tabItem { Label("Node", systemImage: "antenna.radiowaves.left.and.right") }
             .tag(Tab.node)
+
+            NavigationStack {
+                MacSetupScreen()
+            }
+            .tabItem { Label("Mac", systemImage: "desktopcomputer") }
+            .tag(Tab.macSetup)
 
             NavigationStack {
                 SpeakScreen()
@@ -40,10 +46,16 @@ struct RootView: View {
             .tag(Tab.trust)
 
             NavigationStack {
-                TravelScreen()
+                ModelsScreen()
             }
-            .tabItem { Label("Travel", systemImage: "airplane") }
-            .tag(Tab.travel)
+            .tabItem { Label("Models", systemImage: "cpu") }
+            .tag(Tab.models)
+
+            NavigationStack {
+                ChatScreen()
+            }
+            .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right.fill") }
+            .tag(Tab.chat)
         }
         .tint(IhnColor.accent)
     }
