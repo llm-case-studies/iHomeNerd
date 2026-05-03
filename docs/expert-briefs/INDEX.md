@@ -23,6 +23,12 @@ request owns the validation lane**.
 | `uniform-web-ui` | One canonical Command Center SPA served by every node. | `initiatives/uniform-web-ui/INDEX.md` |
 | `iphone-to-mac-brain` | Phone-first onboarding into an Apple Silicon Mac home brain. | `initiatives/iphone-to-mac-brain/INDEX.md` |
 
+## Lessons
+
+- Cross-initiative lessons: `LESSONS.md`
+- Initiative-specific lessons live beside each initiative README, for example:
+  `initiatives/iphone-to-mac-brain/LESSONS.md`
+
 ## Reference Packs
 
 | Reference | Lesson |
@@ -38,4 +44,3 @@ request owns the validation lane**.
 - `completed`: shipped, result captured, validation path known
 - `paused`: waiting on rate limit, host availability, hardware, or another dependency
 - `aborted`: intentionally stopped; result should explain why
-

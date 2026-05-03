@@ -23,11 +23,13 @@ work under the owning initiative in `initiatives/`.
 docs/expert-briefs/
   README.md
   INDEX.md
+  LESSONS.md
   reference/
   initiatives/
     <initiative>/
       README.md
       INDEX.md
+      LESSONS.md
       active/
       completed/
       paused/
@@ -40,6 +42,11 @@ under the initiative whose success condition it advances.
 
 `reference/` is for durable learning examples. It should grow slowly when a
 sprint teaches a reusable pattern. `initiatives/` is for real product work.
+
+Use `LESSONS.md` files to capture reusable learning without bloating active
+sprint briefs. The top-level lessons log is for patterns that help every
+initiative; initiative-level lessons are for domain-specific findings and open
+questions.
 
 ## Sprint Pack Shape
 

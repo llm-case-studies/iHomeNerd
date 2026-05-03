@@ -94,6 +94,7 @@ Use the smoke level that matches the sprint:
 
 ## Source Docs
 
+- `docs/expert-briefs/initiatives/iphone-to-mac-brain/LESSONS.md`
 - `docs/IPHONE_TO_MAC_BRAIN_SETUP_VISION_2026-05-01.md`
 - `docs/APPLE_SILICON_NATIVE_MLX_HOSTING_2026-05-01.md`
 - `mobile/testing/requests/IPHONE_TO_MAC_BRAIN_SETUP_AND_MLX_PROVIDER_TEST_REQUEST_2026-05-02.md`
