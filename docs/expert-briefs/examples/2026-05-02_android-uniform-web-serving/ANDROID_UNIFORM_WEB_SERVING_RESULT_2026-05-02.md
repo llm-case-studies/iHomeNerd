@@ -1,28 +1,28 @@
 # Result — Android Uniform Web Serving
 
 **Date:** 2026-05-02  
-**Branch:** `feature/android-uniform-web-serving`  
-**Commit:** `21f2bf2` (committed locally, pushed to iMac via SCP)  
+**Branch:** `feature/android-uniform-web-serving` (rebased onto origin/main `cfb7bee`)  
+**Commit:** `2185c43` (cherry-picked from local branch)  
 **Host:** `Acer-HL` → `iMac-macOS`
 
 ## Summary
 
 - branch: `feature/android-uniform-web-serving`
-- commit: `21f2bf2`
+- commit: `2185c43` (rebased from `21f2bf2`)
 - host: `Acer-HL` (code) / `iMac-macOS` (build)
 - scope implemented: tightened Android web serving contract
 
 ## What changed
 
 1. **commandCenterIndexResponse()** — now uses `degradedCommandCenterHtml()` instead of the synthetic `commandCenterHtml()` which masqueraded as the real Command Center
-2. **commandCenterRouteResponse()** — now checks for bundled `index.html` before serving SPA fallback; returns 503 with "Command Center not available - web assets not bundled" when assets are missing
-3. **degradedCommandCenterHtml()** — new honest error page that explicitly states "Command Center Unavailable" and explains the bundled web interface is not present
+2. **commandCenterRouteResponse()** — now checks for bundled `index.html` before serving SPA fallback; returns 503 with "Command Center not available - web assets not bundled" when assets missing
+3. **degradedCommandCenterHtml()** — new honest error page explicitly stating "Command Center Unavailable"
 
 The serving contract is now honest:
-- Real bundled SPA path (`/index.html` + `/assets/*`) is the primary surface when available
-- When bundled assets are missing, returns an explicit degraded page (not a fake Command Center)
-- SPA deep links (`/app`, `/some/deep/link`) check for bundled index existence; fail honestly if missing
-- Keep `:17777` / `:17778` serving intact
+- Real bundled SPA path (`/index.html` + `/assets/*`) is the primary surface
+- When bundled assets are missing, returns explicit degraded page (not a fake Command Center)
+- SPA deep links check for bundled index before falling back
+- `:17777` / `:17778` serving unchanged
 
 ## Files touched
 
@@ -30,28 +30,34 @@ The serving contract is now honest:
 
 ## What was intentionally not done
 
-- No frontend redesign (per brief constraint)
+- No frontend redesign
 - No new capability work beyond web serving contract
 - No changes to setup/bootstrap channel (`:17778`)
 - No modification to existing JSON endpoints
 
 ## Build and smoke notes
 
-- build status: **BLOCKED — pre-existing broken UI code** (IhnHomeApp.kt, IhnHomeViewModel.kt reference fields that don't exist on origin/main)
-- smoke-tested device(s): none (build failed)
-- build/deploy host: `iMac-macOS`
-- testing host: N/A (build blocked)
+- **build status: PASSED**
+- **smoke-tested device(s): BLOCKED** — adb not available on iMac-macOS
+- **build/deploy host:** `iMac-macOS`
+- **APK:** `app/build/outputs/apk/debug/app-debug.apk` (589MB)
 
-**Note:** Build fails due to pre-existing broken code in `IhnHomeApp.kt:1851-1863` (references to `gpuName`, `models`, `batteryPercent`, `totalStorageBytes` that don't exist in current source tree) and `IhnHomeViewModel.kt` (missing GatewaySnapshot, IhnGatewayRepository imports). This is unrelated to the web serving changes in LocalNodeRuntime.kt.
+The build passes. Smoke test requires manual validation with adb (not currently available on iMac).
 
-## Testing request prepared
+## Testing request updated
 
 Updated: `mobile/testing/requests/ANDROID_UNIFORM_WEB_SERVING_TEST_REQUEST_2026-05-02.md`
 
-The implementation is committed and code changes are pushed to iMac-macOS.
-
 ## Risks / open questions
 
-- Build must pass before smoke testing can proceed
-- Pre-existing UI code breakage must be resolved on origin/main first
-- When bundled Command Center assets ARE present (future: with real SPA), the serving behavior should be verified by the next tester
+- Smoke test must be run manually when device/adb is available
+- The degraded page behavior should be verified (what shows when no bundled assets)
+- When bundled Command Center IS present (future APK with real SPA), serving should be verified
+
+## Branch state
+
+```
+Local (Acer-HL):  feature/android-uniform-web-serving -> origin/main (rebased)
+Remote origin:      feature/android-uniform-web-serving -> cfb7bee (via SCP copy)
+iMac-macOS:       feature/android-uniform-web-serving -> origin/main + LocalNodeRuntime.kt changes applied, build passed
+```
