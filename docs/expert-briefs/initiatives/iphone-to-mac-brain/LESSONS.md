@@ -38,3 +38,37 @@ Open questions:
   parts in `messages[].content`, or keep the current string-only contract.
 - Whether provider-unavailable should remain `502` for all text providers, or
   split sidecar unreachable (`502`) from no model loaded (`503`) later.
+
+## 2026-05-03 — iOS Mac Setup Route Smoke
+
+Sprint:
+
+- `2026-05-03_ios-mac-setup-route-smoke`
+- Branch: `validation/iphone-to-mac-brain/ios-mac-setup-route-smoke`
+- Validation host: `iMac-Debian`
+- Build/deploy host: `mac-mini`
+- Target device: iPhone 12 Pro Max
+
+Lessons:
+
+- **The multi-machine lane works.** `iMac-Debian` can drive the Mac build host
+  over SSH, `mac-mini` can build/deploy through Xcode to the real iPhone, and
+  the validator can probe the iPhone over the LAN.
+- **Keychain secrets stay out of agent chat.** `IHN_KEYCHAIN_PW` is the
+  mac-mini `alex` login/keychain password and should be typed into the shell
+  with `read -rs`, not pasted into an agent session.
+- **Personal Team trust is a known real-device step.** First launch can be
+  blocked by "Untrusted Developer" until the developer profile is trusted under
+  Settings > General > VPN & Device Management.
+- **Real-device smoke should record both build lane and route lane.** The result
+  needs the SSH/build/deploy outcome, the device identity/IP, and the actual
+  route/security probes.
+- **Bonjour is useful evidence.** `_ihomenerd-setup._tcp` with `role=mac-setup`
+  proved the setup service was visible on the LAN, not only reachable by direct
+  IP.
+
+Follow-up:
+
+- Consider documenting a preflight checklist for iOS validation sessions:
+  iPhone unlocked, same Wi-Fi, Developer Mode enabled, trusted developer profile,
+  and keychain password entered only through the shell.

@@ -3,7 +3,7 @@
 | Sprint | Status | Branch | Implementation Host | Build Host | Validation | Depends On |
 |---|---|---|---|---|---|---|
 | `2026-05-02_first-implementation-spine` | completed | merged to `main` | `mac-mini` / Codex | `mac-mini` | static + backend fake sidecar; live iPhone route blocked by stale app build | `feature/iphone-mac-brain-setup` |
-| `2026-05-03_ios-mac-setup-route-smoke` | active | `validation/iphone-to-mac-brain/ios-mac-setup-route-smoke` | `mac-mini` | `mac-mini` | `iMac-Debian` / `testing/initiatives/...` | current `main` built to iPhone |
+| `2026-05-03_ios-mac-setup-route-smoke` | completed | `validation/iphone-to-mac-brain/ios-mac-setup-route-smoke` | `mac-mini` | `mac-mini` | PASS on real iPhone 12 Pro Max; evidence in `testing/initiatives/...` | current `main` built to iPhone |
 | `2026-05-03_mlx-chat-contract-cleanup` | completed | `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup` | `Acer-HL` | backend local | PASS on `iMac-Debian`; evidence in `testing/initiatives/...` | provider seam landed |
 | `2026-05-03_mac-mini-mlx-sidecar-smoke` | queued | `feature/iphone-to-mac-brain/mac-mini-mlx-sidecar-smoke` | `mac-mini` | `mac-mini` | `iMac-Debian` | real MLX runtime available |
 | `2026-05-04_mac-installer-preflight-hardening` | queued | `feature/iphone-to-mac-brain/mac-installer-preflight` | `Acer-HL` or `mac-mini` | `mac-mini` | `iMac-Debian` | route smoke + sidecar smoke preferred |
@@ -12,9 +12,9 @@
 
 ## Current Priority
 
-Current first-lane sprint:
+Next product lane: `2026-05-03_mac-mini-mlx-sidecar-smoke`.
 
-- `2026-05-03_ios-mac-setup-route-smoke` closes the nearest iPhone evidence gap
-  on the Mac/iPhone build lane.
+The nearest evidence gaps are now closed:
 
-Next product lane after route smoke: `2026-05-03_mac-mini-mlx-sidecar-smoke`.
+- `/v1/chat` contract cleanup passed fake MLX sidecar validation.
+- iPhone Mac setup routes passed real iPhone 12 Pro Max route smoke.
