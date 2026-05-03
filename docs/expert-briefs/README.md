@@ -10,7 +10,8 @@ pattern:
 2. name the repo branch
 3. name the merge target
 4. name the validation path
-5. require a follow-on testing request
+5. provide a paste-ready kickoff prompt
+6. require a follow-on testing request
 
 Agents handle examples better than abstract policy. Use the sprint packs under
 `reference/` as the stable reference shape for future work, then place live
@@ -39,6 +40,31 @@ under the initiative whose success condition it advances.
 
 `reference/` is for durable learning examples. It should grow slowly when a
 sprint teaches a reusable pattern. `initiatives/` is for real product work.
+
+## Sprint Pack Shape
+
+Each active sprint should include:
+
+```text
+00-opencode-kickoff.md
+01-brief.md
+02-result-template.md
+03-merge-note-template.md
+```
+
+`00-opencode-kickoff.md` is the paste-ready starting prompt. Version it with
+the sprint so the team can improve the actual agent handoff over time instead
+of reconstructing prompts from chat history.
+
+The kickoff prompt should include:
+
+- host and repo context
+- dirty-worktree check before branch switching
+- exact branch creation command
+- required files to read first
+- implementation fence
+- explicit non-goals
+- required tests, result note, commit, and push expectations
 
 ## Required execution fence
 
@@ -102,6 +128,10 @@ them a bounded path when the plan is sound.
 ## Branch base rule
 
 New feature sprint branches must be cut from `origin/main` at handoff time.
+
+Temporary exception: if the sprint pack itself lives on an unmerged coordination
+branch, the kickoff prompt may base from that branch until the pack lands on
+`main`. The brief must call that out explicitly.
 
 Do not start a new feature sprint from:
 
