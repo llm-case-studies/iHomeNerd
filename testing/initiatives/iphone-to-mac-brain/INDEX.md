@@ -3,7 +3,7 @@
 | Sprint | Status | Request | Result | Evidence |
 |---|---|---|---|---|
 | `2026-05-03_ios-mac-setup-route-smoke` | active | `2026-05-03_ios-mac-setup-route-smoke/request.md` | `2026-05-03_ios-mac-setup-route-smoke/result.md` | `2026-05-03_ios-mac-setup-route-smoke/evidence/` |
-| `2026-05-03_mlx-chat-contract-cleanup` | active | `2026-05-03_mlx-chat-contract-cleanup/request.md` | `2026-05-03_mlx-chat-contract-cleanup/result.md` | `2026-05-03_mlx-chat-contract-cleanup/evidence/` |
+| `2026-05-03_mlx-chat-contract-cleanup` | completed / PASS | `2026-05-03_mlx-chat-contract-cleanup/request.md` | `2026-05-03_mlx-chat-contract-cleanup/result.md` | `2026-05-03_mlx-chat-contract-cleanup/evidence/` |
 
 ## Legacy References
 
