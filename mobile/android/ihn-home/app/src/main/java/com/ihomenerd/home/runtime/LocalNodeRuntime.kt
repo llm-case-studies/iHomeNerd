@@ -291,7 +291,10 @@ data class LocalRuntimeState(
     val lastTtsAtMillis: Long? = null,
     val packs: List<LocalPack> = defaultLocalPacks(),
     val remoteClients: List<RemoteClient> = emptyList(),
-    val lastError: String? = null
+    val lastError: String? = null,
+    val isCharging: Boolean? = null,
+    val chargingSource: String? = null,
+    val isBatteryOptimizationExempt: Boolean? = null
 )
 
 private data class CapabilityStatus(
@@ -361,7 +364,10 @@ object LocalNodeRuntime {
                 localNetworkHint = network.reachabilityHint,
                 startedAtMillis = System.currentTimeMillis(),
                 nodeName = defaultLocalNodeName(),
-                lastError = null
+                lastError = null,
+                isCharging = detectCharging(),
+                chargingSource = detectChargingSource(),
+                isBatteryOptimizationExempt = detectBatteryOptimizationExempt()
             )
         }
         scope.launch {
@@ -544,7 +550,7 @@ object LocalNodeRuntime {
                 secureServerSocket = null
             }
             if (!running.get()) {
-                _state.update { it.copy(running = false) }
+                _state.update { it.copy(running = false, isCharging = null, chargingSource = null, isBatteryOptimizationExempt = null) }
             }
         }
     }
@@ -596,6 +602,7 @@ object LocalNodeRuntime {
                     method == "GET" && path == "/cluster/nodes" -> jsonResponse(clusterJson())
                     method == "GET" && path == "/system/stats" -> jsonResponse(systemStatsJson())
                     method == "GET" && path == "/setup/trust-status" -> jsonResponse(trustStatusJson())
+                    method == "GET" && path == "/v1/models" -> jsonResponse(modelsCatalogJson())
                     method == "GET" && path == "/v1/mobile/model-packs" -> jsonResponse(modelPacksJson())
                     method == "GET" && path == "/v1/voices" -> jsonResponse(ttsVoicesJson())
                     method == "POST" && path == "/v1/mobile/model-packs/load" -> {
@@ -1054,6 +1061,7 @@ object LocalNodeRuntime {
                     .put("ips", JSONArray(state.localIps))
                     .put("hint", state.localNetworkHint ?: JSONObject.NULL)
             )
+            .put("server_readiness", serverReadinessJson(state, batteryPercent, batteryTempC, thermalStatus, processCpuPercent, totalRamBytes, appMemoryPssBytes))
             .put("connected_clients", connectedClients)
             .put("connected_apps", connectedApps)
     }
@@ -1077,6 +1085,12 @@ object LocalNodeRuntime {
         capabilityStatuses(state)
             .filter { it.available }
             .forEach { status -> models.put(status.profile.name, status.packId) }
+        val batteryPercent = detectBatteryPercent()
+        val batteryTempC = detectBatteryTemperatureC()
+        val thermalStatus = detectThermalStatus()
+        val processCpuPercent = detectProcessCpuPercent()
+        val totalRamBytes = detectTotalRamBytes()
+        val appMemoryPssBytes = detectAppMemoryPssBytes()
         return JSONObject()
             .put("ok", state.running)
             .put("status", if (state.running) "ok" else "stopped")
@@ -1091,6 +1105,7 @@ object LocalNodeRuntime {
             .put("network_transport", state.localNetworkTransport ?: JSONObject.NULL)
             .put("network_ips", JSONArray(state.localIps))
             .put("port", state.port)
+            .put("server_readiness", serverReadinessJson(state, batteryPercent, batteryTempC, thermalStatus, processCpuPercent, totalRamBytes, appMemoryPssBytes))
     }
 
     private fun discoverJson(): JSONObject {
@@ -1144,6 +1159,104 @@ object LocalNodeRuntime {
             }
     }
 
+    private fun modelsCatalogJson(): JSONObject {
+        val state = _state.value
+        val statuses = capabilityStatuses(state)
+        val modelsArray = JSONArray()
+
+        state.packs.forEach { pack ->
+            val packStatuses = statuses.filter { it.packId == pack.id }
+            val isExperimental = pack.note.contains("experimental", ignoreCase = true) ||
+                pack.note.contains("preview", ignoreCase = true)
+
+            packStatuses.forEach { status ->
+                val modelEntry = JSONObject()
+                    .put("id", "${pack.id}:${status.profile.name}")
+                    .put("object", "model")
+                    .put("created", state.startedAtMillis ?: 0)
+                    .put("owned_by", "ihomenerd-android")
+                    .put("pack_id", pack.id)
+                    .put("pack_name", pack.name)
+                    .put("pack_kind", pack.kind)
+                    .put("capability", status.profile.name)
+                    .put("capability_title", status.profile.title)
+                    .put("backend", status.profile.backend)
+                    .put("implementation", status.profile.implementation)
+                    .put("tier", status.profile.tier)
+                    .put("load_state", status.loadState)
+                    .put("loaded", status.available)
+                    .put("loadable", status.loadable)
+                    .put("experimental", isExperimental)
+                    .put("offline", status.profile.offline)
+                    .put("streaming", status.profile.streaming)
+                    .put("languages", JSONArray(status.profile.languages))
+                    .put("latency_class", status.profile.latencyClass)
+                    .put("quality_modes", JSONArray(status.profile.modes.map { modeJson(it, status.available) }))
+                    .put("note", listOf(status.profile.note, status.packNote).filter { it.isNotBlank() }.distinct().joinToString(" "))
+
+                if (status.profile.name == "chat") {
+                    appContext?.let { ctx ->
+                        modelEntry.put("model_file", AndroidChatEngine.availableModelSummary(ctx) ?: JSONObject.NULL)
+                        AndroidChatEngine.activeBackendName()?.let { backendName ->
+                            modelEntry.put("active_backend", backendName)
+                        }
+                    }
+                }
+
+                if (status.profile.name == "transcribe_audio") {
+                    appContext?.let { ctx ->
+                        val backends = AndroidAsrEngine.availableBackendChoices(ctx)
+                        modelEntry.put("backend_choices", JSONArray(backends.map { b ->
+                            JSONObject()
+                                .put("id", b.id)
+                                .put("title", b.title)
+                                .put("backend", b.backend)
+                                .put("languages", JSONArray(b.languages))
+                        }))
+                    }
+                }
+
+                modelsArray.put(modelEntry)
+            }
+        }
+
+        val loadedCount = state.packs.count { it.loaded }
+        val loadableCount = state.packs.count { !it.loaded && it.loadable }
+        val experimentalCount = state.packs.count { pack ->
+            pack.note.contains("experimental", ignoreCase = true) || pack.note.contains("preview", ignoreCase = true)
+        }
+
+        return JSONObject()
+            .put("product", PRODUCT)
+            .put("version", VERSION)
+            .put("node", state.nodeName)
+            .put("os", "android")
+            .put("runtime_running", state.running)
+            .put("total_packs", state.packs.size)
+            .put("loaded_packs", loadedCount)
+            .put("loadable_packs", loadableCount)
+            .put("experimental_packs", experimentalCount)
+            .put("data", modelsArray)
+            .put(
+                "summary",
+                JSONObject()
+                    .put("loaded", JSONArray(state.packs.filter { it.loaded }.map { it.name }))
+                    .put("loadable", JSONArray(state.packs.filter { !it.loaded && it.loadable }.map { it.name }))
+                    .put("unavailable", JSONArray(state.packs.filter { !it.loaded && !it.loadable }.map { it.name }))
+                    .put("experimental", JSONArray(state.packs.filter { pack ->
+                        pack.note.contains("experimental", ignoreCase = true) || pack.note.contains("preview", ignoreCase = true)
+                    }.map { it.name }))
+                    .put(
+                        "capability_map",
+                        JSONObject().apply {
+                            statuses.filter { it.available }.forEach { status ->
+                                put(status.profile.name, status.profile.backend)
+                            }
+                        }
+                    )
+            )
+    }
+
     private fun modelPacksJson(): JSONObject {
         val array = JSONArray()
         _state.value.packs.forEach { pack ->
@@ -1163,7 +1276,12 @@ object LocalNodeRuntime {
         serveBundledCommandCenterAsset(path)?.let { return it }
 
         return if (shouldServeCommandCenterSpa(path)) {
-            commandCenterIndexResponse()
+            val bundledIndex = serveBundledCommandCenterAsset("/index.html")
+            if (bundledIndex != null) {
+                commandCenterIndexResponse()
+            } else {
+                textResponse(503, "Command Center not available - web assets not bundled")
+            }
         } else {
             textResponse(404, "Not found")
         }
@@ -1171,7 +1289,7 @@ object LocalNodeRuntime {
 
     private fun commandCenterIndexResponse(): HttpResponse {
         return serveBundledCommandCenterAsset("/index.html")
-            ?: htmlResponse(commandCenterHtml())
+            ?: htmlResponse(degradedCommandCenterHtml())
     }
 
     private fun serveBundledCommandCenterAsset(path: String): HttpResponse? {
@@ -1299,6 +1417,40 @@ object LocalNodeRuntime {
                 <p><code>ni3 hao3</code> vs <code>ni3 hao2</code></p>
                 <p>Tone mismatches: <strong>${compareDemo.toneMismatches}</strong> · Similarity: <strong>${"%.2f".format(compareDemo.similarity)}</strong></p>
                 <p class="muted">JSON endpoint: <code>/v1/pronunco/compare-pinyin</code></p>
+              </div>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    private fun degradedCommandCenterHtml(): String {
+        val state = _state.value
+        return """
+            <!doctype html>
+            <html>
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Command Center Unavailable</title>
+              <style>
+                body { font-family: system-ui, sans-serif; background:#1a1a1a; color:#eef1f8; margin:0; padding:24px; text-align:center; }
+                .card { background:#2a2a2a; border:1px solid #4a4a4a; border-radius:12px; padding:32px; margin:24px auto; max-width:400px; }
+                h1 { color:#ff6b6b; }
+                code { background:#3a3a3a; padding:4px 8px; border-radius:4px; }
+                .hint { color:#9aa3b5; margin-top:16px; }
+                .status { color:#51cf66; }
+              </style>
+            </head>
+            <body>
+              <div class="card">
+                <h1>Command Center Unavailable</h1>
+                <p>The bundled web interface is not available on this device.</p>
+                <p class="status">Runtime: ${if (state.running) "running" else "stopped"}</p>
+                <p class="hint">The Command Center app must be bundled with the APK at build time.</p>
+              </div>
+              <div class="card">
+                <p>Use <code>/capabilities</code> or <code>/health</code> for JSON status.</p>
+                <p class="hint">Setup and bootstrap remain at http://${state.localIp ?: "127.0.0.1"}:${SETUP_PORT}/setup</p>
               </div>
             </body>
             </html>
@@ -1542,6 +1694,77 @@ object LocalNodeRuntime {
             .put("hostname", state.nodeName)
     }
 
+    private fun serverReadinessJson(
+        state: LocalRuntimeState,
+        batteryPercent: Int?,
+        batteryTempC: Double?,
+        thermalStatus: String?,
+        processCpuPercent: Double?,
+        totalRamBytes: Long?,
+        appMemoryPssBytes: Long?
+    ): JSONObject {
+        val isCharging = detectCharging()
+        val chargingSource = detectChargingSource()
+        val isBatteryOptExempt = detectBatteryOptimizationExempt()
+        val hasLanIp = !state.localIps.isNullOrEmpty()
+        val networkOk = state.localNetworkTransport == "wifi" || state.localNetworkTransport == "ethernet" || state.localNetworkTransport == "hotspot"
+
+        val notes = mutableListOf<String>()
+
+        if (!state.running) {
+            notes.add("Runtime is not running. Start it to serve on :17777 and :17778.")
+        }
+
+        val lowBatteryNotCharging = batteryPercent != null && isCharging != true && batteryPercent <= 25
+        if (lowBatteryNotCharging) {
+            notes.add("Battery is low (${batteryPercent}%) and device is not charging. Connect to power for reliable semi-headless serving.")
+        }
+
+        if (isBatteryOptExempt != true) {
+            notes.add("Battery optimization is not exempted for this app. Android may restrict the runtime background service.")
+        }
+
+        if (thermalStatus != null && thermalStatus != "none") {
+            notes.add("Thermal status is '$thermalStatus'. Performance may be affected.")
+        }
+
+        if (!hasLanIp) {
+            notes.add("No LAN IPv4 detected. Connect to Wi-Fi or enable hotspot for network serving.")
+        }
+
+        if (state.localNetworkTransport == "cellular" && hasLanIp) {
+            notes.add("Active network is cellular-only. Nearby LAN clients may not reach this node.")
+        }
+
+        if (state.localNetworkTransport == "vpn") {
+            notes.add("A VPN is active. Nearby LAN access may not be reachable.")
+        }
+
+        val readinessLevel = when {
+            !state.running -> "not_ready"
+            !hasLanIp -> "not_ready"
+            notes.isEmpty() -> "ready"
+            else -> "degraded"
+        }
+
+        return JSONObject()
+            .put("runtime_running", state.running)
+            .put("ports_serving", if (state.running) JSONArray(listOf(PORT, SETUP_PORT)) else JSONArray())
+            .put("is_charging", isCharging)
+            .put("charging_source", chargingSource ?: JSONObject.NULL)
+            .put("battery_percent", batteryPercent ?: JSONObject.NULL)
+            .put("battery_temp_c", batteryTempC ?: JSONObject.NULL)
+            .put("battery_optimization_exempt", isBatteryOptExempt)
+            .put("thermal_status", thermalStatus ?: JSONObject.NULL)
+            .put("app_memory_pss_bytes", appMemoryPssBytes ?: JSONObject.NULL)
+            .put("process_cpu_percent", processCpuPercent ?: JSONObject.NULL)
+            .put("total_ram_bytes", totalRamBytes ?: JSONObject.NULL)
+            .put("network_transport", state.localNetworkTransport ?: JSONObject.NULL)
+            .put("network_ready", hasLanIp)
+            .put("readiness_level", readinessLevel)
+            .put("readiness_notes", JSONArray(notes))
+    }
+
     private fun nodeQualityProfiles(): List<String> {
         val ramBytes = detectTotalRamBytes() ?: return listOf("fast")
         val ramGiB = ramBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
@@ -1642,6 +1865,33 @@ object LocalNodeRuntime {
             PowerManager.THERMAL_STATUS_SHUTDOWN -> "shutdown"
             else -> "unknown"
         }
+    }
+
+    private fun detectCharging(): Boolean? {
+        val context = appContext ?: return null
+        val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return null
+        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+        if (status == -1) return null
+        return status == BatteryManager.BATTERY_STATUS_CHARGING ||
+            status == BatteryManager.BATTERY_STATUS_FULL
+    }
+
+    private fun detectChargingSource(): String? {
+        val context = appContext ?: return null
+        val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return null
+        val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
+        return when (plugged) {
+            BatteryManager.BATTERY_PLUGGED_AC -> "ac"
+            BatteryManager.BATTERY_PLUGGED_USB -> "usb"
+            BatteryManager.BATTERY_PLUGGED_WIRELESS -> "wireless"
+            else -> null
+        }
+    }
+
+    private fun detectBatteryOptimizationExempt(): Boolean? {
+        val context = appContext ?: return null
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return null
+        return powerManager.isIgnoringBatteryOptimizations(context.packageName)
     }
 
     private fun detectProcessCpuPercent(): Double? {
