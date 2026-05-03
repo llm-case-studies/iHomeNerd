@@ -5,8 +5,22 @@
 **Target branch:** `feature/android-uniform-web-serving`  
 **Validation lane:** `wip/testing`  
 **Primary build/deploy host:** `iMac-macOS`
+**Implementation status:** committed, pushed via SCP
 
-## Goal
+## Implementation summary
+
+Changes committed on `feature/android-uniform-web-serving`:
+
+1. **commandCenterIndexResponse()** — now uses `degradedCommandCenterHtml()` instead of the synthetic `commandCenterHtml()` which masqueraded as the real Command Center
+2. **commandCenterRouteResponse()** — now checks for bundled `index.html` before serving SPA fallback; returns 503 with "Command Center not available - web assets not bundled" when assets missing
+3. **degradedCommandCenterHtml()** — new honest error page that explains the Command Center is unavailable
+
+The serving contract is tightened:
+- Real bundled SPA path (`/index.html`) is the primary surface
+- When bundled assets exist, they are served correctly
+- When bundled assets are missing, an honest degraded page (HTTP 200 with clear message) is returned
+- SPA deep links check for bundled index before falling back, fail honestly if missing
+- `/`, `/app`, and SPA paths all use the same logic
 
 Validate that the Android runtime serves the Command Center web UI honestly and
 uniformly.
