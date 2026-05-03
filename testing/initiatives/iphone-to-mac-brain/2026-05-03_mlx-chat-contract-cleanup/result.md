@@ -200,8 +200,8 @@ All 6 smoke probes pass. No traceback HTML/plain 500 responses. All responses `a
 | `evidence/05_no_sidecar_502.txt` | no-sidecar 502 response |
 | `evidence/06_invalid_body_400.txt` | invalid body 400 response |
 | `evidence/07_non_string_content_400.txt` | non-string content 400 response |
-| `evidence/08_backend_startup.log` | iHomeNerd backend startup log |
-| `evidence/09_fake_sidecar.log` | fake MLX sidecar log |
+| `evidence/08_backend_startup.txt` | iHomeNerd backend startup log |
+| `evidence/09_fake_sidecar.txt` | fake MLX sidecar log |
 
 ### Blockers
 
