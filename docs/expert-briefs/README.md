@@ -185,6 +185,12 @@ Every coding expert effort should end with:
 That last item matters. Do not stop at "implementation done." Leave the next
 tester a runnable request.
 
+Treat the initial `request.md` as a **minimum validation floor**, not a closed
+checklist. If implementation work exposes additional risk, edge cases, or
+failure modes, update the same testing request with the extra cases before
+handoff. Do not create a parallel request unless the validation scope has become
+a separate sprint.
+
 If the sprint cannot reach smoke-ready state, the result note should say so
 explicitly and leave the exact blocker and next commands.
 
