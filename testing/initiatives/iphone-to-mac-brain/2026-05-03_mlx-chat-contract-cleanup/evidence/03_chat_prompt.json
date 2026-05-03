@@ -1,0 +1,9 @@
+{
+    "role": "assistant",
+    "content": "[FAKE MLX] Say hello in three words.",
+    "response": "[FAKE MLX] Say hello in three words.",
+    "text": "[FAKE MLX] Say hello in three words.",
+    "model": "mlx-community/gemma-4-e2b-it-4bit",
+    "backend": "mlx_macos",
+    "provider": "mlx"
+}

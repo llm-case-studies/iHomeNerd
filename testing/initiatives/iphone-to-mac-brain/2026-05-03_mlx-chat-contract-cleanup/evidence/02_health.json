@@ -1,0 +1,29 @@
+{
+    "ok": true,
+    "status": "ok",
+    "product": "iHomeNerd",
+    "version": "0.1.0",
+    "hostname": "iMac-Debian",
+    "ollama": false,
+    "llm": {
+        "ok": true,
+        "provider": "mlx",
+        "backend": "mlx_macos",
+        "model": "mlx-community/gemma-4-e2b-it-4bit"
+    },
+    "providers": [
+        "mlx_macos"
+    ],
+    "models": {
+        "translate_text": "mlx-community/gemma-4-e2b-it-4bit",
+        "chat": "mlx-community/gemma-4-e2b-it-4bit",
+        "summarize_document": "mlx-community/gemma-4-e2b-it-4bit",
+        "extract_lesson_items": "mlx-community/gemma-4-e2b-it-4bit",
+        "chat_persona": "mlx-community/gemma-4-e2b-it-4bit",
+        "dialogue_session": "mlx-community/gemma-4-e2b-it-4bit",
+        "dialogue_turn": "mlx-community/gemma-4-e2b-it-4bit",
+        "query_documents": "mlx-community/gemma-4-e2b-it-4bit"
+    },
+    "binding": "127.0.0.1",
+    "port": 17790
+}

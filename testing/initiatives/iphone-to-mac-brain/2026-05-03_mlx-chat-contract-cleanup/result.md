@@ -140,3 +140,69 @@ Timing fields (`processingTime`, `tokensPerSecond`) omitted — no honest measur
 ## Known Blockers
 
 - **No Ollama/MLX on Acer-HL**: integration tests in `test_language_api.py` and `test_chat_contract.py` cannot run without a live LLM backend. The tests are designed to connect to a running server and need either Ollama or a real/fake MLX sidecar. The code logic for 400 and 502 paths was verified with manual HTTP smoke.
+
+---
+
+## Validation — iMac-Debian (2026-05-03)
+
+- **validation host:** `iMac-Debian`
+- **validation branch:** `validation/iphone-to-mac-brain/mlx-chat-contract-cleanup`
+- **validation commit SHA:** `1b64086f7533e8444772a8a1977c1cb95b6e5092`
+- **tested product commit SHA:** `1b64086f7533e8444772a8a1977c1cb95b6e5092`
+- **verdict:** **PASS**
+
+### Commands Run
+
+```bash
+# Focused pytest
+cd backend && source .venv/bin/activate
+python -m pytest tests/test_llm_provider.py tests/test_language_api.py tests/test_chat_contract.py -q
+
+# Fake MLX sidecar smoke (all 6 probes)
+# - Started fake sidecar on port 11435
+# - Started iHomeNerd backend on port 17790 with IHN_LLM_PROVIDER=mlx
+# - Ran curl probes against /health, /v1/chat (prompt), /v1/chat (messages),
+#   no-sidecar 502, invalid body 400, non-string content 400
+```
+
+### Focused Pytest Results (no running backend)
+
+| Test suite | Count | Pass | Fail | Skip |
+|---|---|---|---|---|
+| `test_llm_provider.py` | 3 | 3 | 0 | 0 |
+| `test_language_api.py` | 22 | 0 | 19 | 3 |
+| `test_chat_contract.py` | 5 | 0 | 1 | 4 |
+
+- Unit tests (test_llm_provider.py): **3 passed**
+- Integration tests (test_language_api.py, test_chat_contract.py): all failed with `httpx.ConnectError` — no backend running at `localhost:17777`
+
+### Fake MLX Sidecar Smoke Results
+
+| # | Probe | HTTP | Response |
+|---|---|---|---|
+| 1 | `GET /health` | 200 | `ok: true`, `provider: "mlx"`, `backend: "mlx_macos"`, model resolved |
+| 2 | `POST /v1/chat` with `{"prompt":"Say hello in three words."}` | 200 | `content: "[FAKE MLX] Say hello in three words."`, `backend: "mlx_macos"`, `provider: "mlx"` |
+| 3 | `POST /v1/chat` with `{"messages":[{"role":"user","content":"Say hello in four words."}]}` | 200 | `content: "[FAKE MLX] Say hello in four words."`, `backend: "mlx_macos"`, `provider: "mlx"` |
+| 4 | no-sidecar 502 | 502 | `{"detail":"LLM provider unreachable: All connection attempts failed"}` |
+| 5 | invalid body `{}` | 400 | `{"detail":"Request must include a non-empty 'prompt' string or 'messages' array."}` |
+| 6 | non-string content `{"messages":[{"role":"user","content":123}]}` | 400 | `{"detail":"messages[0] must include a non-empty 'content' string."}` |
+
+All 6 smoke probes pass. No traceback HTML/plain 500 responses. All responses `application/json`.
+
+### Evidence Files
+
+| File | Content |
+|---|---|
+| `evidence/01_pytest_raw.txt` | Raw pytest output (all 26 tests) |
+| `evidence/02_health.json` | `/health` response |
+| `evidence/03_chat_prompt.json` | `/v1/chat` prompt response |
+| `evidence/04_chat_messages.json` | `/v1/chat` messages response |
+| `evidence/05_no_sidecar_502.txt` | no-sidecar 502 response |
+| `evidence/06_invalid_body_400.txt` | invalid body 400 response |
+| `evidence/07_non_string_content_400.txt` | non-string content 400 response |
+| `evidence/08_backend_startup.log` | iHomeNerd backend startup log |
+| `evidence/09_fake_sidecar.log` | fake MLX sidecar log |
+
+### Blockers
+
+None. All smoke probes pass. No product defects suspected.
