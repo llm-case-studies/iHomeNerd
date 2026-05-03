@@ -17,6 +17,7 @@ env/
 *.sqlite
 *.db
 data/
+!mobile/android/ihn-home/app/src/main/java/com/ihomenerd/home/data/
 
 # Model binaries (download separately)
 backend/models/

@@ -291,7 +291,10 @@ data class LocalRuntimeState(
     val lastTtsAtMillis: Long? = null,
     val packs: List<LocalPack> = defaultLocalPacks(),
     val remoteClients: List<RemoteClient> = emptyList(),
-    val lastError: String? = null
+    val lastError: String? = null,
+    val isCharging: Boolean? = null,
+    val chargingSource: String? = null,
+    val isBatteryOptimizationExempt: Boolean? = null
 )
 
 private data class CapabilityStatus(
@@ -361,7 +364,10 @@ object LocalNodeRuntime {
                 localNetworkHint = network.reachabilityHint,
                 startedAtMillis = System.currentTimeMillis(),
                 nodeName = defaultLocalNodeName(),
-                lastError = null
+                lastError = null,
+                isCharging = detectCharging(),
+                chargingSource = detectChargingSource(),
+                isBatteryOptimizationExempt = detectBatteryOptimizationExempt()
             )
         }
         scope.launch {
@@ -544,7 +550,7 @@ object LocalNodeRuntime {
                 secureServerSocket = null
             }
             if (!running.get()) {
-                _state.update { it.copy(running = false) }
+                _state.update { it.copy(running = false, isCharging = null, chargingSource = null, isBatteryOptimizationExempt = null) }
             }
         }
     }
@@ -1054,6 +1060,7 @@ object LocalNodeRuntime {
                     .put("ips", JSONArray(state.localIps))
                     .put("hint", state.localNetworkHint ?: JSONObject.NULL)
             )
+            .put("server_readiness", serverReadinessJson(state, batteryPercent, batteryTempC, thermalStatus, processCpuPercent, totalRamBytes, appMemoryPssBytes))
             .put("connected_clients", connectedClients)
             .put("connected_apps", connectedApps)
     }
@@ -1077,6 +1084,12 @@ object LocalNodeRuntime {
         capabilityStatuses(state)
             .filter { it.available }
             .forEach { status -> models.put(status.profile.name, status.packId) }
+        val batteryPercent = detectBatteryPercent()
+        val batteryTempC = detectBatteryTemperatureC()
+        val thermalStatus = detectThermalStatus()
+        val processCpuPercent = detectProcessCpuPercent()
+        val totalRamBytes = detectTotalRamBytes()
+        val appMemoryPssBytes = detectAppMemoryPssBytes()
         return JSONObject()
             .put("ok", state.running)
             .put("status", if (state.running) "ok" else "stopped")
@@ -1091,6 +1104,7 @@ object LocalNodeRuntime {
             .put("network_transport", state.localNetworkTransport ?: JSONObject.NULL)
             .put("network_ips", JSONArray(state.localIps))
             .put("port", state.port)
+            .put("server_readiness", serverReadinessJson(state, batteryPercent, batteryTempC, thermalStatus, processCpuPercent, totalRamBytes, appMemoryPssBytes))
     }
 
     private fun discoverJson(): JSONObject {
@@ -1542,6 +1556,77 @@ object LocalNodeRuntime {
             .put("hostname", state.nodeName)
     }
 
+    private fun serverReadinessJson(
+        state: LocalRuntimeState,
+        batteryPercent: Int?,
+        batteryTempC: Double?,
+        thermalStatus: String?,
+        processCpuPercent: Double?,
+        totalRamBytes: Long?,
+        appMemoryPssBytes: Long?
+    ): JSONObject {
+        val isCharging = detectCharging()
+        val chargingSource = detectChargingSource()
+        val isBatteryOptExempt = detectBatteryOptimizationExempt()
+        val hasLanIp = !state.localIps.isNullOrEmpty()
+        val networkOk = state.localNetworkTransport == "wifi" || state.localNetworkTransport == "ethernet" || state.localNetworkTransport == "hotspot"
+
+        val notes = mutableListOf<String>()
+
+        if (!state.running) {
+            notes.add("Runtime is not running. Start it to serve on :17777 and :17778.")
+        }
+
+        val lowBatteryNotCharging = batteryPercent != null && isCharging != true && batteryPercent <= 25
+        if (lowBatteryNotCharging) {
+            notes.add("Battery is low (${batteryPercent}%) and device is not charging. Connect to power for reliable semi-headless serving.")
+        }
+
+        if (isBatteryOptExempt != true) {
+            notes.add("Battery optimization is not exempted for this app. Android may restrict the runtime background service.")
+        }
+
+        if (thermalStatus != null && thermalStatus != "none") {
+            notes.add("Thermal status is '$thermalStatus'. Performance may be affected.")
+        }
+
+        if (!hasLanIp) {
+            notes.add("No LAN IPv4 detected. Connect to Wi-Fi or enable hotspot for network serving.")
+        }
+
+        if (state.localNetworkTransport == "cellular" && hasLanIp) {
+            notes.add("Active network is cellular-only. Nearby LAN clients may not reach this node.")
+        }
+
+        if (state.localNetworkTransport == "vpn") {
+            notes.add("A VPN is active. Nearby LAN access may not be reachable.")
+        }
+
+        val readinessLevel = when {
+            !state.running -> "not_ready"
+            !hasLanIp -> "not_ready"
+            notes.isEmpty() -> "ready"
+            else -> "degraded"
+        }
+
+        return JSONObject()
+            .put("runtime_running", state.running)
+            .put("ports_serving", if (state.running) JSONArray(listOf(PORT, SETUP_PORT)) else JSONArray())
+            .put("is_charging", isCharging)
+            .put("charging_source", chargingSource ?: JSONObject.NULL)
+            .put("battery_percent", batteryPercent ?: JSONObject.NULL)
+            .put("battery_temp_c", batteryTempC ?: JSONObject.NULL)
+            .put("battery_optimization_exempt", isBatteryOptExempt)
+            .put("thermal_status", thermalStatus ?: JSONObject.NULL)
+            .put("app_memory_pss_bytes", appMemoryPssBytes ?: JSONObject.NULL)
+            .put("process_cpu_percent", processCpuPercent ?: JSONObject.NULL)
+            .put("total_ram_bytes", totalRamBytes ?: JSONObject.NULL)
+            .put("network_transport", state.localNetworkTransport ?: JSONObject.NULL)
+            .put("network_ready", hasLanIp)
+            .put("readiness_level", readinessLevel)
+            .put("readiness_notes", JSONArray(notes))
+    }
+
     private fun nodeQualityProfiles(): List<String> {
         val ramBytes = detectTotalRamBytes() ?: return listOf("fast")
         val ramGiB = ramBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
@@ -1642,6 +1727,33 @@ object LocalNodeRuntime {
             PowerManager.THERMAL_STATUS_SHUTDOWN -> "shutdown"
             else -> "unknown"
         }
+    }
+
+    private fun detectCharging(): Boolean? {
+        val context = appContext ?: return null
+        val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return null
+        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+        if (status == -1) return null
+        return status == BatteryManager.BATTERY_STATUS_CHARGING ||
+            status == BatteryManager.BATTERY_STATUS_FULL
+    }
+
+    private fun detectChargingSource(): String? {
+        val context = appContext ?: return null
+        val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return null
+        val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
+        return when (plugged) {
+            BatteryManager.BATTERY_PLUGGED_AC -> "ac"
+            BatteryManager.BATTERY_PLUGGED_USB -> "usb"
+            BatteryManager.BATTERY_PLUGGED_WIRELESS -> "wireless"
+            else -> null
+        }
+    }
+
+    private fun detectBatteryOptimizationExempt(): Boolean? {
+        val context = appContext ?: return null
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return null
+        return powerManager.isIgnoringBatteryOptimizations(context.packageName)
     }
 
     private fun detectProcessCpuPercent(): Double? {

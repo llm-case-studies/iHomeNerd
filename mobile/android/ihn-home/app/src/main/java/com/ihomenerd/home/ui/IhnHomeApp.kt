@@ -333,6 +333,9 @@ private fun NodeScreen(
                 onOpenLocalCommandCenter = onOpenLocalCommandCenter
             )
         }
+        item {
+            ServerReadinessCard(state = localRuntimeState)
+        }
 
         if (snapshot == null) {
             item {
@@ -1821,6 +1824,144 @@ private fun CardShell(content: @Composable ColumnScope.() -> Unit) {
         border = CardDefaults.outlinedCardBorder()
     ) {
         Column(modifier = Modifier.padding(16.dp), content = content)
+    }
+}
+
+@Composable
+private fun ServerReadinessCard(state: LocalRuntimeState) {
+    val hasLan = !state.localIps.isNullOrEmpty()
+    val networkOk = state.localNetworkTransport == "wifi" || state.localNetworkTransport == "ethernet" || state.localNetworkTransport == "hotspot"
+
+    val readinessTone: Color
+    val readinessTitle: String
+    val readinessSupporting: String
+
+    when {
+        !state.running -> {
+            readinessTone = Warning
+            readinessTitle = "Server not ready"
+            readinessSupporting = "Start the local runtime to begin serving."
+        }
+        !hasLan -> {
+            readinessTone = Warning
+            readinessTitle = "No network reachable"
+            readinessSupporting = "Connect to Wi-Fi or enable hotspot for LAN serving."
+        }
+        state.isCharging != true && state.isBatteryOptimizationExempt != true -> {
+            readinessTone = Warning
+            readinessTitle = "Server degraded"
+            readinessSupporting = "Plug in and exempt from battery optimization for reliable semi-headless serving."
+        }
+        state.isCharging != true -> {
+            readinessTone = Warning
+            readinessTitle = "Server degraded"
+            readinessSupporting = "Device is not charging. Connect to power for long-running node duty."
+        }
+        state.isBatteryOptimizationExempt != true -> {
+            readinessTone = Warning
+            readinessTitle = "Server ready but fragile"
+            readinessSupporting = "Battery optimization is not exempted. Android may stop the runtime."
+        }
+        else -> {
+            readinessTone = Success
+            readinessTitle = "Server ready for node duty"
+            readinessSupporting = "Charging · network available · runtime serving on :17777 and :17778."
+        }
+    }
+
+    HighlightCard(
+        tone = readinessTone,
+        title = readinessTitle,
+        supporting = readinessSupporting
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            ReadinessChip(
+                icon = Icons.Outlined.Cable,
+                label = when {
+                    state.isCharging == true -> "Charging"
+                    state.isCharging == false -> "Not charging"
+                    else -> "Unknown"
+                },
+                tone = when {
+                    state.isCharging == true -> Success
+                    state.isCharging == false -> Warning
+                    else -> Warning
+                },
+                detail = state.chargingSource ?: "-"
+            )
+            ReadinessChip(
+                icon = Icons.Outlined.WifiTethering,
+                label = if (hasLan) "Network OK" else "No LAN",
+                tone = if (hasLan && networkOk) Success else Warning,
+                detail = state.localIp ?: "-"
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            ReadinessChip(
+                icon = Icons.Outlined.PlayArrow,
+                label = if (state.running) "Serving" else "Stopped",
+                tone = if (state.running) Success else Error,
+                detail = if (state.running) ":17777/:17778" else "start runtime"
+            )
+            ReadinessChip(
+                icon = Icons.Outlined.Shield,
+                label = when (state.isBatteryOptimizationExempt) {
+                    true -> "Exempted"
+                    false -> "Not exempted"
+                    else -> "Unknown"
+                },
+                tone = when (state.isBatteryOptimizationExempt) {
+                    true -> Success
+                    false -> Warning
+                    else -> Warning
+                },
+                detail = "battery opt"
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        if (state.running && state.isCharging != true) {
+            Text(
+                text = "Connect power for reliable semi-headless serving. Without charging, long-running node duty is not reliable.",
+                color = Warning,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        if (state.running && state.isBatteryOptimizationExempt != true) {
+            Text(
+                text = "Battery optimization may kill the runtime in the background. Consider exempting this app from battery optimization in Android settings.",
+                color = Warning,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReadinessChip(
+    icon: ImageVector,
+    label: String,
+    tone: Color,
+    detail: String
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(tone.copy(alpha = 0.12f), MaterialTheme.shapes.small),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = tone, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(label, color = tone, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+        Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, fontSize = 10.sp)
     }
 }
 
