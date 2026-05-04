@@ -25,6 +25,132 @@ Example concern:
 
 Before we add or remove routes mechanically, we should clarify the model.
 
+## Portfolio context
+
+The discussion will be better if contributors react to real clients instead of
+an abstract API diagram.
+
+### A. First-party iHN clients
+
+These are not "integrations." They are part of the iHN product itself.
+
+| Client | Current / potential | End-user need it serves |
+|---|---|---|
+| Web Command Center | current | Operate the Home, inspect nodes, trust, health, models, sessions, and alerts |
+| Android node-class app | current | Start a portable node, inspect this-device health, host the web UI, act as a travel or spare node |
+| iOS controller app | emerging | Pair to a Home, trust it, monitor it, and drive light actions from a polished mobile client |
+
+### B. Current external client apps
+
+These already exist or are explicitly active in the portfolio.
+
+| Client | Current / potential | End-user need it serves |
+|---|---|---|
+| PronunCo | current | Learn pronunciation and language material with local help: extraction, translation, drills, dialogue, score explanation |
+| TelPro-Bro | current / near-term | Practice spoken delivery, roleplay, score explanation, and recording continuity |
+
+### C. Potential or planned ecosystem clients
+
+These matter because they pressure-test whether the iHN surface is too narrow,
+too app-specific, or too leaky.
+
+| Client | Current / potential | End-user need it serves |
+|---|---|---|
+| Tax / TurboTax chooser / checker | potential | Understand tax docs, choose software tier, review assumptions, ask tax questions locally |
+| iMedisys | potential | Analyze medical bills/docs, apply rules, explain denials/coding, support decisions privately |
+| Kitchen / restaurant back-office | potential | OCR receipts/invoices, dish and cost insight, local archive/search |
+| iScamHunter | potential | Investigate scams locally, gather evidence, summarize findings, publish case material |
+| WhoWhe2Wha | potential | Consume deadline/time-based outcomes from iHN and present them in life timeline form |
+| iOfficeNerd | potential sibling variant | Private office knowledge brain, policy/docs search, local admin/control |
+
+### D. Sibling products and near-neighbors
+
+These should shape the architecture, but they are not necessarily "clients" of
+iHN in the same sense.
+
+| Product | Role |
+|---|---|
+| RoadNerd | separate deployment model; may share assets or ideas, but not the same runtime contract |
+| Crypto-Fakes | publication / case-study destination fed by investigation workflows rather than a direct iHN client |
+
+## First-pass need ladder
+
+One way to keep boundaries clean is to translate needs downward through four
+layers:
+
+1. end-user-facing need
+2. client-app-facing need
+3. adapter/plugin-facing need
+4. stable iHN-facing need
+
+The point is not to force every app through the exact same ladder. The point is
+to see where aggregation and generalization should happen.
+
+### Example 1: PronunCo pronunciation help
+
+| Layer | Example |
+|---|---|
+| End-user need | "Help me understand why my pronunciation was off and what to practice next." |
+| Client-app-facing need | show score explanation, targeted drill suggestions, model audio, dialogue follow-up |
+| Adapter/plugin-facing need | convert app lesson/session state into comparison, drill, and explanation requests |
+| Stable iHN-facing need | transcribe speech, synthesize speech, compare expected vs actual pronunciation, optionally run bounded dialogue/translation |
+
+### Example 2: Tax copilot
+
+| Layer | Example |
+|---|---|
+| End-user need | "Help me understand this tax form and whether I picked the right software tier." |
+| Client-app-facing need | upload / inspect docs, ask questions, receive explanation with caveats, review software-choice recommendation |
+| Adapter/plugin-facing need | normalize tax document classes, map interview answers to rule inputs, ask for narrative explanation |
+| Stable iHN-facing need | OCR/ingest docs, query documents, summarize, chat, run deterministic rules where needed |
+
+### Example 3: TelPro-Bro coaching
+
+| Layer | Example |
+|---|---|
+| End-user need | "Help me practice this spoken delivery and tell me what to improve." |
+| Client-app-facing need | roleplay session, score explanation, recording continuity, targeted retry loop |
+| Adapter/plugin-facing need | session orchestration, prompt shaping, score-normalization, recording metadata mapping |
+| Stable iHN-facing need | transcribe audio, synthesize speech, bounded chat/dialogue, store/retrieve recordings |
+
+### Example 4: iHN itself as the product
+
+| Layer | Example |
+|---|---|
+| End-user need | "Tell me whether my Home is healthy and what this node can do." |
+| Client-app-facing need | dashboard, trust view, node list, model inventory, alerts |
+| Adapter/plugin-facing need | often none, or only thin client adaptation |
+| Stable iHN-facing need | `/health`, `/discover`, `/capabilities`, `/system/stats`, `/sessions`, `/setup/*`, `/v1/models` |
+
+## First-pass hypotheses
+
+These are the current working hypotheses, not final decisions.
+
+1. **The stable iHN surface should mostly answer shared infrastructure and
+   shared capability questions.**
+   Examples: trust, node health, discovery, sessions, model inventory, chat,
+   translation, ASR, TTS, docs, cluster control.
+
+2. **Most app-specific pedagogy or workflow should stay above iHN.**
+   PronunCo drill selection and teaching UX, or TelPro-Bro coaching loop design,
+   likely belong in the client app.
+
+3. **Adapter/plugin space is where domain-specific transforms should live.**
+   This is the likely home for lesson extraction helpers, score explanation
+   helpers, pinyin utilities, tax-rule adapters, medical normalization, and
+   similar domain transforms.
+
+4. **Not every plugin/helper capability deserves a public top-level route.**
+   Some should remain:
+   - internal helper contracts
+   - plugin-only namespaces
+   - or app-specific bridge calls
+
+5. **A good stable iHN route should make sense even when no single ecosystem app
+   is in focus.**
+   If it only makes sense inside one app's product language, that is a warning
+   sign.
+
 ## Decision scope
 
 This sprint is about the **client-facing surface** only.
@@ -171,4 +297,3 @@ state, with reasonable confidence:
 - the adapter/plugin surface
 - the app-owned surface
 - the first 1-3 cleanup actions to implement
-
