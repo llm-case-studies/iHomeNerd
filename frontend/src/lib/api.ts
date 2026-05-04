@@ -1247,6 +1247,79 @@ export const api = {
   },
 
   /**
+   * GET /v1/models
+   * List available models and the currently-loaded one.
+   */
+  async getModels() {
+    try {
+      const res = await fetch(`${BASE_URL}/v1/models`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        let detail = `Server returned ${res.status}`;
+        try {
+          const parsed = JSON.parse(errorText);
+          detail = parsed.detail || parsed.error || detail;
+        } catch {
+          if (errorText.trim()) detail = errorText.trim();
+        }
+        return {
+          available: [],
+          loaded: null,
+          backend: null,
+          _error: { status: res.status, detail },
+        };
+      }
+      return await res.json();
+    } catch (e) {
+      console.warn('Backend unavailable for /v1/models', e);
+      return {
+        available: [],
+        loaded: null,
+        backend: null,
+        _error: { status: 0, detail: e instanceof Error ? e.message : 'Could not reach /v1/models' },
+      };
+    }
+  },
+
+  /**
+   * POST /v1/models/load
+   * Load a model by id. Returns load_time_seconds on success.
+   */
+  async loadModel(modelId: string) {
+    try {
+      const res = await fetch(`${BASE_URL}/v1/models/load`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model_id: modelId }),
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        let detail = `Server returned ${res.status}`;
+        try {
+          const parsed = JSON.parse(errorText);
+          detail = parsed.detail || parsed.error || detail;
+        } catch {
+          if (errorText.trim()) detail = errorText.trim();
+        }
+        return {
+          loaded: null,
+          load_time_seconds: null,
+          backend: null,
+          _error: { status: res.status, detail },
+        };
+      }
+      return await res.json();
+    } catch (e) {
+      return {
+        loaded: null,
+        load_time_seconds: null,
+        backend: null,
+        _error: { status: 0, detail: e instanceof Error ? e.message : 'Could not reach /v1/models/load' },
+      };
+    }
+  },
+
+  /**
    * POST /v1/investigate/scan
    * Run an active intelligence scan.
    */

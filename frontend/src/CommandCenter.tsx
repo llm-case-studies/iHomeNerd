@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, MessageSquare, Mic, FileText, Languages, Search, Bot, Server, Package, Globe as GlobeIcon, HelpCircle } from 'lucide-react';
+import { Settings, MessageSquare, Mic, FileText, Languages, Search, Bot, Server, Package, Box, Globe as GlobeIcon, HelpCircle } from 'lucide-react';
 import { ChatPanel } from './components/ChatPanel';
 import { TranslatePanel } from './components/TranslatePanel';
 import { SystemPanel } from './components/SystemPanel';
@@ -9,10 +9,11 @@ import { DocsPanel } from './components/DocsPanel';
 import { InvestigatePanel } from './components/InvestigatePanel';
 import { AgentsPanel } from './components/AgentsPanel';
 import { BuilderPanel } from './components/BuilderPanel';
+import { ModelsPanel } from './components/ModelsPanel';
 import { HelpModal } from './components/HelpModal';
 import { api, NodeCapabilities } from './lib/api';
 
-type TabId = 'chat' | 'talk' | 'docs' | 'translate' | 'investigate' | 'agents' | 'builder' | 'system';
+type TabId = 'chat' | 'talk' | 'docs' | 'translate' | 'investigate' | 'agents' | 'builder' | 'system' | 'models';
 
 interface Tab {
   id: TabId;
@@ -29,6 +30,7 @@ const TABS: Tab[] = [
   { id: 'agents', labelKey: 'tab_agents', icon: Bot },
   { id: 'builder', labelKey: 'tab_builder', icon: Package },
   { id: 'system', labelKey: 'tab_system', icon: Server },
+  { id: 'models', labelKey: 'tab_models', icon: Box },
 ];
 
 export default function App() {
@@ -77,6 +79,8 @@ export default function App() {
         return <AgentsPanel />;
       case 'builder':
         return <BuilderPanel />;
+      case 'models':
+        return <ModelsPanel />;
       default:
         return null;
     }

@@ -79,6 +79,7 @@ const resources = {
       "tab_agents": "Agents",
       "tab_builder": "Builder",
       "tab_system": "System",
+      "tab_models": "Models",
       "docs_title": "Local Collections",
       "docs_copilot": "Document Copilot",
       "docs_desc": "Ask questions about your selected local documents. Data never leaves your machine.",
