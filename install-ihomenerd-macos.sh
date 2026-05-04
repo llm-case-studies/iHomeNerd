@@ -211,7 +211,8 @@ ok "Python ${PYTHON_VERSION} with venv support is ready (${PYTHON_BIN})"
 step "Choosing the right starter model pack"
 
 MAC_LLM_BACKEND="${IHN_MAC_LLM_BACKEND:-ollama}"
-MLX_MODEL="${IHN_MLX_MODEL:-mlx-community/gemma-4-e2b-it-4bit}"
+MLX_MODEL="${IHN_MLX_MODEL:-mlx-community/Qwen2.5-1.5B-Instruct-4bit}"
+MLX_LM_VERSION="${IHN_MLX_LM_VERSION:-0.31.3}"
 MLX_SERVER_PORT="${IHN_MLX_SERVER_PORT:-11435}"
 MODELS_TO_PULL=()
 if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
@@ -230,14 +231,63 @@ else
 fi
 ok "Selected: ${MODEL_DESC}"
 
-step "Setting up the Nerd Cave"
-
 INSTALL_DIR="${IHN_INSTALL_DIR:-${HOME}/.ihomenerd}"
 if [[ "$INSTALL_DIR" == "~/"* ]]; then
     INSTALL_DIR="${HOME}/${INSTALL_DIR#~/}"
 elif [[ "$INSTALL_DIR" == "~" ]]; then
     INSTALL_DIR="${HOME}"
 fi
+MLX_VENV_DIR="${IHN_MLX_VENV_DIR:-${INSTALL_DIR}/runtime/mlx-sidecar-venv}"
+
+if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
+    if [[ "$MLX_MODEL" == *"gemma-4"* ]] && [[ "${IHN_ALLOW_UNVALIDATED_MLX_MODEL:-0}" != "1" ]]; then
+        fail "mlx-community/gemma-4-e2b-it-4bit is known incompatible with mlx-lm==${MLX_LM_VERSION}. Set IHN_MLX_MODEL to a validated model (mlx-community/Qwen2.5-1.5B-Instruct-4bit) or IHN_ALLOW_UNVALIDATED_MLX_MODEL=1 to override."
+    fi
+    if [[ "$MLX_MODEL" == *"gemma-4"* ]] && [[ "${IHN_ALLOW_UNVALIDATED_MLX_MODEL:-0}" == "1" ]]; then
+        warn "Overriding known-bad model guard for ${MLX_MODEL}. This model is known incompatible with mlx-lm==${MLX_LM_VERSION}."
+    fi
+fi
+
+if [[ "${IHN_PREFLIGHT_ONLY:-0}" == "1" ]]; then
+    step "Preflight Summary"
+    echo ""
+    echo -e "  ${BOLD}Install directory:${NC}     ${INSTALL_DIR}"
+    echo -e "  ${BOLD}Backend:${NC}               ${MAC_LLM_BACKEND}"
+    echo -e "  ${BOLD}MLX model:${NC}             ${MLX_MODEL}"
+    echo -e "  ${BOLD}mlx-lm version:${NC}        ${MLX_LM_VERSION}"
+    echo -e "  ${BOLD}MLX sidecar venv:${NC}      ${MLX_VENV_DIR}"
+    echo -e "  ${BOLD}MLX server port:${NC}       ${MLX_SERVER_PORT}"
+    echo -e "  ${BOLD}Backend venv:${NC}           ${INSTALL_DIR}/backend/.venv"
+    echo ""
+    ok "Preflight checks passed. No downloads, CA creation, venv installs, launchd registration, or service starts were performed."
+    exit 0
+fi
+
+if [[ "${IHN_MLX_RUNTIME_ONLY:-0}" == "1" ]]; then
+    [[ "$MAC_LLM_BACKEND" == "mlx" ]] || fail "IHN_MLX_RUNTIME_ONLY=1 requires IHN_MAC_LLM_BACKEND=mlx."
+    step "MLX Runtime-Only Setup"
+    if [[ -d "$MLX_VENV_DIR" ]]; then
+        ok "Reusing existing MLX sidecar venv at ${MLX_VENV_DIR}"
+    else
+        say "Creating MLX sidecar venv at ${MLX_VENV_DIR}..."
+        "$PYTHON_BIN" -m venv "$MLX_VENV_DIR"
+        ok "MLX sidecar venv created"
+    fi
+    "${MLX_VENV_DIR}/bin/pip" install --upgrade pip >/dev/null
+    say "Installing mlx-lm==${MLX_LM_VERSION}..."
+    "${MLX_VENV_DIR}/bin/pip" install "mlx-lm==${MLX_LM_VERSION}"
+    say "Verifying mlx_lm.server..."
+    if "${MLX_VENV_DIR}/bin/python" -m mlx_lm.server --help >/dev/null 2>&1; then
+        ok "mlx_lm.server is ready"
+    else
+        fail "mlx_lm.server could not be started."
+    fi
+    ok "MLX runtime-only setup complete. No repo download, CA setup, backend venv, launchd, or service start was performed."
+    exit 0
+fi
+
+step "Setting up the Nerd Cave"
+
 REPO_REF="${IHN_REPO_REF:-main}"
 ARCHIVE_URL="https://github.com/llm-case-studies/iHomeNerd/archive/refs/heads/${REPO_REF}.tar.gz"
 HOME_CA_DIR="${INSTALL_DIR}/home-ca"
@@ -306,12 +356,20 @@ step "Installing Python environment"
 "$PYTHON_BIN" -m venv "${INSTALL_DIR}/backend/.venv"
 "${INSTALL_DIR}/backend/.venv/bin/pip" install --upgrade pip >/dev/null
 "${INSTALL_DIR}/backend/.venv/bin/pip" install "${INSTALL_DIR}/backend"
+ok "Backend Python environment is ready"
+
 if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
-    say "Installing MLX runtime for Apple Silicon..."
-    "${INSTALL_DIR}/backend/.venv/bin/pip" install mlx-lm
-    ok "MLX runtime is ready"
+    step "Installing MLX sidecar runtime"
+    if [[ -d "$MLX_VENV_DIR" ]]; then
+        ok "Reusing existing MLX sidecar venv at ${MLX_VENV_DIR}"
+    else
+        "$PYTHON_BIN" -m venv "$MLX_VENV_DIR"
+        ok "Created MLX sidecar venv at ${MLX_VENV_DIR}"
+    fi
+    "${MLX_VENV_DIR}/bin/pip" install --upgrade pip >/dev/null
+    "${MLX_VENV_DIR}/bin/pip" install "mlx-lm==${MLX_LM_VERSION}"
+    ok "MLX sidecar runtime is ready (mlx-lm==${MLX_LM_VERSION})"
 fi
-ok "Python environment is ready"
 
 step "Registering launchd services"
 
@@ -348,7 +406,7 @@ if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
 #!/usr/bin/env bash
 set -euo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH"
-exec "${INSTALL_DIR}/backend/.venv/bin/python" -m mlx_lm.server --host 127.0.0.1 --port "${MLX_SERVER_PORT}" --model "${MLX_MODEL}"
+exec "${MLX_VENV_DIR}/bin/python" -m mlx_lm.server --host 127.0.0.1 --port "${MLX_SERVER_PORT}" --model "${MLX_MODEL}"
 EOF
     chmod +x "${INSTALL_DIR}/run-mlx.sh"
 
