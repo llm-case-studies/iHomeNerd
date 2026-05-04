@@ -21,8 +21,9 @@ This initiative exists to make that split real in code.
 
 ## Current Active Sprints
 
-- `active/2026-05-03_frontend-model-selector/`
-- `active/2026-05-03_ios-uniform-web-serving/`
+- `active/2026-05-03_frontend-model-selector/` — SPA consumer of `/v1/models` + `/v1/models/load`
+- `active/2026-05-03_ios-uniform-web-serving/` — iOS serves the bundled Command Center
+- `active/2026-05-03_ios-chat-contract-unification/` — iOS `/v1/chat` mirrors backend cleanup `4e9aa7b` (canonical superset shape)
 
 ## Foundation Doc
 
