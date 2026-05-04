@@ -61,22 +61,35 @@ That distinction is one of the main reasons this document exists.
 These reasons are not mutually exclusive. Most serious products in the portfolio
 will have more than one.
 
+- **Brain-demand profile**
+  - `perceive/extract` — OCR, ASR, detection, parsing, structured extraction
+  - `understand/explain` — summarize, interpret, explain jargon, explain scores
+  - `compare/evaluate` — compare candidates, assess gap/risk/fit, classify or grade quality
+  - `coach/correct` — guide improvement, correction, retry loops, style feedback
+  - `plan/recommend` — suggest next steps, timelines, routing, scheduling, mitigation plans
+  - `simulate/roleplay` — dialogue partner, scenario simulation, argument rehearsal, interview-style interaction
+  - `optimize/tune` — wording optimization, conversion tuning, route optimization, strategy refinement
+  - `monitor/triage` — watch streams, surface anomalies, prioritize events, route cases
+  - `rules/decision-support` — deterministic or semi-deterministic reasoning over policy, coverage, coding, compliance, or classification
+
+These are the kinds of brain work the product is asking iHN to help with.
+
 ## Portfolio list
 
-| Product | Working relationship to iHN | End-user-facing needs | Likely local AI domains | Why local AI matters | Boundary notes |
-|---|---|---|---|---|
-| `On-My-Watch` | client | analyze video evidence; monitor suspicious activities for security; monitor events on farms and camps | OCR / vision, monitoring / triage, summaries, alerts | privacy/trust; offline/resilience; on-the-go/edge; latency/realtime | feels like a strong iHN client for vision + event summarization, but its security workflow and evidence UX should likely stay app-owned |
-| `iLegalFlow` | client | pre-filing USPTO IP analysis; pre-filing IP guidance for a driving-school simulator; exhibit analysis and comparison; customs-code equivalence and routing optimization; contract wording analysis; insurance coverage analysis and gap detection | docs / RAG, rules, comparison, structured extraction, optimization | regulatory/compliance; IP protection; business secrets | likely needs heavy rules + document reasoning; good test of what belongs in core docs/rules vs legal-specific adapters |
-| `iMedisys` | client | medical coding and billing and coverage analysis; image triage and routing; medical jargon explainer; appointments/tests planner; health-coverage comparison and optimization | docs / RAG, rules, OCR / vision, planning, explanation | regulatory/compliance; privacy/trust; business secrets | very likely a true client; medical workflow and regulated explanation logic should not leak into generic iHN product routes |
-| `ScamHunters` / `iScamHunter` | client | potential scam analysis; attack-surface detection; prevention planning; scam comparison and history lookup; damage evaluation | docs / RAG, OCR / vision, investigation, evidence synthesis, planning | privacy/trust; offline/resilience; business secrets | strong candidate for investigation-oriented client; app-specific evidence workflow should stay above core iHN |
-| `iForeclosed` | client | auction lookup; surplus identification; service-provider analysis; lien analysis | docs / RAG, structured extraction, comparison, optimization | business secrets; cost/control; offline/resilience | likely a client if pursued; could stress docs + rules + market lookup boundaries |
-| `m-Beacon` | client | conversion analysis and tuning; analytics intake and analysis; marketing-domain optimization | analytics, summarization, recommendation, planning | business secrets; cost/control | less obviously tied to current iHN story, but useful pressure test for whether generic analytics helpers belong in core or in adapters |
-| `TelPro-Bro` | client | copy/text improvement; on-the-fly suggestions for speed, intonation, wording, sentence structure; delivery coaching and drilling; charisma classification/coaching | ASR / TTS, dialogue, coaching, scoring, recordings | privacy/trust; latency/realtime; offline/resilience | true client; coaching loop is app-owned, while speech, dialogue, recording, and generic scoring primitives may live below |
-| `ACTCLI` | unclear | actuarial and other non-trivial-topic live discussion participation | dialogue, retrieval, reasoning, maybe rules | business secrets; regulatory/compliance; latency/realtime | could be a client or a thin interface to shared reasoning tools; worth clarifying whether it is product, shell, or operator workflow |
-| `WhoWhe2Wha` | consumer / client | event and activity planning help; intake and analysis; coaching; pre-planning and logistics | planning, scheduling, summarization, reminders | privacy/trust; offline/resilience; on-the-go/edge | likely consumes deadlines/plans/events more than it needs the full iHN route surface; good test of output-oriented boundaries |
-| `PronunCo` | client | drill design and evaluation across vocab/phonetics/grammar; progression planning; situational roleplay and dialogue; teacher support; class prep/activity log/evaluation/homework assessment; corporate meetings and team building; industry jargon; video/audio phonetics correction | ASR / TTS, dialogue, translation, extraction, scoring, helper transforms | privacy/trust; offline/resilience; latency/realtime; on-the-go/edge | canonical client; exactly the case that exposed route-boundary leakage between app logic and helper surface |
-| `RoadNerd` | deployment / sibling | device and network troubleshooting; receipts and tickets intake; restaurant menu review and recorder/feedback intake; sightseeing/events/museums companion; smarter routing planner | investigate, docs / OCR, travel assistant, planning | offline/resilience; on-the-go/edge; bad internet; cost/control | likely not a normal client app; better treated as a separate deployment model or sibling with shared capability ideas |
-| `Edge-Kite` | client / deployment | off-the-hub event-stream recorder, triage, pre-analyzer | monitoring / event triage, edge routing, pre-analysis | offline/resilience; on-the-go/edge; latency/realtime | may be closer to a node role or deployment pattern than a user-facing client; worth clarifying before treating it as a normal app |
+| Product | Working relationship to iHN | End-user-facing needs | Likely local AI domains | Why local AI matters | Brain-demand profile | Boundary notes |
+|---|---|---|---|---|---|---|
+| `On-My-Watch` | client | analyze video evidence; monitor suspicious activities for security; monitor events on farms and camps | OCR / vision, monitoring / triage, summaries, alerts | privacy/trust; offline/resilience; on-the-go/edge; latency/realtime | perceive/extract; monitor/triage; understand/explain; compare/evaluate | feels like a strong iHN client for vision + event summarization, but its security workflow and evidence UX should likely stay app-owned |
+| `iLegalFlow` | client | pre-filing USPTO IP analysis; pre-filing IP guidance for a driving-school simulator; exhibit analysis and comparison; customs-code equivalence and routing optimization; contract wording analysis; insurance coverage analysis and gap detection | docs / RAG, rules, comparison, structured extraction, optimization | regulatory/compliance; IP protection; business secrets | perceive/extract; understand/explain; compare/evaluate; optimize/tune; rules/decision-support; simulate/roleplay | likely needs heavy rules + document reasoning; good test of what belongs in core docs/rules vs legal-specific adapters |
+| `iMedisys` | client | medical coding and billing and coverage analysis; image triage and routing; medical jargon explainer; appointments/tests planner; health-coverage comparison and optimization | docs / RAG, rules, OCR / vision, planning, explanation | regulatory/compliance; privacy/trust; business secrets | perceive/extract; understand/explain; compare/evaluate; plan/recommend; monitor/triage; rules/decision-support | very likely a true client; medical workflow and regulated explanation logic should not leak into generic iHN product routes |
+| `ScamHunters` / `iScamHunter` | client | potential scam analysis; attack-surface detection; prevention planning; scam comparison and history lookup; damage evaluation | docs / RAG, OCR / vision, investigation, evidence synthesis, planning | privacy/trust; offline/resilience; business secrets | perceive/extract; compare/evaluate; plan/recommend; monitor/triage; rules/decision-support | strong candidate for investigation-oriented client; app-specific evidence workflow should stay above core iHN |
+| `iForeclosed` | client | auction lookup; surplus identification; service-provider analysis; lien analysis | docs / RAG, structured extraction, comparison, optimization | business secrets; cost/control; offline/resilience | perceive/extract; compare/evaluate; optimize/tune; rules/decision-support | likely a client if pursued; could stress docs + rules + market lookup boundaries |
+| `m-Beacon` | client | conversion analysis and tuning; analytics intake and analysis; marketing-domain optimization | analytics, summarization, recommendation, planning | business secrets; cost/control | understand/explain; compare/evaluate; optimize/tune; simulate/roleplay | less obviously tied to current iHN story, but useful pressure test for whether generic analytics helpers belong in core or in adapters |
+| `TelPro-Bro` | client | copy/text improvement; on-the-fly suggestions for speed, intonation, wording, sentence structure; delivery coaching and drilling; charisma classification/coaching | ASR / TTS, dialogue, coaching, scoring, recordings | privacy/trust; latency/realtime; offline/resilience | perceive/extract; compare/evaluate; coach/correct; simulate/roleplay; optimize/tune | true client; coaching loop is app-owned, while speech, dialogue, recording, and generic scoring primitives may live below |
+| `ACTCLI` | unclear | actuarial and other non-trivial-topic live discussion participation | dialogue, retrieval, reasoning, maybe rules | business secrets; regulatory/compliance; latency/realtime | understand/explain; compare/evaluate; simulate/roleplay; rules/decision-support | could be a client or a thin interface to shared reasoning tools; worth clarifying whether it is product, shell, or operator workflow |
+| `WhoWhe2Wha` | consumer / client | event and activity planning help; intake and analysis; coaching; pre-planning and logistics | planning, scheduling, summarization, reminders | privacy/trust; offline/resilience; on-the-go/edge | understand/explain; plan/recommend; simulate/roleplay | likely consumes deadlines/plans/events more than it needs the full iHN route surface; good test of output-oriented boundaries |
+| `PronunCo` | client | drill design and evaluation across vocab/phonetics/grammar; progression planning; situational roleplay and dialogue; teacher support; class prep/activity log/evaluation/homework assessment; corporate meetings and team building; industry jargon; video/audio phonetics correction | ASR / TTS, dialogue, translation, extraction, scoring, helper transforms | privacy/trust; offline/resilience; latency/realtime; on-the-go/edge | perceive/extract; understand/explain; compare/evaluate; coach/correct; plan/recommend; simulate/roleplay | canonical client; exactly the case that exposed route-boundary leakage between app logic and helper surface |
+| `RoadNerd` | deployment / sibling | device and network troubleshooting; receipts and tickets intake; restaurant menu review and recorder/feedback intake; sightseeing/events/museums companion; smarter routing planner | investigate, docs / OCR, travel assistant, planning | offline/resilience; on-the-go/edge; cost/control | perceive/extract; understand/explain; plan/recommend; monitor/triage | likely not a normal client app; better treated as a separate deployment model or sibling with shared capability ideas |
+| `Edge-Kite` | client / deployment | off-the-hub event-stream recorder, triage, pre-analyzer | monitoring / event triage, edge routing, pre-analysis | offline/resilience; on-the-go/edge; latency/realtime | perceive/extract; monitor/triage; compare/evaluate | may be closer to a node role or deployment pattern than a user-facing client; worth clarifying before treating it as a normal app |
 
 ## First-pass portfolio observations
 
@@ -150,6 +163,117 @@ If a need is local mainly because of:
 - or one workflow's specialized semantics
 
 it may be a stronger candidate for adapter/plugin space or app-owned logic.
+
+## First-pass brain-demand clusters
+
+This is the first useful bridge from portfolio analysis to adapter mapping.
+
+### 1. Perception and extraction cluster
+
+Common asks:
+
+- OCR
+- ASR
+- object or event detection
+- structured extraction from forms, receipts, contracts, or evidence
+
+Strong portfolio examples:
+
+- `On-My-Watch`
+- `iMedisys`
+- `ScamHunters`
+- `RoadNerd`
+- `PronunCo` (audio/phonetic side)
+
+Potential adapter implication:
+
+- shared extraction/perception adapters may make sense below app-specific logic
+
+### 2. Evaluation and coaching cluster
+
+Common asks:
+
+- pronunciation correction
+- delivery or charisma judgment
+- score explanation
+- quality/risk/gap evaluation
+
+Strong portfolio examples:
+
+- `PronunCo`
+- `TelPro-Bro`
+- `iMedisys`
+- `iLegalFlow`
+
+Potential adapter implication:
+
+- coaching/evaluation adapters may be distinct from raw core capabilities like
+  ASR, TTS, or chat
+
+### 3. Planning and recommendation cluster
+
+Common asks:
+
+- appointments/tests planning
+- logistics and scheduling
+- prevention plans
+- routing or sequencing recommendations
+
+Strong portfolio examples:
+
+- `WhoWhe2Wha`
+- `iMedisys`
+- `ScamHunters`
+- `RoadNerd`
+- `PronunCo` progression planning
+
+Potential adapter implication:
+
+- planning outputs may deserve a stable core substrate, while domain-specific
+  plans remain app-owned
+
+### 4. Simulation and roleplay cluster
+
+Common asks:
+
+- roleplay dialogue
+- live discussion participation
+- scenario rehearsal
+- conversational what-if exploration
+
+Strong portfolio examples:
+
+- `PronunCo`
+- `TelPro-Bro`
+- `ACTCLI`
+- parts of `m-Beacon`
+- parts of `iLegalFlow`
+
+Potential adapter implication:
+
+- shared bounded-dialogue/session primitives may belong in core iHN, while
+  scenario semantics belong above it
+
+### 5. Rules and decision-support cluster
+
+Common asks:
+
+- compliance analysis
+- coding and coverage logic
+- classification and equivalence
+- policy-aware recommendation
+
+Strong portfolio examples:
+
+- `iMedisys`
+- `iLegalFlow`
+- `iForeclosed`
+- some `ACTCLI` use cases
+
+Potential adapter implication:
+
+- core iHN may provide rules/doc/query primitives, but domain-specific rule
+  packs and decision language likely belong in adapters or sibling domains
 
 ## Why this matters for the client-surface review
 
