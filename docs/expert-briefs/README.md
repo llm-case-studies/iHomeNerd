@@ -86,6 +86,33 @@ state:
 
 Only after that should the formal validation request move to `wip/testing`.
 
+## Discussion-only sprints
+
+Not every sprint should start with code.
+
+Use a discussion-only sprint when:
+
+- the boundary between product surface and helper surface is unclear
+- spike work exposed a capability question before the product contract is
+  settled
+- several agents should contribute opinions before a coding branch is cut
+
+Expected deliverables for a discussion-only sprint:
+
+1. a seed brief framing the decision
+2. a feedback template or contribution guide
+3. a synthesis document that can later become the input to a coding/testing
+   sprint
+
+These sprints should still name:
+
+- the initiative
+- the decision scope
+- the future conversion trigger to coding/testing work
+
+They do **not** need to force a test request or implementation branch before
+the conceptual boundary is ready.
+
 ## Required deliverables
 
 Every coding expert effort should end with:
