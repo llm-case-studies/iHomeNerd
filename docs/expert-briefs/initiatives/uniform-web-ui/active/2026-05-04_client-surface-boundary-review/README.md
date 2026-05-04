@@ -19,9 +19,10 @@ Files:
 - `01-seed.md` - framing, working model, and concrete questions
 - `02-feedback-template.md` - structured response guide for contributors
 - `03-synthesis-template.md` - decision log for convergence
+- `04-portfolio-working-list.md` - current startup/client inventory and first-pass
+  relationship to iHN
 
 Exit condition:
 
 - we reach a stable-enough boundary model for client-facing iHN surface work
 - then cut a coding/testing sprint from `origin/main`
-
