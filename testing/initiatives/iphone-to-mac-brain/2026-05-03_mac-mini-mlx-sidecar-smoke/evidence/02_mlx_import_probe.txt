@@ -1,0 +1,14 @@
+MLX Import Probe — 2026-05-03
+==============================
+
+System python3 (3.9.6):
+  mlx=False
+  mlx_lm=False
+  mlx_probe_error=ModuleNotFoundError("No module named 'mlx'")
+
+Backend .venv (Python 3.12.13):
+  pip list | grep -i mlx  ->  (no output)
+  .venv/bin/mlx*          ->  no matches
+
+Conclusion: mlx and mlx_lm packages are not installed anywhere on mac-mini.
+mlx_lm.server is not available.

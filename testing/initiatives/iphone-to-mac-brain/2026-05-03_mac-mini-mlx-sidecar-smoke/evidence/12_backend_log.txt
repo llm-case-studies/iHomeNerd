@@ -1,0 +1,31 @@
+/Users/alex/Projects/iHomeNerd/backend/app/main.py:46: DeprecationWarning:
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+  @app.on_event("startup")
+/Users/alex/Projects/iHomeNerd/backend/app/main.py:69: DeprecationWarning:
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+  @app.on_event("shutdown")
+INFO:     Started server process [67594]
+INFO:     Waiting for application startup.
+INFO:     Started server process [67594]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:17792 (Press CTRL+C to quit)
+INFO:     Application startup complete.
+INFO:     Uvicorn running on https://127.0.0.1:17791 (Press CTRL+C to quit)
+Kokoro model files not found. TTS unavailable.
+INFO:     127.0.0.1:65233 - "GET /health HTTP/1.1" 200 OK
+Kokoro model files not found. TTS unavailable.
+INFO:     127.0.0.1:65235 - "GET /capabilities HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65237 - "POST /v1/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65240 - "POST /v1/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65243 - "POST /v1/chat HTTP/1.1" 502 Bad Gateway
+Kokoro model files not found. TTS unavailable.
+INFO:     127.0.0.1:65257 - "GET /capabilities HTTP/1.1" 200 OK

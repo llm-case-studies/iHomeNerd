@@ -1,0 +1,40 @@
+Gemma 4 Model Blocker — 2026-05-03
+===================================
+
+Model: mlx-community/gemma-4-e2b-it-4bit
+mlx-lm version: 0.31.3 (latest PyPI, 2026-04-22)
+
+Observed behavior:
+- sidecar /v1/models: WORKS (returns model info via GET handler)
+- sidecar POST /v1/completions: HANGS (no response, times out after 120s)
+- sidecar POST /v1/chat/completions: HANGS (no response, times out after 120s)
+- sidecar POST /v1/chat: 404 Not Found (logged by server)
+
+Root cause:
+  The generation thread (Thread-1) crashes on model load with:
+
+  ValueError: Received 140 parameters not in model:
+  language_model.model.layers.15.self_attn.k_norm.weight,
+  language_model.model.layers.15.self_attn.k_proj.biases,
+  ...
+  language_model.model.layers.34.self_attn.v_proj.weight.
+
+  The model's safetensors contain self_attn.k_norm parameters
+  (layers 15-34) that the mlx-lm==0.31.3 architecture does not
+  recognize for Gemma4. These are likely from a newer model
+  conversion or a model variant that differs from the Gemma4
+  architecture shipped in mlx-lm 0.31.3.
+
+Impact:
+  - GET /v1/models continues to work (served directly by HTTP handler)
+  - All POST completion endpoints hang (generation thread is dead)
+  - iHN backend returns 502 for all /v1/chat requests via MLX provider
+  - The hardcoded default model in backend/app/config.py and docs is
+    unsafe with mlx-lm==0.31.3
+
+Resolution for this sprint:
+  Switched to mlx-community/Qwen2.5-1.5B-Instruct-4bit which loads
+  successfully in mlx-lm 0.31.3. Documented as FINDING: default model
+  must be updated in config and docs.
+
+Full sidecar log with error: attached as evidence/04a_gemma4_sidecar_log.txt

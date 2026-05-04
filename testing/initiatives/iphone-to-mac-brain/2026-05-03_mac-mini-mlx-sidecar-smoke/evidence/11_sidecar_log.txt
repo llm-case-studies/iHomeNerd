@@ -1,0 +1,59 @@
+/Users/alex/.ihomenerd/runtime/mlx-sidecar-venv/lib/python3.12/site-packages/mlx_lm/server.py:1723: UserWarning: mlx_lm.server is not recommended for production as it only implements basic security checks.
+  warnings.warn(
+2026-05-03 19:13:23,648 - INFO - Starting httpd at 127.0.0.1 on port 11435...
+2026-05-03 19:13:23,800 - INFO - HTTP Request: GET https://huggingface.co/api/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/revision/main "HTTP/1.1 200 OK"
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]2026-05-03 19:13:23,858 - INFO - HTTP Request: HEAD https://huggingface.co/mlx-community/Qwen2.5-1.5B-Instruct-4bit/resolve/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/added_tokens.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-05-03 19:13:23,859 - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-05-03 19:13:23,887 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/added_tokens.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,904 - INFO - HTTP Request: HEAD https://huggingface.co/mlx-community/Qwen2.5-1.5B-Instruct-4bit/resolve/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/tokenizer.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-03 19:13:23,916 - INFO - HTTP Request: HEAD https://huggingface.co/mlx-community/Qwen2.5-1.5B-Instruct-4bit/resolve/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/model.safetensors.index.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-03 19:13:23,918 - INFO - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/added_tokens.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,921 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/tokenizer.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,922 - INFO - HTTP Request: HEAD https://huggingface.co/mlx-community/Qwen2.5-1.5B-Instruct-4bit/resolve/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/model.safetensors "HTTP/1.1 302 Found"
+2026-05-03 19:13:23,923 - INFO - HTTP Request: HEAD https://huggingface.co/mlx-community/Qwen2.5-1.5B-Instruct-4bit/resolve/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/special_tokens_map.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-03 19:13:23,926 - INFO - HTTP Request: HEAD https://huggingface.co/mlx-community/Qwen2.5-1.5B-Instruct-4bit/resolve/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-03 19:13:23,930 - INFO - HTTP Request: HEAD https://huggingface.co/mlx-community/Qwen2.5-1.5B-Instruct-4bit/resolve/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/config.json "HTTP/1.1 307 Temporary Redirect"
+Fetching 9 files:  11%|█         | 1/9 [00:00<00:01,  7.96it/s]2026-05-03 19:13:23,947 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/model.safetensors.index.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,947 - INFO - HTTP Request: HEAD https://huggingface.co/mlx-community/Qwen2.5-1.5B-Instruct-4bit/resolve/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/merges.txt "HTTP/1.1 307 Temporary Redirect"
+2026-05-03 19:13:23,959 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,960 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/special_tokens_map.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,960 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/config.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,963 - INFO - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/tokenizer.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,981 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/merges.txt "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,989 - INFO - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,991 - INFO - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/model.safetensors.index.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,993 - INFO - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/special_tokens_map.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:23,997 - INFO - HTTP Request: HEAD https://huggingface.co/mlx-community/Qwen2.5-1.5B-Instruct-4bit/resolve/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/vocab.json "HTTP/1.1 307 Temporary Redirect"
+2026-05-03 19:13:24,002 - INFO - HTTP Request: GET https://huggingface.co/api/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/xet-read-token/8b403126fc14f14cfc99bb4cfa72ecbc129ea677 "HTTP/1.1 200 OK"
+2026-05-03 19:13:24,004 - INFO - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/config.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:24,018 - INFO - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/merges.txt "HTTP/1.1 200 OK"
+2026-05-03 19:13:24,030 - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/vocab.json "HTTP/1.1 200 OK"
+2026-05-03 19:13:24,063 - INFO - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/mlx-community/Qwen2.5-1.5B-Instruct-4bit/8b403126fc14f14cfc99bb4cfa72ecbc129ea677/vocab.json "HTTP/1.1 200 OK"
+Fetching 9 files:  33%|███▎      | 3/9 [00:00<00:00, 10.42it/s]Fetching 9 files:  56%|█████▌    | 5/9 [00:17<00:17,  4.45s/it]Fetching 9 files: 100%|██████████| 9/9 [00:17<00:00,  1.93s/it]
+127.0.0.1 - - [03/May/2026 19:14:04] "GET /v1/models HTTP/1.1" 200 -
+2026-05-03 19:14:27,853 - INFO - Prompt Cache: 0 sequences, 0.00 GB
+2026-05-03 19:14:27,853 - INFO - - assistant: 0 sequences, 0.00 GB
+2026-05-03 19:14:27,853 - INFO - - user: 0 sequences, 0.00 GB
+2026-05-03 19:14:27,853 - INFO - - system: 0 sequences, 0.00 GB
+127.0.0.1 - - [03/May/2026 19:14:27] "POST /v1/chat/completions HTTP/1.1" 200 -
+2026-05-03 19:14:28,606 - INFO - Prompt processing progress: 34/35
+2026-05-03 19:14:28,779 - INFO - Prompt processing progress: 35/35
+127.0.0.1 - - [03/May/2026 19:14:36] "GET /v1/models HTTP/1.1" 200 -
+127.0.0.1 - - [03/May/2026 19:14:42] "GET /v1/models HTTP/1.1" 200 -
+127.0.0.1 - - [03/May/2026 19:14:53] "GET /v1/models HTTP/1.1" 200 -
+127.0.0.1 - - [03/May/2026 19:14:56] "GET /v1/models HTTP/1.1" 200 -
+2026-05-03 19:15:00,211 - INFO - Prompt Cache: 1 sequences, 0.00 GB
+2026-05-03 19:15:00,211 - INFO - - assistant: 1 sequences, 0.00 GB
+2026-05-03 19:15:00,211 - INFO - - user: 0 sequences, 0.00 GB
+2026-05-03 19:15:00,211 - INFO - - system: 0 sequences, 0.00 GB
+127.0.0.1 - - [03/May/2026 19:15:00] "POST /v1/chat/completions HTTP/1.1" 200 -
+2026-05-03 19:15:00,439 - INFO - Prompt processing progress: 16/17
+2026-05-03 19:15:00,463 - INFO - Prompt processing progress: 17/17
+2026-05-03 19:15:04,099 - INFO - Prompt Cache: 2 sequences, 0.00 GB
+2026-05-03 19:15:04,100 - INFO - - assistant: 2 sequences, 0.00 GB
+2026-05-03 19:15:04,100 - INFO - - user: 0 sequences, 0.00 GB
+2026-05-03 19:15:04,100 - INFO - - system: 0 sequences, 0.00 GB
+127.0.0.1 - - [03/May/2026 19:15:04] "POST /v1/chat/completions HTTP/1.1" 200 -
+2026-05-03 19:15:04,316 - INFO - Prompt processing progress: 11/12
+2026-05-03 19:15:04,338 - INFO - Prompt processing progress: 12/12

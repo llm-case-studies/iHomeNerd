@@ -1,0 +1,194 @@
+2026-05-03 19:04:11,085 - DEBUG - connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+/Users/alex/.ihomenerd/runtime/mlx-sidecar-venv/lib/python3.12/site-packages/mlx_lm/server.py:1723: UserWarning: mlx_lm.server is not recommended for production as it only implements basic security checks.
+  warnings.warn(
+2026-05-03 19:04:11,085 - INFO - Starting httpd at 127.0.0.1 on port 11435...
+2026-05-03 19:04:11,136 - DEBUG - connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x10bc29ca0>
+2026-05-03 19:04:11,136 - DEBUG - start_tls.started ssl_context=<ssl.SSLContext object at 0x10c8698d0> server_hostname='huggingface.co' timeout=None
+2026-05-03 19:04:11,162 - DEBUG - start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x10c289850>
+2026-05-03 19:04:11,162 - DEBUG - send_request_headers.started request=<Request [b'GET']>
+2026-05-03 19:04:11,162 - DEBUG - send_request_headers.complete
+2026-05-03 19:04:11,162 - DEBUG - send_request_body.started request=<Request [b'GET']>
+2026-05-03 19:04:11,163 - DEBUG - send_request_body.complete
+2026-05-03 19:04:11,163 - DEBUG - receive_response_headers.started request=<Request [b'GET']>
+2026-05-03 19:04:11,209 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Sun, 03 May 2026 23:04:11 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"4700-w9lpG7KorUNoAOInPE/fZ3pAoVY"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-69f7d46b-0de535db646985352ee60272;db1805fa-0302-4bd5-9916-01058b463b3d'), (b'RateLimit', b'"api";r=499;t=177'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 98c618da1ae9747c519f885d3d24b9a8.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'JFK50-P9'), (b'X-Amz-Cf-Id', b'YWA5VBOfS4pRutUQwVm6TpIZY_6XEN578QqBNZn_eCmC1ON_8TJl_A==')])
+2026-05-03 19:04:11,210 - INFO - HTTP Request: GET https://huggingface.co/api/models/mlx-community/gemma-4-e2b-it-4bit/revision/main "HTTP/1.1 200 OK"
+2026-05-03 19:04:11,210 - DEBUG - receive_response_body.started request=<Request [b'GET']>
+2026-05-03 19:04:11,212 - DEBUG - receive_response_body.complete
+2026-05-03 19:04:11,212 - DEBUG - response_closed.started
+2026-05-03 19:04:11,212 - DEBUG - response_closed.complete
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 142784.82it/s]
+Exception in thread Thread-1 (_generate):
+Traceback (most recent call last):
+  File "/Users/alex/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/Users/alex/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/alex/.ihomenerd/runtime/mlx-sidecar-venv/lib/python3.12/site-packages/mlx_lm/server.py", line 695, in _generate
+    self.model_provider.load_default()
+  File "/Users/alex/.ihomenerd/runtime/mlx-sidecar-venv/lib/python3.12/site-packages/mlx_lm/server.py", line 385, in load_default
+    self.load("default_model", None, "default_model")
+  File "/Users/alex/.ihomenerd/runtime/mlx-sidecar-venv/lib/python3.12/site-packages/mlx_lm/server.py", line 394, in load
+    self._load(*model_key)
+  File "/Users/alex/.ihomenerd/runtime/mlx-sidecar-venv/lib/python3.12/site-packages/mlx_lm/server.py", line 349, in _load
+    model, tokenizer = load(
+                       ^^^^^
+  File "/Users/alex/.ihomenerd/runtime/mlx-sidecar-venv/lib/python3.12/site-packages/mlx_lm/utils.py", line 491, in load
+    model, config = load_model(model_path, lazy, model_config=model_config)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alex/.ihomenerd/runtime/mlx-sidecar-venv/lib/python3.12/site-packages/mlx_lm/utils.py", line 415, in load_model
+    model.load_weights(list(weights.items()), strict=strict)
+  File "/Users/alex/.ihomenerd/runtime/mlx-sidecar-venv/lib/python3.12/site-packages/mlx/nn/layers/base.py", line 185, in load_weights
+    raise ValueError(
+ValueError: Received 140 parameters not in model:
+language_model.model.layers.15.self_attn.k_norm.weight,
+language_model.model.layers.15.self_attn.k_proj.biases,
+language_model.model.layers.15.self_attn.k_proj.scales,
+language_model.model.layers.15.self_attn.k_proj.weight,
+language_model.model.layers.15.self_attn.v_proj.biases,
+language_model.model.layers.15.self_attn.v_proj.scales,
+language_model.model.layers.15.self_attn.v_proj.weight,
+language_model.model.layers.16.self_attn.k_norm.weight,
+language_model.model.layers.16.self_attn.k_proj.biases,
+language_model.model.layers.16.self_attn.k_proj.scales,
+language_model.model.layers.16.self_attn.k_proj.weight,
+language_model.model.layers.16.self_attn.v_proj.biases,
+language_model.model.layers.16.self_attn.v_proj.scales,
+language_model.model.layers.16.self_attn.v_proj.weight,
+language_model.model.layers.17.self_attn.k_norm.weight,
+language_model.model.layers.17.self_attn.k_proj.biases,
+language_model.model.layers.17.self_attn.k_proj.scales,
+language_model.model.layers.17.self_attn.k_proj.weight,
+language_model.model.layers.17.self_attn.v_proj.biases,
+language_model.model.layers.17.self_attn.v_proj.scales,
+language_model.model.layers.17.self_attn.v_proj.weight,
+language_model.model.layers.18.self_attn.k_norm.weight,
+language_model.model.layers.18.self_attn.k_proj.biases,
+language_model.model.layers.18.self_attn.k_proj.scales,
+language_model.model.layers.18.self_attn.k_proj.weight,
+language_model.model.layers.18.self_attn.v_proj.biases,
+language_model.model.layers.18.self_attn.v_proj.scales,
+language_model.model.layers.18.self_attn.v_proj.weight,
+language_model.model.layers.19.self_attn.k_norm.weight,
+language_model.model.layers.19.self_attn.k_proj.biases,
+language_model.model.layers.19.self_attn.k_proj.scales,
+language_model.model.layers.19.self_attn.k_proj.weight,
+language_model.model.layers.19.self_attn.v_proj.biases,
+language_model.model.layers.19.self_attn.v_proj.scales,
+language_model.model.layers.19.self_attn.v_proj.weight,
+language_model.model.layers.20.self_attn.k_norm.weight,
+language_model.model.layers.20.self_attn.k_proj.biases,
+language_model.model.layers.20.self_attn.k_proj.scales,
+language_model.model.layers.20.self_attn.k_proj.weight,
+language_model.model.layers.20.self_attn.v_proj.biases,
+language_model.model.layers.20.self_attn.v_proj.scales,
+language_model.model.layers.20.self_attn.v_proj.weight,
+language_model.model.layers.21.self_attn.k_norm.weight,
+language_model.model.layers.21.self_attn.k_proj.biases,
+language_model.model.layers.21.self_attn.k_proj.scales,
+language_model.model.layers.21.self_attn.k_proj.weight,
+language_model.model.layers.21.self_attn.v_proj.biases,
+language_model.model.layers.21.self_attn.v_proj.scales,
+language_model.model.layers.21.self_attn.v_proj.weight,
+language_model.model.layers.22.self_attn.k_norm.weight,
+language_model.model.layers.22.self_attn.k_proj.biases,
+language_model.model.layers.22.self_attn.k_proj.scales,
+language_model.model.layers.22.self_attn.k_proj.weight,
+language_model.model.layers.22.self_attn.v_proj.biases,
+language_model.model.layers.22.self_attn.v_proj.scales,
+language_model.model.layers.22.self_attn.v_proj.weight,
+language_model.model.layers.23.self_attn.k_norm.weight,
+language_model.model.layers.23.self_attn.k_proj.biases,
+language_model.model.layers.23.self_attn.k_proj.scales,
+language_model.model.layers.23.self_attn.k_proj.weight,
+language_model.model.layers.23.self_attn.v_proj.biases,
+language_model.model.layers.23.self_attn.v_proj.scales,
+language_model.model.layers.23.self_attn.v_proj.weight,
+language_model.model.layers.24.self_attn.k_norm.weight,
+language_model.model.layers.24.self_attn.k_proj.biases,
+language_model.model.layers.24.self_attn.k_proj.scales,
+language_model.model.layers.24.self_attn.k_proj.weight,
+language_model.model.layers.24.self_attn.v_proj.biases,
+language_model.model.layers.24.self_attn.v_proj.scales,
+language_model.model.layers.24.self_attn.v_proj.weight,
+language_model.model.layers.25.self_attn.k_norm.weight,
+language_model.model.layers.25.self_attn.k_proj.biases,
+language_model.model.layers.25.self_attn.k_proj.scales,
+language_model.model.layers.25.self_attn.k_proj.weight,
+language_model.model.layers.25.self_attn.v_proj.biases,
+language_model.model.layers.25.self_attn.v_proj.scales,
+language_model.model.layers.25.self_attn.v_proj.weight,
+language_model.model.layers.26.self_attn.k_norm.weight,
+language_model.model.layers.26.self_attn.k_proj.biases,
+language_model.model.layers.26.self_attn.k_proj.scales,
+language_model.model.layers.26.self_attn.k_proj.weight,
+language_model.model.layers.26.self_attn.v_proj.biases,
+language_model.model.layers.26.self_attn.v_proj.scales,
+language_model.model.layers.26.self_attn.v_proj.weight,
+language_model.model.layers.27.self_attn.k_norm.weight,
+language_model.model.layers.27.self_attn.k_proj.biases,
+language_model.model.layers.27.self_attn.k_proj.scales,
+language_model.model.layers.27.self_attn.k_proj.weight,
+language_model.model.layers.27.self_attn.v_proj.biases,
+language_model.model.layers.27.self_attn.v_proj.scales,
+language_model.model.layers.27.self_attn.v_proj.weight,
+language_model.model.layers.28.self_attn.k_norm.weight,
+language_model.model.layers.28.self_attn.k_proj.biases,
+language_model.model.layers.28.self_attn.k_proj.scales,
+language_model.model.layers.28.self_attn.k_proj.weight,
+language_model.model.layers.28.self_attn.v_proj.biases,
+language_model.model.layers.28.self_attn.v_proj.scales,
+language_model.model.layers.28.self_attn.v_proj.weight,
+language_model.model.layers.29.self_attn.k_norm.weight,
+language_model.model.layers.29.self_attn.k_proj.biases,
+language_model.model.layers.29.self_attn.k_proj.scales,
+language_model.model.layers.29.self_attn.k_proj.weight,
+language_model.model.layers.29.self_attn.v_proj.biases,
+language_model.model.layers.29.self_attn.v_proj.scales,
+language_model.model.layers.29.self_attn.v_proj.weight,
+language_model.model.layers.30.self_attn.k_norm.weight,
+language_model.model.layers.30.self_attn.k_proj.biases,
+language_model.model.layers.30.self_attn.k_proj.scales,
+language_model.model.layers.30.self_attn.k_proj.weight,
+language_model.model.layers.30.self_attn.v_proj.biases,
+language_model.model.layers.30.self_attn.v_proj.scales,
+language_model.model.layers.30.self_attn.v_proj.weight,
+language_model.model.layers.31.self_attn.k_norm.weight,
+language_model.model.layers.31.self_attn.k_proj.biases,
+language_model.model.layers.31.self_attn.k_proj.scales,
+language_model.model.layers.31.self_attn.k_proj.weight,
+language_model.model.layers.31.self_attn.v_proj.biases,
+language_model.model.layers.31.self_attn.v_proj.scales,
+language_model.model.layers.31.self_attn.v_proj.weight,
+language_model.model.layers.32.self_attn.k_norm.weight,
+language_model.model.layers.32.self_attn.k_proj.biases,
+language_model.model.layers.32.self_attn.k_proj.scales,
+language_model.model.layers.32.self_attn.k_proj.weight,
+language_model.model.layers.32.self_attn.v_proj.biases,
+language_model.model.layers.32.self_attn.v_proj.scales,
+language_model.model.layers.32.self_attn.v_proj.weight,
+language_model.model.layers.33.self_attn.k_norm.weight,
+language_model.model.layers.33.self_attn.k_proj.biases,
+language_model.model.layers.33.self_attn.k_proj.scales,
+language_model.model.layers.33.self_attn.k_proj.weight,
+language_model.model.layers.33.self_attn.v_proj.biases,
+language_model.model.layers.33.self_attn.v_proj.scales,
+language_model.model.layers.33.self_attn.v_proj.weight,
+language_model.model.layers.34.self_attn.k_norm.weight,
+language_model.model.layers.34.self_attn.k_proj.biases,
+language_model.model.layers.34.self_attn.k_proj.scales,
+language_model.model.layers.34.self_attn.k_proj.weight,
+language_model.model.layers.34.self_attn.v_proj.biases,
+language_model.model.layers.34.self_attn.v_proj.scales,
+language_model.model.layers.34.self_attn.v_proj.weight.
+127.0.0.1 - - [03/May/2026 19:04:51] "GET /v1/models HTTP/1.1" 200 -
+2026-05-03 19:05:02,061 - DEBUG - Incoming Request Body: {
+	"model": "mlx-community/gemma-4-e2b-it-4bit",
+	"messages": [
+		{
+			"role": "user",
+			"content": "Say hi in two words."
+		}
+	],
+	"max_tokens": 10,
+	"stream": false
+}
