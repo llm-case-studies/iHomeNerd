@@ -264,6 +264,46 @@ These rules are proposed, not yet final.
    A route that helped a spike should still earn its place in the stable
    surface.
 
+## Open questions and tensions
+
+These are deliberately unresolved. They are here to invite useful disagreement.
+
+1. **How public should helper capabilities be?**
+   Some helpers are clearly useful.
+   The question is whether usefulness should lead to:
+   - public stable route
+   - plugin namespace
+   - internal helper only
+
+2. **What counts as a true client app versus a sibling product?**
+   `PronunCo` and `TelPro-Bro` look like true clients.
+   `RoadNerd`, `Edge-Kite`, and `iOfficeNerd` may not.
+   That distinction changes what kind of contract iHN should expose.
+
+3. **Should simulation/roleplay be a core primitive or always adapter-owned?**
+   Several products want scenario dialogue.
+   But the scenario semantics may remain deeply app-specific.
+
+4. **How much planning should live in core iHN?**
+   Many apps want recommendation and planning help.
+   It is unclear whether iHN should expose planning primitives directly or only
+   provide lower-level substrate for app-owned planning logic.
+
+5. **When does a rules-heavy domain deserve stable core support?**
+   `iMedisys`, `iLegalFlow`, and related domains may all want rules +
+   explanation.
+   The open question is whether the stable surface should expose general rules
+   primitives only, or domain-facing decision routes too.
+
+6. **How much of the current app-integration surface is spike residue?**
+   Some capabilities may exist mainly because they were easy to try during
+   exploration, not because they earned a stable product boundary.
+
+7. **What would make the stable core too thin?**
+   Over-pruning is also a risk.
+   If iHN becomes only health/trust/chat/storage plumbing, it may stop being a
+   useful AI brain product in its own right.
+
 ## Concrete questions for contributors
 
 1. Which current routes clearly belong in the stable core iHN surface?
@@ -297,3 +337,9 @@ state, with reasonable confidence:
 - the adapter/plugin surface
 - the app-owned surface
 - the first 1-3 cleanup actions to implement
+
+That means this sprint should end with:
+
+- better boundaries
+- not perfect agreement
+- and a smaller, sharper set of coding questions than we started with
