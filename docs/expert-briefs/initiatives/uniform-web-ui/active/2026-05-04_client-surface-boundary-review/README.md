@@ -22,6 +22,8 @@ Files:
 - `04-portfolio-working-list.md` - current startup/client inventory and first-pass
   relationship to iHN
 - `05-participant-invite.md` - reusable handoff note for AI or human reviewers
+- `07-round-1-kickoff.md` - blind first-pass review note
+- `08-round-2-kickoff.md` - critique/synthesis round note
 
 ## Participant expectations
 
