@@ -7,6 +7,7 @@
 **Base:** `origin/main` (7f84a8d)
 **Validator:** OpenCode on iMac-Debian
 **Runtime host:** mac-mini (Apple Silicon M1, macOS 26.4.1)
+**Successful sidecar model:** `mlx-community/Qwen2.5-1.5B-Instruct-4bit`
 
 ## Verdict: PASS (with findings)
 
@@ -77,8 +78,9 @@ HTTP/1.1 502 Bad Gateway
 
 ## Finding: Hardcoded Default Model Is Incompatible
 
-The model `mlx-community/gemma-4-e2b-it-4bit` (hardcoded in `backend/app/config.py:21`)
-is incompatible with `mlx-lm==0.31.3`. The model's safetensors contain
+The model `mlx-community/gemma-4-e2b-it-4bit` (hardcoded in
+`backend/app/config.py` at tested commit `7f84a8d`) is incompatible with
+`mlx-lm==0.31.3`. The model's safetensors contain
 `self_attn.k_norm` parameters (layers 15-34) that the 0.31.3 Gemma4 architecture
 does not recognize:
 

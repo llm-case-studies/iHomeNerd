@@ -125,7 +125,7 @@ Recommendation: implement option 1 first for managed-home MVP, then move to opti
 
   ```bash
   IHN_MAC_LLM_BACKEND=mlx
-  IHN_MLX_MODEL=mlx-community/gemma-4-e2b-it-4bit
+  IHN_MLX_MODEL=mlx-community/Qwen2.5-1.5B-Instruct-4bit
   ```
 
 - Launchd agents:

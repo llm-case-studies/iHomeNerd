@@ -40,3 +40,22 @@ Follow-up:
   validation closes.
 - Add host readiness checks to future kickoff prompts when a new machine enters
   the flow.
+
+## 2026-05-03 — Native Runtime Validation Must Exercise Generation
+
+Context:
+
+- Initiative: `iphone-to-mac-brain`
+- Sprint: `2026-05-03_mac-mini-mlx-sidecar-smoke`
+- Runtime host: `mac-mini`
+
+Lessons:
+
+- **Model listing is a weak readiness signal.** A sidecar can return
+  `/v1/models` while the first generation request crashes or hangs. Runtime
+  sprints should always include at least one POST generation probe.
+- **Defaults need real-host evidence.** A model that appears in catalogs or SDK
+  registries is not automatically a safe default for a specific runtime version.
+- **Validation can produce product fixes.** Evidence sprints should be allowed
+  to close with "PASS with findings" when the path works but a default, doc, or
+  installer assumption needs immediate correction.

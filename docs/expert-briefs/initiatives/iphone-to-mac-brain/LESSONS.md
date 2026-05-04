@@ -72,3 +72,32 @@ Follow-up:
 - Consider documenting a preflight checklist for iOS validation sessions:
   iPhone unlocked, same Wi-Fi, Developer Mode enabled, trusted developer profile,
   and keychain password entered only through the shell.
+
+## 2026-05-03 — Mac Mini MLX Sidecar Smoke
+
+Sprint:
+
+- `2026-05-03_mac-mini-mlx-sidecar-smoke`
+- Branch: `validation/iphone-to-mac-brain/mac-mini-mlx-sidecar-smoke`
+- Validation host: `iMac-Debian`
+- Runtime host: `mac-mini`
+
+Lessons:
+
+- **`/v1/models` is not enough.** Gemma 4 listed successfully from
+  `mlx_lm.server`, but generation crashed in the worker thread. Real sidecar
+  validation must include POST chat probes.
+- **Pin runtime and model together.** `mlx-lm==0.31.3` works with
+  `mlx-community/Qwen2.5-1.5B-Instruct-4bit` on the Mac mini, but not with the
+  previously configured Gemma 4 default.
+- **Keep sidecar dependencies isolated.** Installing `mlx-lm` into a dedicated
+  `~/.ihomenerd/runtime/mlx-sidecar-venv` kept the backend venv stable and made
+  the runtime boundary explicit.
+- **Record first-run model cost.** Qwen2.5 1.5B downloaded and loaded quickly
+  enough for a starter model; Gemma 4 was larger and still failed after
+  download.
+
+Follow-up:
+
+- Mac installer/preflight should create or reuse the sidecar venv and default to
+  `mlx-community/Qwen2.5-1.5B-Instruct-4bit`.

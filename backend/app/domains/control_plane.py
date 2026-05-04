@@ -301,14 +301,11 @@ def _recommended_models(gpu_vram_mb: int, ram_bytes: int, os_name: str = "", arc
     if _apple_silicon(os_name, arch):
         if ram_bytes >= 24 * 1024**3:
             return [
-                "mlx-community/gemma-4-e2b-it-4bit",
+                "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
                 "mlx-community/Qwen2.5-7B-Instruct-4bit",
             ]
         if ram_bytes >= 16 * 1024**3:
-            return [
-                "mlx-community/gemma-4-e2b-it-4bit",
-                "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
-            ]
+            return ["mlx-community/Qwen2.5-1.5B-Instruct-4bit"]
         return ["mlx-community/Qwen2.5-1.5B-Instruct-4bit"]
     if gpu_vram_mb >= 8000:
         return ["gemma4:e4b", "gemma3:12b", "llama3:8b"]

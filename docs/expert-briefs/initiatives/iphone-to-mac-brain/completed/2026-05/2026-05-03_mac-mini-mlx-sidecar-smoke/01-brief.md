@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-03
 **Initiative:** `iphone-to-mac-brain`
-**Status:** active sprint
+**Status:** completed - PASS with findings
 **Audience:** OpenCode validator on `iMac-Debian`
 
 ## Why This Sprint Exists
@@ -75,7 +75,7 @@ Do not turn this into:
 The intended sidecar command is:
 
 ```bash
-mlx_lm.server --host 127.0.0.1 --port 11435 --model mlx-community/gemma-4-e2b-it-4bit
+mlx_lm.server --host 127.0.0.1 --port 11435 --model mlx-community/Qwen2.5-1.5B-Instruct-4bit
 ```
 
 The intended backend environment is:
@@ -83,10 +83,13 @@ The intended backend environment is:
 ```bash
 IHN_LLM_PROVIDER=mlx
 IHN_MLX_SERVER_URL=http://127.0.0.1:11435
-IHN_MLX_MODEL=mlx-community/gemma-4-e2b-it-4bit
+IHN_MLX_MODEL=mlx-community/Qwen2.5-1.5B-Instruct-4bit
 IHN_HOST=127.0.0.1
 IHN_PORT=17791
 ```
+
+Validation found that the originally proposed Gemma 4 sidecar model crashes
+generation under `mlx-lm==0.31.3`; Qwen2.5 1.5B is the validated starter model.
 
 Keep both services bound to localhost on `mac-mini` for this sprint. The
 validator can run probes through SSH on `mac-mini`; LAN exposure is not needed.

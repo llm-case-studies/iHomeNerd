@@ -68,8 +68,13 @@ Sources:
 Run:
 
 ```bash
-mlx_lm.server --host 127.0.0.1 --port 11435 --model mlx-community/gemma-4-e2b-it-4bit
+mlx_lm.server --host 127.0.0.1 --port 11435 --model mlx-community/Qwen2.5-1.5B-Instruct-4bit
 ```
+
+Validation note from 2026-05-03: `mlx-community/gemma-4-e2b-it-4bit`
+downloads and lists under `mlx-lm==0.31.3`, but generation crashes on unknown
+`self_attn.k_norm` parameters. Do not use it as the default Mac MLX sidecar
+model until the runtime/model pair is revalidated.
 
 Then teach `backend/app/ollama.py` or a new provider layer to call:
 
@@ -182,7 +187,7 @@ For Mac MLX, return both legacy and canonical fields:
   "content": "...",
   "response": "...",
   "text": "...",
-  "model": "mlx-community/gemma-4-e2b-it-4bit",
+  "model": "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
   "backend": "mlx_macos",
   "processingTime": 4.23,
   "tokensPerSecond": 12.34
@@ -217,7 +222,7 @@ Add an opt-in path:
 
 ```bash
 IHN_MAC_LLM_BACKEND=mlx
-IHN_MLX_MODEL=mlx-community/gemma-4-e2b-it-4bit
+IHN_MLX_MODEL=mlx-community/Qwen2.5-1.5B-Instruct-4bit
 ```
 
 Installer changes:
@@ -230,7 +235,7 @@ Installer changes:
 
 ```bash
 export IHN_LLM_PROVIDER="mlx"
-export IHN_MLX_MODEL="mlx-community/gemma-4-e2b-it-4bit"
+export IHN_MLX_MODEL="mlx-community/Qwen2.5-1.5B-Instruct-4bit"
 export IHN_MLX_SERVER_URL="http://127.0.0.1:11435"
 ```
 
@@ -241,7 +246,7 @@ For `/capabilities`:
 ```json
 "chat": {
   "available": true,
-  "model": "mlx-community/gemma-4-e2b-it-4bit",
+  "model": "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
   "tier": "medium",
   "backend": "mlx_macos",
   "endpoint": "/v1/chat",
@@ -273,15 +278,16 @@ Conservative starter table:
 
 | Mac unified memory | Starter models |
 |---|---|
-| 8 GB | Qwen 1.5B 4-bit, Gemma 2B 4-bit |
-| 16 GB | Gemma 2B 4-bit, Qwen 7B 4-bit as measured/optional |
+| 8 GB | Qwen 1.5B 4-bit |
+| 16 GB | Qwen 1.5B 4-bit, Qwen 7B 4-bit as measured/optional |
 | 24 GB | 8B to 14B 4-bit candidates |
 | 32 GB+ | larger 14B+ and MoE candidates, benchmark-gated |
 
-The Mac mini M1 16 GB should start with the same model as the iPhone comparison:
+The Mac mini M1 16 GB should start with the model that passed the real sidecar
+smoke:
 
 ```text
-mlx-community/gemma-4-e2b-it-4bit
+mlx-community/Qwen2.5-1.5B-Instruct-4bit
 ```
 
 Then add:

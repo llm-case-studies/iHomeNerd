@@ -17,6 +17,11 @@ This is not the fake sidecar contract smoke. Use `mlx_lm.server` if it is
 available. If it is not available, record a precise blocker and stop before
 making product changes or installing packages.
 
+Post-validation note: the first pass found that
+`mlx-community/gemma-4-e2b-it-4bit` is not compatible with `mlx-lm==0.31.3`
+for generation on the Mac sidecar. The replayable validated starter model is
+`mlx-community/Qwen2.5-1.5B-Instruct-4bit`.
+
 ## Branch Setup
 
 ```bash
@@ -93,7 +98,7 @@ Terminal A on `mac-mini` or an SSH session kept open:
 
 ```bash
 cd ~/Projects/iHomeNerd
-mlx_lm.server --host 127.0.0.1 --port 11435 --model mlx-community/gemma-4-e2b-it-4bit
+mlx_lm.server --host 127.0.0.1 --port 11435 --model mlx-community/Qwen2.5-1.5B-Instruct-4bit
 ```
 
 If the model downloads on first launch, capture the log and elapsed time.
@@ -105,7 +110,7 @@ cd ~/Projects/iHomeNerd/backend
 source .venv/bin/activate
 IHN_LLM_PROVIDER=mlx \
 IHN_MLX_SERVER_URL=http://127.0.0.1:11435 \
-IHN_MLX_MODEL=mlx-community/gemma-4-e2b-it-4bit \
+IHN_MLX_MODEL=mlx-community/Qwen2.5-1.5B-Instruct-4bit \
 IHN_HOST=127.0.0.1 \
 IHN_PORT=17791 \
 python -m app.main
@@ -200,7 +205,7 @@ evidence/10_backend_log.txt
 ## Expected Pass Criteria
 
 - sidecar `/v1/models` returns a model list including or compatible with
-  `mlx-community/gemma-4-e2b-it-4bit`.
+  `mlx-community/Qwen2.5-1.5B-Instruct-4bit`.
 - iHN `/health` reports `provider == "mlx"` and `backend == "mlx_macos"`.
 - iHN `/capabilities` reports chat capability with MLX provider metadata.
 - both chat requests return HTTP 200.
