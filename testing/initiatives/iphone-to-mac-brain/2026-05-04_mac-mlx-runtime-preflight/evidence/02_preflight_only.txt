@@ -1,0 +1,27 @@
+Command:
+  IHN_PREFLIGHT_ONLY=1 IHN_MAC_LLM_BACKEND=mlx IHN_AUTO_YES=1
+  IHN_PYTHON_BIN=$HOME/.ihomenerd/runtime/mlx-sidecar-venv/bin/python3
+  bash install-ihomenerd-macos.sh
+Exit: 0
+
+── Checking this Mac ──
+  ✅ Operating system: macOS
+  ✅ Architecture: arm64 · Apple M1
+  ✅ RAM: 16GB
+  ✅ Disk: 13GB available
+  ✅ Python 3.12.13 with venv support is ready
+
+── Choosing the right starter model pack ──
+  ✅ Selected: MLX native chat (mlx-community/Qwen2.5-1.5B-Instruct-4bit)
+
+── Preflight Summary ──
+  Install directory:     /Users/alex/.ihomenerd
+  Backend:               mlx
+  MLX model:             mlx-community/Qwen2.5-1.5B-Instruct-4bit
+  mlx-lm version:        0.31.3
+  MLX sidecar venv:      /Users/alex/.ihomenerd/runtime/mlx-sidecar-venv
+  MLX server port:       11435
+  Backend venv:           /Users/alex/.ihomenerd/backend/.venv
+
+  ✅ Preflight checks passed. No downloads, CA creation, venv installs,
+     launchd registration, or service starts were performed.

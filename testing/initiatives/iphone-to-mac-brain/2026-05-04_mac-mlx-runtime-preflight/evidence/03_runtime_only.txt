@@ -1,0 +1,29 @@
+Command:
+  IHN_MLX_RUNTIME_ONLY=1 IHN_MAC_LLM_BACKEND=mlx IHN_AUTO_YES=1
+  IHN_INSTALL_DIR=/tmp/ihn-mlx-runtime-test-[timestamp]
+  IHN_PYTHON_BIN=$HOME/.ihomenerd/runtime/mlx-sidecar-venv/bin/python3
+  bash install-ihomenerd-macos.sh
+Exit: 0
+
+── Checking this Mac ──
+  ✅ Operating system: macOS
+  ✅ Architecture: arm64 · Apple M1
+  ✅ RAM: 16GB
+  ✅ Disk: 13GB available
+  ✅ Python 3.12.13 with venv support is ready
+
+── Choosing the right starter model pack ──
+  ✅ Selected: MLX native chat (mlx-community/Qwen2.5-1.5B-Instruct-4bit)
+
+── MLX Runtime-Only Setup ──
+  ✅ MLX sidecar venv created
+  Installing mlx-lm==0.31.3...
+  Successfully installed mlx-lm-0.31.3 mlx-0.31.2 mlx-metal-0.31.2
+  ✅ mlx_lm.server is ready
+  ✅ MLX runtime-only setup complete. No repo download, CA setup,
+     backend venv, launchd, or service start was performed.
+
+Post-check:
+  MLX sidecar venv: FOUND at <temp>/runtime/mlx-sidecar-venv
+  Backend .venv: NONE (expected)
+  LaunchAgents: NONE (untouched)
