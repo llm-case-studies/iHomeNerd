@@ -1,0 +1,16 @@
+Command:
+  IHN_PREFLIGHT_ONLY=1 IHN_MAC_LLM_BACKEND=mlx IHN_AUTO_YES=1
+  IHN_MLX_MODEL=mlx-community/gemma-4-e2b-it-4bit
+  IHN_PYTHON_BIN=$HOME/.ihomenerd/runtime/mlx-sidecar-venv/bin/python3
+  bash install-ihomenerd-macos.sh
+Exit: 1
+
+── Choosing the right starter model pack ──
+  ✅ Selected: MLX native chat (mlx-community/gemma-4-e2b-it-4bit)
+  ✘ mlx-community/gemma-4-e2b-it-4bit is known incompatible with
+    mlx-lm==0.31.3. Set IHN_MLX_MODEL to a validated model
+    (mlx-community/Qwen2.5-1.5B-Instruct-4bit) or
+    IHN_ALLOW_UNVALIDATED_MLX_MODEL=1 to override.
+
+PASS: Script exits non-zero with clear error message mentioning Gemma 4
+incompatibility and override instructions.

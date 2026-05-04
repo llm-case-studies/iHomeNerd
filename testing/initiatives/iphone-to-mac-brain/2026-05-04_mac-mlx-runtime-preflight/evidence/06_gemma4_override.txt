@@ -1,0 +1,25 @@
+Command:
+  IHN_PREFLIGHT_ONLY=1 IHN_MAC_LLM_BACKEND=mlx IHN_AUTO_YES=1
+  IHN_MLX_MODEL=mlx-community/gemma-4-e2b-it-4bit
+  IHN_ALLOW_UNVALIDATED_MLX_MODEL=1
+  IHN_PYTHON_BIN=$HOME/.ihomenerd/runtime/mlx-sidecar-venv/bin/python3
+  bash install-ihomenerd-macos.sh
+Exit: 0
+
+── Choosing the right starter model pack ──
+  ✅ Selected: MLX native chat (mlx-community/gemma-4-e2b-it-4bit)
+  ⚠️ Overriding known-bad model guard for mlx-community/gemma-4-e2b-it-4bit.
+     This model is known incompatible with mlx-lm==0.31.3.
+
+── Preflight Summary ──
+  Install directory:      /Users/alex/.ihomenerd
+  Backend:                mlx
+  MLX model:              mlx-community/gemma-4-e2b-it-4bit
+  mlx-lm version:         0.31.3
+  MLX sidecar venv:       /Users/alex/.ihomenerd/runtime/mlx-sidecar-venv
+  MLX server port:        11435
+  Backend venv:           /Users/alex/.ihomenerd/backend/.venv
+
+  ✅ Preflight checks passed.
+
+PASS: Preflight proceeds with warning when override is set. Exit 0.

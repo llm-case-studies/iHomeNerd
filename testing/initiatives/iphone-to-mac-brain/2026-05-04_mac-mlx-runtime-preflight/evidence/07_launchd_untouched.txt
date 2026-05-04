@@ -1,0 +1,4 @@
+Pre-test: LaunchAgents/com.ihomenerd.* => NONE
+Post-test: LaunchAgents/com.ihomenerd.* => NONE
+
+launchd was never touched during preflight-only or runtime-only modes.
