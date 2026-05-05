@@ -101,3 +101,37 @@ Follow-up:
 
 - Mac installer/preflight should create or reuse the sidecar venv and default to
   `mlx-community/Qwen2.5-1.5B-Instruct-4bit`.
+
+## 2026-05-04 — Mac MLX Runtime Preflight
+
+Sprint:
+
+- `2026-05-04_mac-mlx-runtime-preflight`
+- Branch: `feature/iphone-to-mac-brain/mac-mlx-runtime-preflight`
+- Implementation host: `Acer-HL`
+- Validation host: `iMac-Debian`
+- Runtime host: `mac-mini`
+
+Lessons:
+
+- **Safe installer modes are worth first-class treatment.** `IHN_PREFLIGHT_ONLY`
+  and `IHN_MLX_RUNTIME_ONLY` let validators exercise the risky Mac runtime path
+  without running the full installer, touching launchd, or mutating the backend
+  venv.
+- **Sidecar runtime belongs outside backend venv.** The installer now uses a
+  dedicated `${INSTALL_DIR}/runtime/mlx-sidecar-venv`, matching the manually
+  validated setup and avoiding dependency coupling between FastAPI and MLX.
+- **Known-bad model guards should fail before side effects.** The Gemma 4 guard
+  prevents repeating the validated `mlx-lm==0.31.3` incompatibility unless an
+  explicit override is set.
+- **Automation-safe means no prompts.** The disk-space confirmation still runs
+  before preflight-only exits; automated callers should set `IHN_AUTO_YES=1`
+  until that is tightened.
+- **Runtime checks can age.** `python -m mlx_lm.server --help` still exits 0,
+  but prints a deprecation warning. Future hardening should use the preferred
+  CLI invocation.
+
+Follow-up:
+
+- Launchd service hardening should use the dedicated sidecar venv and should
+  avoid deprecated `mlx_lm.server` invocation forms.

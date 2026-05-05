@@ -2,7 +2,7 @@
 
 | Sprint | Status | Request | Result | Evidence |
 |---|---|---|---|---|
-| `2026-05-04_mac-mlx-runtime-preflight` | active | `2026-05-04_mac-mlx-runtime-preflight/request.md` | `2026-05-04_mac-mlx-runtime-preflight/result.md` | `2026-05-04_mac-mlx-runtime-preflight/evidence/` |
+| `2026-05-04_mac-mlx-runtime-preflight` | completed / PASS with findings | `2026-05-04_mac-mlx-runtime-preflight/request.md` | `2026-05-04_mac-mlx-runtime-preflight/result.md` | `2026-05-04_mac-mlx-runtime-preflight/evidence/` |
 | `2026-05-03_mac-mini-mlx-sidecar-smoke` | completed / PASS with findings | `2026-05-03_mac-mini-mlx-sidecar-smoke/request.md` | `2026-05-03_mac-mini-mlx-sidecar-smoke/result.md` | `2026-05-03_mac-mini-mlx-sidecar-smoke/evidence/` |
 | `2026-05-03_ios-mac-setup-route-smoke` | completed / PASS | `2026-05-03_ios-mac-setup-route-smoke/request.md` | `2026-05-03_ios-mac-setup-route-smoke/result.md` | `2026-05-03_ios-mac-setup-route-smoke/evidence/` |
 | `2026-05-03_mlx-chat-contract-cleanup` | completed / PASS | `2026-05-03_mlx-chat-contract-cleanup/request.md` | `2026-05-03_mlx-chat-contract-cleanup/result.md` | `2026-05-03_mlx-chat-contract-cleanup/evidence/` |

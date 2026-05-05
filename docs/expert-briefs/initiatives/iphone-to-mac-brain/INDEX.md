@@ -6,14 +6,14 @@
 | `2026-05-03_ios-mac-setup-route-smoke` | completed | `validation/iphone-to-mac-brain/ios-mac-setup-route-smoke` | `mac-mini` | `mac-mini` | PASS on real iPhone 12 Pro Max; evidence in `testing/initiatives/...` | current `main` built to iPhone |
 | `2026-05-03_mlx-chat-contract-cleanup` | completed | `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup` | `Acer-HL` | backend local | PASS on `iMac-Debian`; evidence in `testing/initiatives/...` | provider seam landed |
 | `2026-05-03_mac-mini-mlx-sidecar-smoke` | completed | `validation/iphone-to-mac-brain/mac-mini-mlx-sidecar-smoke` | `iMac-Debian` | `mac-mini` | PASS with findings; Qwen2.5 sidecar works, Gemma 4 default rejected | real MLX runtime available |
-| `2026-05-04_mac-mlx-runtime-preflight` | active | `feature/iphone-to-mac-brain/mac-mlx-runtime-preflight` | `Acer-HL` | `mac-mini` | `iMac-Debian` | route smoke + real sidecar smoke complete |
+| `2026-05-04_mac-mlx-runtime-preflight` | completed | `feature/iphone-to-mac-brain/mac-mlx-runtime-preflight` | `Acer-HL` | `mac-mini` | PASS with 2 low-severity findings; evidence in `testing/initiatives/...` | route smoke + real sidecar smoke complete |
 | `2026-05-04_mac-launchd-sidecar-service` | queued | `feature/iphone-to-mac-brain/mac-launchd-sidecar-service` | `Acer-HL` or `mac-mini` | `mac-mini` | `iMac-Debian` | runtime preflight complete |
 | `2026-05-04_iphone-mac-pairing-approval` | queued | `feature/iphone-to-mac-brain/pairing-approval` | Swift-aware host | `mac-mini` | `iMac-Debian` | route smoke complete |
 | `2026-05-04_token-gated-cert-handoff` | queued | `feature/iphone-to-mac-brain/token-gated-cert-handoff` | Swift/Python split | `mac-mini` | `iMac-Debian` | pairing approval complete |
 
 ## Current Priority
 
-Next active lane: `2026-05-04_mac-mlx-runtime-preflight`.
+Next queued lane: `2026-05-04_mac-launchd-sidecar-service`.
 
 The nearest evidence gaps are now closed:
 
@@ -23,6 +23,8 @@ The nearest evidence gaps are now closed:
   `mlx-community/Qwen2.5-1.5B-Instruct-4bit`.
 - `mlx-community/gemma-4-e2b-it-4bit` is not a safe Mac MLX sidecar default for
   `mlx-lm==0.31.3`.
+- macOS installer preflight/runtime-only modes now reproduce the validated MLX
+  sidecar setup without touching launchd or backend venv.
 
-The active sprint turns that manual sidecar setup into installer preflight and
-runtime-only modes. Launchd service hardening stays queued until this lands.
+Launchd service hardening can now build on the dedicated sidecar venv and
+validated runtime-only path.
