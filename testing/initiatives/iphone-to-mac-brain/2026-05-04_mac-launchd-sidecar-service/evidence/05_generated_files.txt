@@ -1,0 +1,60 @@
+Warning: Permanently added '192.168.0.221' (ED25519) to the list of known hosts.
+=== run-mlx.sh ===
+EXISTS
+EXECUTABLE
+
+=== run-mlx.sh contents ===
+#!/usr/bin/env bash
+set -euo pipefail
+
+log_exit() {
+    local code=$?
+    local signal=""
+    if [[ $code -gt 128 ]]; then
+        signal=" (signal $((code - 128)): $(kill -l $((code - 128)) 2>/dev/null || echo "SIG?"))"
+    fi
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] mlx_lm.server exited with code ${code}${signal}" >&2
+}
+trap log_exit EXIT
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+exec "/Users/alex/.ihomenerd-smoke/mac-launchd-sidecar-service/runtime/mlx-sidecar-venv/bin/mlx_lm.server" --host 127.0.0.1 --port "12435" --model "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+
+=== run-ihomenerd.sh ===
+EXISTS
+EXECUTABLE
+
+=== run-ihomenerd.sh contents ===
+#!/usr/bin/env bash
+set -euo pipefail
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+export IHN_DATA_DIR="/Users/alex/.ihomenerd-smoke/mac-launchd-sidecar-service"
+export IHN_LAN_MODE=1
+export IHN_HOST="127.0.0.1"
+export IHN_PORT="18777"
+export IHN_OLLAMA_URL="http://127.0.0.1:11434"
+export IHN_LLM_PROVIDER="mlx"
+export IHN_MLX_MODEL="mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+export IHN_MLX_SERVER_URL="http://127.0.0.1:12435"
+export IHN_CA_CERT_PATH="/Users/alex/.ihomenerd-smoke/mac-launchd-sidecar-service/home-ca/ca.crt"
+export IHN_CA_KEY_PATH="/Users/alex/.ihomenerd-smoke/mac-launchd-sidecar-service/home-ca/ca.key"
+export IHN_CERT_LAN_IP="192.168.0.221"
+export IHN_CERT_HOSTNAMES="mac-mini-m1,Alex’s Mac mini,mac-mini-m1.local"
+cd "/Users/alex/.ihomenerd-smoke/mac-launchd-sidecar-service/backend"
+exec "/Users/alex/.ihomenerd-smoke/mac-launchd-sidecar-service/backend/.venv/bin/python" -m app.main
+
+=== Binding checks ===
+--- run-mlx.sh binds to 127.0.0.1 ---
+exec "/Users/alex/.ihomenerd-smoke/mac-launchd-sidecar-service/runtime/mlx-sidecar-venv/bin/mlx_lm.server" --host 127.0.0.1 --port "12435" --model "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+
+--- run-mlx.sh references port 12435 ---
+exec "/Users/alex/.ihomenerd-smoke/mac-launchd-sidecar-service/runtime/mlx-sidecar-venv/bin/mlx_lm.server" --host 127.0.0.1 --port "12435" --model "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+
+--- run-mlx.sh does NOT bind to 0.0.0.0 ---
+NOT FOUND (GOOD)
+
+--- run-ihomenerd.sh exports IHN_PORT ---
+NOT FOUND
+
+--- run-ihomenerd.sh exports IHN_MLX_SERVER_URL ---
+NOT FOUND

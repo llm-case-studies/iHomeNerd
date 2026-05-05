@@ -1,0 +1,2 @@
+Warning: Permanently added '192.168.0.221' (ED25519) to the list of known hosts.
+{"role":"assistant","content":"Launch daemon is working fine.","response":"Launch daemon is working fine.","text":"Launch daemon is working fine.","model":"mlx-community/Qwen2.5-1.5B-Instruct-4bit","backend":"mlx_macos","provider":"mlx"}

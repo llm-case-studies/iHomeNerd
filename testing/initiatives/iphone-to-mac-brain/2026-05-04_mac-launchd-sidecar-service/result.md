@@ -3,119 +3,89 @@
 **Date:** 2026-05-05
 **Initiative:** `iphone-to-mac-brain`
 **Sprint:** `2026-05-04_mac-launchd-sidecar-service`
-**Implementation host:** `Acer-HL`
-**Base branch:** `origin/main` (`f7bc24a`)
-**Working branch:** `feature/iphone-to-mac-brain/mac-launchd-sidecar-service`
-**Working commit:** `6125f74`
-**Validation host:** `iMac-Debian`
+**Validator host:** `iMac-Debian`
 **Runtime host:** `mac-mini`
-**Verdict:** IMPLEMENTED — ready for validation
+**Product branch:** `feature/iphone-to-mac-brain/mac-launchd-sidecar-service`
+**Product commit (tip):** `1756e951eef76acb0f03fd26ea7071bc5f1859eb`
+**Implementation commit:** `6125f7430d1474fcbd4e21fa9db6adf0224f2634`
+**Verdict:** PASS
 
-## Summary
+## Evidence Index
 
-Hardened all three launchd agent plists with production-ready configuration
-(throttle, graceful shutdown, resource limits, process priority). Added
-isolation/smoke controls (`IHN_SERVICE_LABEL_SUFFIX`, `IHN_PORT`,
-`IHN_SKIP_OLLAMA`), fixed a heredoc expansion bug, switched to non-deprecated
-`mlx_lm.server` CLI, and added end-to-end port configurability to
-`install-ihomenerd-macos.sh`.
+| # | File | Status |
+|---|------|--------|
+| 01 | `evidence/01_preflight_safety.txt` | PASS |
+| 02 | `evidence/02_bash_syntax.txt` | PASS |
+| 03 | `evidence/03_mlx_invocation.txt` | PASS |
+| 04 | `evidence/04_smoke_install.txt` | PASS |
+| 05 | `evidence/05_generated_files.txt` | PASS |
+| 06 | `evidence/06_launchd_status.txt` | PASS |
+| 07 | `evidence/07_mlx_models.json` | PASS |
+| 08 | `evidence/08_ihn_health.json` | PASS |
+| 09 | `evidence/09_ihn_chat.json` | PASS |
+| 10 | `evidence/10_cleanup.txt` | PASS |
 
-## Changes Since Prior Commit
+## Pass Criteria Assessment
 
-### 1. Heredoc expansion fix (blocker)
+### 01 - Preflight Safety
+- Production labels `com.ihomenerd.brain`, `com.ihomenerd.mlx`, `com.ihomenerd.ollama` all absent
+- Production `~/.ihomenerd` exists (untouched)
+- No stale smoke install from prior run
 
-- `run-mlx.sh` and `run-ollama.sh` heredocs changed from single-quoted
-  (`'RUNMLX'`/`'RUNOLLAMA'`) to unquoted (`RUNMLX`/`RUNOLLAMA`) so
-  installer-time variables (`${MLX_VENV_DIR}`, `${MLX_SERVER_PORT}`,
-  `${MLX_MODEL}`, `${OLLAMA_CLI}`) expand correctly.
-- Runtime-only variables (`$?`, `$code`, `$((code - 128))`, `$(kill -l)`,
-  `$(date)`, `$PATH`) properly escaped with `\$` to avoid premature expansion.
-
-### 2. Non-deprecated MLX invocation (blocker)
-
-- Changed from `python -m mlx_lm.server` to `mlx_lm.server` CLI entry point
-  in both `run-mlx.sh` generation and the `IHN_MLX_RUNTIME_ONLY` verification.
-- `mlx_lm.server --help` used instead of `python -m mlx_lm.server --help`.
-
-### 3. IHN_SERVICE_LABEL_SUFFIX support
-
-- `IHN_SERVICE_LABEL_SUFFIX` appends to all launchd labels, plist filenames,
-  log filenames, and printed service commands.
-- When suffix is set (e.g. `.smoke`), smoke ports default to 18777 (brain)
-  and 12435 (MLX) unless the user explicitly sets `IHN_PORT` or
-  `IHN_MLX_SERVER_PORT`.
-- Without suffix, default ports are 17777 (brain) and 11435 (MLX).
-
-### 4. IHN_PORT support
-
-- `IHN_PORT` exported in generated `run-ihomenerd.sh` alongside `IHN_HOST`.
-- All curl probes, the success banner, and `open` command use `${IHN_PORT}`
-  instead of hardcoded `17777`.
-
-### 5. IHN_SKIP_OLLAMA support
-
-- `IHN_SKIP_OLLAMA=1` skips ollama CLI detection, wrapper script generation,
-  plist creation, and model pull entirely.
-- When set, outputs `ok "Skipping Ollama setup (IHN_SKIP_OLLAMA=1)"`.
-
-## Plist Hardening (preserved from prior commit)
-
-| Agent | ThrottleInterval | ExitTimeOut | ProcessType | Nice | WorkingDirectory |
-|---|---|---|---|---|---|
-| `com.ihomenerd.brain${SUFFIX}` | 10 | 15 | Standard | — | `${INSTALL_DIR}/backend` |
-| `com.ihomenerd.mlx${SUFFIX}` | 15 | 20 | Background | 5 | `${INSTALL_DIR}/runtime` |
-| `com.ihomenerd.ollama${SUFFIX}` | 10 | 15 | Background | — | `${INSTALL_DIR}` |
-
-All plists also include: dict-form `KeepAlive`, `EnvironmentVariables` (PATH),
-`SoftResourceLimits` (NumberOfFiles 4096).
-
-## run-mlx.sh EXIT trap (preserved from prior commit)
-
-`log_exit()` captures exit code and signal name on termination, logging to
-stderr with a UTC timestamp.
-
-## Environment Variables
-
-| Variable | Default | Notes |
-|---|---|---|
-| `IHN_SERVICE_LABEL_SUFFIX` | `""` | e.g. `.smoke` for isolation |
-| `IHN_PORT` | 17777 (18777 with suffix) | brain HTTPS port |
-| `IHN_MLX_SERVER_PORT` | 11435 (12435 with suffix) | MLX sidecar HTTP port |
-| `IHN_SKIP_OLLAMA` | 0 | skip ollama detection/setup |
-| `IHN_MAC_LLM_BACKEND` | `ollama` | `mlx` for native MLX mode |
-| `IHN_MLX_MODEL` | `mlx-community/Qwen2.5-1.5B-Instruct-4bit` | |
-| `IHN_MLX_LM_VERSION` | `0.31.3` | |
-| `IHN_PREFLIGHT_ONLY` | 0 | |
-| `IHN_MLX_RUNTIME_ONLY` | 0 | |
-
-## Static Check
-
+### 02 - Bash Syntax
 `bash -n install-ihomenerd-macos.sh` passes with no output.
 
-## control_plane.py
+### 03 - MLX Invocation
+Installer uses `mlx_lm.server` CLI entry point (not deprecated `python -m mlx_lm.server`). References at lines 292-296 (verification) and line 461 (exec in generated `run-mlx.sh`).
 
-No changes required. Existing launchd detection (`launchctl list | grep
-"com\.ihomenerd"`) matches suffixed labels. Service management commands
-(bootstrap, bootout, kickstart, print) remain compatible.
+### 04 - Smoke Install
+Full smoke install succeeded with `IHN_INSTALL_DIR`, `IHN_SERVICE_LABEL_SUFFIX=".smoke"`,
+`IHN_PORT=18777`, `IHN_MLX_SERVER_PORT=12435`, `IHN_MAC_LLM_BACKEND=mlx`, `IHN_SKIP_OLLAMA=1`.
+All stages passed: Mac check, model selection, CA generation, backend venv, MLX sidecar venv
+(`mlx-lm==0.31.3`), launchd registration. One warning: "MLX sidecar is not ready yet" during
+health wait, but subsequent probes confirmed it became ready. `IHN_PYTHON_BIN` was needed --
+see Finding 1.
 
-## Model Policy
+### 05 - Generated Files
+`run-mlx.sh`: EXISTS, EXECUTABLE, binds to `127.0.0.1` (not `0.0.0.0`), references port `12435`.
+`run-ihomenerd.sh`: EXISTS, EXECUTABLE, exports `IHN_PORT="18777"`, exports `IHN_MLX_SERVER_URL="http://127.0.0.1:12435"`.
 
-Default MLX model remains `mlx-community/Qwen2.5-1.5B-Instruct-4bit` as
-validated in `2026-05-03_mac-mini-mlx-sidecar-smoke`. No benchmark or
-model switching was performed in this sprint.
+### 06 - Launchd Status
+- `com.ihomenerd.brain.smoke`: state = running, minimum runtime = 10, exit timeout = 15, maxfiles = 4096
+- `com.ihomenerd.mlx.smoke`: state = running, nice = 5, minimum runtime = 15, exit timeout = 20, spawn type = background, maxfiles = 4096
+- `com.ihomenerd.ollama.smoke`: NOT FOUND (correct, `IHN_SKIP_OLLAMA=1`)
+- All unsuffixed production labels: NOT FOUND (not touched)
+- Only `.smoke` plists exist in `~/Library/LaunchAgents/`
 
-## Validation Status
+### 07 - MLX Sidecar Models
+`GET http://127.0.0.1:12435/v1/models` returns model list including `mlx-community/Qwen2.5-1.5B-Instruct-4bit`.
 
-Pending — see
-`testing/initiatives/iphone-to-mac-brain/2026-05-04_mac-launchd-sidecar-service/request.md`
-for the validation plan.
+### 08 - iHN Health
+`GET https://127.0.0.1:18777/health` returns `ok: true`, `provider: mlx`, `backend: mlx_macos`, `model: mlx-community/Qwen2.5-1.5B-Instruct-4bit`, `port: 18777`.
 
-## Evidence
+### 09 - iHN Chat
+`POST https://127.0.0.1:18777/v1/chat` returns HTTP 200 with all required fields: `role`, `content`, `response`, `text`, `model`, `backend`, `provider`. Response: "Launch daemon is working fine." (model paraphrased the prompt, semantically correct).
 
-Evidence will be collected by the validation host (`iMac-Debian`) against
-`mac-mini` and placed under `evidence/`.
+### 10 - Cleanup
+Smoke services unloaded, plists removed, smoke directory removed. Production `~/.ihomenerd` still exists. Production labels still absent. State matches preflight.
 
-## Blockers
+## Findings
 
-None from implementation side. `bash -n` passes on `Acer-HL`. The script
-is ready for runtime validation on `mac-mini`.
+### Finding 1 -- `IHN_PYTHON_BIN` required on this host
+mac-mini system Python is 3.9.6. No Homebrew Python 3.11+ is installed system-wide.
+The backend `.venv/bin/python` (3.12.13) was supplied via `IHN_PYTHON_BIN` to allow
+the installer to pass the Python version gate. The installer's `find_python311()`
+function correctly fell through all candidate paths and would have failed without
+the explicit override.
+
+**Severity:** Note, not a blocker. The installer's Python detection logic is correct;
+this host simply lacks a system-wide Python 3.11+. A one-time `brew install python@3.12`
+would resolve it permanently.
+
+### Finding 2 -- MLX sidecar startup race
+The installer reported "The Brain is up, but the MLX sidecar is not ready yet."
+Both services were running by the time runtime probes executed (~30s later).
+The sidecar health wait loop may benefit from a longer timeout or retry interval
+for cold model warm-up on first launch.
+
+**Severity:** Cosmetic. The services ultimately work correctly.

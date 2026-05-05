@@ -1,0 +1,25 @@
+Warning: Permanently added '192.168.0.221' (ED25519) to the list of known hosts.
+=== Unloading smoke labels ===
+Boot-out failed: 3: No such process
+ollama.smoke (ignored): 3
+
+=== Removing smoke plists ===
+ls: /Users/alex/Library/LaunchAgents/com.ihomenerd*: No such file or directory
+No iHomeNerd plists remain
+
+=== Removing smoke install directory ===
+
+=== Verifying production labels still absent ===
+Bad request.
+Could not find service "com.ihomenerd.brain" in domain for user gui: 501
+brain: NOT FOUND (GOOD)
+Bad request.
+Could not find service "com.ihomenerd.mlx" in domain for user gui: 501
+mlx: NOT FOUND (GOOD)
+Bad request.
+Could not find service "com.ihomenerd.ollama" in domain for user gui: 501
+ollama: NOT FOUND (GOOD)
+
+=== Verifying production install state ===
+production install exists
+smoke install removed (GOOD)
