@@ -6,7 +6,7 @@
 **Implementation host:** `Acer-HL`
 **Base branch:** `origin/main` (`f7bc24a`)
 **Working branch:** `feature/iphone-to-mac-brain/mac-launchd-sidecar-service`
-**Working commit:** `TBD` (will be filled after commit)
+**Working commit:** `6125f74`
 **Validation host:** `iMac-Debian`
 **Runtime host:** `mac-mini`
 **Verdict:** IMPLEMENTED — ready for validation
