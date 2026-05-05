@@ -389,7 +389,28 @@ cat > "${LAUNCH_AGENTS_DIR}/com.ihomenerd.brain.plist" <<EOF
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
-  <true/>
+  <dict>
+    <key>SuccessfulExit</key>
+    <true/>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ExitTimeOut</key>
+  <integer>15</integer>
+  <key>ProcessType</key>
+  <string>Standard</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>SoftResourceLimits</key>
+  <dict>
+    <key>NumberOfFiles</key>
+    <integer>4096</integer>
+  </dict>
   <key>StandardOutPath</key>
   <string>/tmp/ihomenerd.log</string>
   <key>StandardErrorPath</key>
@@ -402,12 +423,23 @@ load_launch_agent "com.ihomenerd.brain" "${LAUNCH_AGENTS_DIR}/com.ihomenerd.brai
 ok "iHomeNerd launchd agent loaded"
 
 if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
-    cat > "${INSTALL_DIR}/run-mlx.sh" <<EOF
+    cat > "${INSTALL_DIR}/run-mlx.sh" <<'RUNMLX'
 #!/usr/bin/env bash
 set -euo pipefail
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH"
+
+log_exit() {
+    local code=$?
+    local signal=""
+    if [[ $code -gt 128 ]]; then
+        signal=" (signal $((code - 128)): $(kill -l $((code - 128)) 2>/dev/null || echo "SIG?"))"
+    fi
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] mlx_lm.server exited with code ${code}${signal}" >&2
+}
+trap log_exit EXIT
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 exec "${MLX_VENV_DIR}/bin/python" -m mlx_lm.server --host 127.0.0.1 --port "${MLX_SERVER_PORT}" --model "${MLX_MODEL}"
-EOF
+RUNMLX
     chmod +x "${INSTALL_DIR}/run-mlx.sh"
 
     cat > "${LAUNCH_AGENTS_DIR}/com.ihomenerd.mlx.plist" <<EOF
@@ -421,10 +453,35 @@ EOF
   <array>
     <string>${INSTALL_DIR}/run-mlx.sh</string>
   </array>
+  <key>WorkingDirectory</key>
+  <string>${INSTALL_DIR}/runtime</string>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
-  <true/>
+  <dict>
+    <key>SuccessfulExit</key>
+    <true/>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>15</integer>
+  <key>ExitTimeOut</key>
+  <integer>20</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>Nice</key>
+  <integer>5</integer>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>SoftResourceLimits</key>
+  <dict>
+    <key>NumberOfFiles</key>
+    <integer>4096</integer>
+  </dict>
   <key>StandardOutPath</key>
   <string>/tmp/ihomenerd-mlx.log</string>
   <key>StandardErrorPath</key>
@@ -439,12 +496,12 @@ fi
 
 OLLAMA_CLI="$(find_ollama_cli || true)"
 if [[ -n "$OLLAMA_CLI" ]]; then
-    cat > "${INSTALL_DIR}/run-ollama.sh" <<EOF
+    cat > "${INSTALL_DIR}/run-ollama.sh" <<'RUNOLLAMA'
 #!/usr/bin/env bash
 set -euo pipefail
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 exec "${OLLAMA_CLI}" serve
-EOF
+RUNOLLAMA
     chmod +x "${INSTALL_DIR}/run-ollama.sh"
 
     cat > "${LAUNCH_AGENTS_DIR}/com.ihomenerd.ollama.plist" <<EOF
@@ -458,10 +515,33 @@ EOF
   <array>
     <string>${INSTALL_DIR}/run-ollama.sh</string>
   </array>
+  <key>WorkingDirectory</key>
+  <string>${INSTALL_DIR}</string>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
-  <true/>
+  <dict>
+    <key>SuccessfulExit</key>
+    <true/>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ExitTimeOut</key>
+  <integer>15</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>SoftResourceLimits</key>
+  <dict>
+    <key>NumberOfFiles</key>
+    <integer>4096</integer>
+  </dict>
   <key>StandardOutPath</key>
   <string>/tmp/ihomenerd-ollama.log</string>
   <key>StandardErrorPath</key>
