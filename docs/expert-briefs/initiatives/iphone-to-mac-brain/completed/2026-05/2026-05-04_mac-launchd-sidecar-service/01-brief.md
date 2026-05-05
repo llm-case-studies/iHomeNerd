@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-05
 **Initiative:** `iphone-to-mac-brain`
-**Status:** active sprint
+**Status:** completed - PASS with findings
 **Audience:** OpenCode implementer on `Acer-HL`
 
 ## Why This Sprint Exists

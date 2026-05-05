@@ -135,3 +135,39 @@ Follow-up:
 
 - Launchd service hardening should use the dedicated sidecar venv and should
   avoid deprecated `mlx_lm.server` invocation forms.
+
+## 2026-05-05 — Mac Launchd Sidecar Service
+
+Sprint:
+
+- `2026-05-04_mac-launchd-sidecar-service`
+- Branch: `feature/iphone-to-mac-brain/mac-launchd-sidecar-service`
+- Implementation host: `Acer-HL`
+- Validation host: `iMac-Debian`
+- Runtime host: `mac-mini`
+
+Lessons:
+
+- **Smoke labels are required for real launchd validation.**
+  `IHN_SERVICE_LABEL_SUFFIX=.smoke` let validation prove launchd behavior
+  without touching production `com.ihomenerd.*` services.
+- **Smoke ports need to travel through the full stack.** `IHN_PORT=18777` and
+  `IHN_MLX_SERVER_PORT=12435` had to be reflected in generated wrappers,
+  curl probes, success output, and backend health.
+- **Skipping Ollama matters for MLX-only smoke.** `IHN_SKIP_OLLAMA=1` prevented
+  the validation install from creating an unnecessary Ollama smoke service or
+  pulling models.
+- **Installer-generated wrappers need installer-time expansion.** Quoted
+  heredocs looked cleaner but broke `${MLX_VENV_DIR}`, `${MLX_SERVER_PORT}`,
+  `${MLX_MODEL}`, and `${OLLAMA_CLI}` in generated scripts.
+- **Clean macOS Python remains a host bootstrap issue.** `mac-mini` needed
+  `IHN_PYTHON_BIN` because no system-wide Python 3.11+ was present.
+- **Cold MLX startup can outlive the first health wait.** The installer warned
+  that MLX was not ready yet, but launchd and subsequent probes confirmed the
+  sidecar came up cleanly.
+
+Follow-up:
+
+- Decide whether the installer should document, detect, or install Python 3.11+
+  on clean macOS hosts.
+- Extend or separate MLX sidecar readiness wait for first-launch cold starts.

@@ -7,13 +7,13 @@
 | `2026-05-03_mlx-chat-contract-cleanup` | completed | `feature/iphone-to-mac-brain/mlx-chat-contract-cleanup` | `Acer-HL` | backend local | PASS on `iMac-Debian`; evidence in `testing/initiatives/...` | provider seam landed |
 | `2026-05-03_mac-mini-mlx-sidecar-smoke` | completed | `validation/iphone-to-mac-brain/mac-mini-mlx-sidecar-smoke` | `iMac-Debian` | `mac-mini` | PASS with findings; Qwen2.5 sidecar works, Gemma 4 default rejected | real MLX runtime available |
 | `2026-05-04_mac-mlx-runtime-preflight` | completed | `feature/iphone-to-mac-brain/mac-mlx-runtime-preflight` | `Acer-HL` | `mac-mini` | PASS with 2 low-severity findings; evidence in `testing/initiatives/...` | route smoke + real sidecar smoke complete |
-| `2026-05-04_mac-launchd-sidecar-service` | active | `feature/iphone-to-mac-brain/mac-launchd-sidecar-service` | `Acer-HL` | `mac-mini` | `iMac-Debian` | runtime preflight complete |
+| `2026-05-04_mac-launchd-sidecar-service` | completed | `feature/iphone-to-mac-brain/mac-launchd-sidecar-service` | `Acer-HL` | `mac-mini` | PASS with 2 low-severity findings; evidence in `testing/initiatives/...` | runtime preflight complete |
 | `2026-05-04_iphone-mac-pairing-approval` | queued | `feature/iphone-to-mac-brain/pairing-approval` | Swift-aware host | `mac-mini` | `iMac-Debian` | route smoke complete |
 | `2026-05-04_token-gated-cert-handoff` | queued | `feature/iphone-to-mac-brain/token-gated-cert-handoff` | Swift/Python split | `mac-mini` | `iMac-Debian` | pairing approval complete |
 
 ## Current Priority
 
-Next active lane: `2026-05-04_mac-launchd-sidecar-service`.
+Next queued lane: `2026-05-04_iphone-mac-pairing-approval`.
 
 The nearest evidence gaps are now closed:
 
@@ -25,10 +25,12 @@ The nearest evidence gaps are now closed:
   `mlx-lm==0.31.3`.
 - macOS installer preflight/runtime-only modes now reproduce the validated MLX
   sidecar setup without touching launchd or backend venv.
+- macOS launchd sidecar service smoke passed with suffixed labels, isolated
+  smoke ports, `IHN_SKIP_OLLAMA=1`, and cleanup that left production
+  `~/.ihomenerd` untouched.
 
-Launchd service hardening is now active. It builds on the dedicated sidecar
-venv and validated runtime-only path, while keeping larger MLX models behind
-future benchmark/profile sprints.
+The Mac MLX lane now has a validated sidecar runtime and launchd lifecycle.
+Larger MLX models remain behind future benchmark/profile sprints.
 
 Model selection reference:
 
