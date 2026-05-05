@@ -27,6 +27,7 @@ from .domains.builder import router as builder_router
 from .domains.rules_router import router as rules_router
 from .domains.vision_router import router as vision_router
 from .domains.persistence_router import router as persistence_router
+from .domains.speech import router as speech_router
 from .plugins.pronunco import router as pronunco_router
 from .plugins.pronunco_persistence import router as pronunco_persistence_router
 from .plugins import pronunco_persistence
@@ -88,6 +89,7 @@ app.include_router(builder_router)
 app.include_router(rules_router)
 app.include_router(vision_router)
 app.include_router(persistence_router)
+app.include_router(speech_router)
 
 # Mount plugins
 app.include_router(pronunco_router)
@@ -450,13 +452,21 @@ async def discover_peers():
 async def capabilities():
     """Capability registry.
 
-    Returns a flat boolean map matching PronunCo's LocalCompanionCapabilities
-    interface, plus full detail under _detail for debugging.
+    Returns a structured map distinguishing core vs plugins,
+    plus full detail under _detail for debugging.
     """
     full = await capabilities_response()
-    # Flat boolean map: { "extract_lesson_items": true, ... }
-    flat = {name: info["available"] for name, info in full["capabilities"].items()}
-    return {**flat, "_detail": full}
+    
+    core_map = {}
+    plugins_map = {"pronunco": {}}
+    
+    for name, info in full["capabilities"].items():
+        if info.get("core", True):
+            core_map[name] = info["available"]
+        else:
+            plugins_map["pronunco"][name] = info["available"]
+            
+    return {"core": core_map, "plugins": plugins_map, "_detail": full}
 
 
 # Registered plugins — name + description for the System dashboard

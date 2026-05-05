@@ -1,33 +1,63 @@
-# Result - Speech Extraction + Plugin Namespace
+# Validation Result - Speech Extraction + Plugin Namespace
 
-**Status:** pending
+**Date:** 2026-05-04
+**Initiative:** `uniform-web-ui`
+**Sprint:** `2026-05-04_speech-extraction-plugin-namespace`
+**Branch:** `feature/uniform-web-ui/speech-extraction-plugin-namespace`
 
-## Verdict
+## Exact Response Shape for `/capabilities`
 
-- PASS / FAIL / PARTIAL:
+```json
+{
+    "core": {
+        "translate_text": false,
+        "chat": false,
+        "summarize_document": false,
+        "query_documents": false,
+        "ingest_folder": true,
+        "investigate_network": true,
+        "investigate_scan": true,
+        "evaluate_rules": true,
+        "transcribe_audio": false,
+        "synthesize_speech": false,
+        "analyze_image": false
+    },
+    "plugins": {
+        "pronunco": {
+            "extract_lesson_items": false,
+            "chat_persona": false,
+            "dialogue_session": false,
+            "dialogue_turn": false,
+            "pronunco_persistence": true,
+            "generate_drill": false,
+            "explain_score": false,
+            "score_pronunciation": false
+        }
+    },
+    "_detail": {
+        "...": "..."
+    }
+}
+```
 
-## Branch
+## Route Status/Result
 
-- Target branch:
-- Final tip:
+- **Speech routes (Core):**
+  - `POST /v1/transcribe-audio`: `503 Service Unavailable` ("ASR engine is not available." - Correct behavior on Acer-HL without whisper).
+  - `POST /v1/synthesize-speech`: `503 Service Unavailable` ("Kokoro model files not found. TTS unavailable." - Correct behavior).
+  - `GET /v1/voices`: `200 OK` (returns `{"available": false, "voices": []}`).
 
-## Core Findings
+- **Plugin routes:**
+  - `POST /v1/plugins/pronunco/lesson-extract`: `503 Service Unavailable` ("Lesson extraction model is not available yet." - Correct behavior since LLM backend isn't running).
 
-- `/capabilities` split:
-- Speech route extraction:
-- Plugin namespace:
-- Flat legacy route status:
-- Flat image stub status:
+- **Removed routes:**
+  - Old flat `POST /v1/lesson-extract`: `404 Not Found`.
+  - Flat `POST /v1/image-extract`: `404 Not Found`.
 
-## Evidence
+## Final Branch Tip SHA
 
-- 
+6e4976c
 
-## Regressions
+## One-line Verdict
 
-- 
-
-## Follow-On Notes
-
-- 
-
+**PASS** - All acceptance criteria met, routes are appropriately separated and `/capabilities` splits core vs plugins cleanly.
