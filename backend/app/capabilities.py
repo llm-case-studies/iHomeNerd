@@ -44,10 +44,10 @@ async def discover(llm_health: dict | None = None) -> list[Capability]:
         _cap("chat", "medium"),
         _cap("summarize_document", "medium"),
         # PronunCo plugin
-        _cap("extract_lesson_items", "medium"),
-        _cap("chat_persona", "medium"),
-        _cap("dialogue_session", "medium"),
-        _cap("dialogue_turn", "medium"),
+        _cap("extract_lesson_items", "medium", core=False),
+        _cap("chat_persona", "medium", core=False),
+        _cap("dialogue_session", "medium", core=False),
+        _cap("dialogue_turn", "medium", core=False),
         # Document RAG
         _cap("query_documents", "medium"),
         Capability(name="ingest_folder", available=True, tier="system", model=None, core=True),
@@ -65,8 +65,8 @@ async def discover(llm_health: dict | None = None) -> list[Capability]:
             extra={"profiles": persistence.storage_stats("pronunco").get("profiles", 0)},
         ),
         # Not yet implemented (stubs)
-        Capability(name="generate_drill", available=False, tier="light", core=True),
-        Capability(name="explain_score", available=False, tier="medium", core=True),
+        Capability(name="generate_drill", available=False, tier="light", core=False),
+        Capability(name="explain_score", available=False, tier="medium", core=False),
         Capability(
             name="transcribe_audio",
             available=asr.is_available(),
@@ -87,7 +87,7 @@ async def discover(llm_health: dict | None = None) -> list[Capability]:
             model=vision.available_model(),
             core=True,
         ),
-        Capability(name="score_pronunciation", available=False, tier="heavy", core=True),
+        Capability(name="score_pronunciation", available=False, tier="heavy", core=False),
     ]
 
 
