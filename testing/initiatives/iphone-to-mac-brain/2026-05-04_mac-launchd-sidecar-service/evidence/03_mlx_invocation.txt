@@ -1,0 +1,6 @@
+292:    say "Verifying mlx_lm.server..."
+293:    if "${MLX_VENV_DIR}/bin/mlx_lm.server" --help >/dev/null 2>&1; then
+294:        ok "mlx_lm.server is ready"
+296:        fail "mlx_lm.server could not be started."
+456:    echo "[\$(date -u +%Y-%m-%dT%H:%M:%SZ)] mlx_lm.server exited with code \${code}\${signal}" >&2
+461:exec "${MLX_VENV_DIR}/bin/mlx_lm.server" --host 127.0.0.1 --port "${MLX_SERVER_PORT}" --model "${MLX_MODEL}"

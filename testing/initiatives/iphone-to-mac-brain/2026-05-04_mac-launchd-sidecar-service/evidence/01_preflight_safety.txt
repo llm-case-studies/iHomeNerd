@@ -1,0 +1,22 @@
+Warning: Permanently added '192.168.0.221' (ED25519) to the list of known hosts.
+=== mac-mini hostname ===
+mac-mini-m1.local
+
+=== uname -a ===
+Darwin mac-mini-m1.local 25.4.0 Darwin Kernel Version 25.4.0: Thu Mar 19 19:32:36 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T8103 arm64
+
+=== Production labels ===
+Bad request.
+Could not find service "com.ihomenerd.brain" in domain for user gui: 501
+---
+Bad request.
+Could not find service "com.ihomenerd.mlx" in domain for user gui: 501
+---
+Bad request.
+Could not find service "com.ihomenerd.ollama" in domain for user gui: 501
+
+=== Production install ===
+production install exists
+
+=== Smoke install ===
+old smoke install absent
