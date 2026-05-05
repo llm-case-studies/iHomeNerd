@@ -214,6 +214,15 @@ MAC_LLM_BACKEND="${IHN_MAC_LLM_BACKEND:-ollama}"
 MLX_MODEL="${IHN_MLX_MODEL:-mlx-community/Qwen2.5-1.5B-Instruct-4bit}"
 MLX_LM_VERSION="${IHN_MLX_LM_VERSION:-0.31.3}"
 MLX_SERVER_PORT="${IHN_MLX_SERVER_PORT:-11435}"
+SERVICE_SUFFIX="${IHN_SERVICE_LABEL_SUFFIX:-}"
+if [[ -n "$SERVICE_SUFFIX" ]]; then
+    IHN_PORT="${IHN_PORT:-18777}"
+    if [[ "${IHN_MLX_SERVER_PORT:-}" == "" ]]; then
+        MLX_SERVER_PORT=12435
+    fi
+else
+    IHN_PORT="${IHN_PORT:-17777}"
+fi
 MODELS_TO_PULL=()
 if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
     [[ "$ARCH" == "arm64" ]] || fail "Native MLX backend requires an Apple Silicon Mac (arm64)."
@@ -253,11 +262,14 @@ if [[ "${IHN_PREFLIGHT_ONLY:-0}" == "1" ]]; then
     echo ""
     echo -e "  ${BOLD}Install directory:${NC}     ${INSTALL_DIR}"
     echo -e "  ${BOLD}Backend:${NC}               ${MAC_LLM_BACKEND}"
+    echo -e "  ${BOLD}Brain port:${NC}            ${IHN_PORT}"
     echo -e "  ${BOLD}MLX model:${NC}             ${MLX_MODEL}"
     echo -e "  ${BOLD}mlx-lm version:${NC}        ${MLX_LM_VERSION}"
     echo -e "  ${BOLD}MLX sidecar venv:${NC}      ${MLX_VENV_DIR}"
     echo -e "  ${BOLD}MLX server port:${NC}       ${MLX_SERVER_PORT}"
     echo -e "  ${BOLD}Backend venv:${NC}           ${INSTALL_DIR}/backend/.venv"
+    echo -e "  ${BOLD}Service suffix:${NC}         ${SERVICE_SUFFIX:-"(none)"}"
+    echo -e "  ${BOLD}Skip Ollama:${NC}            ${IHN_SKIP_OLLAMA:-0}"
     echo ""
     ok "Preflight checks passed. No downloads, CA creation, venv installs, launchd registration, or service starts were performed."
     exit 0
@@ -277,7 +289,7 @@ if [[ "${IHN_MLX_RUNTIME_ONLY:-0}" == "1" ]]; then
     say "Installing mlx-lm==${MLX_LM_VERSION}..."
     "${MLX_VENV_DIR}/bin/pip" install "mlx-lm==${MLX_LM_VERSION}"
     say "Verifying mlx_lm.server..."
-    if "${MLX_VENV_DIR}/bin/python" -m mlx_lm.server --help >/dev/null 2>&1; then
+    if "${MLX_VENV_DIR}/bin/mlx_lm.server" --help >/dev/null 2>&1; then
         ok "mlx_lm.server is ready"
     else
         fail "mlx_lm.server could not be started."
@@ -337,6 +349,8 @@ set -euo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH"
 export IHN_DATA_DIR="${INSTALL_DIR}"
 export IHN_LAN_MODE=1
+export IHN_HOST="127.0.0.1"
+export IHN_PORT="${IHN_PORT}"
 export IHN_OLLAMA_URL="http://127.0.0.1:11434"
 export IHN_LLM_PROVIDER="${MAC_LLM_BACKEND}"
 export IHN_MLX_MODEL="${MLX_MODEL}"
@@ -373,13 +387,18 @@ fi
 
 step "Registering launchd services"
 
-cat > "${LAUNCH_AGENTS_DIR}/com.ihomenerd.brain.plist" <<EOF
+BRAIN_LABEL="com.ihomenerd.brain${SERVICE_SUFFIX}"
+BRAIN_PLIST="${LAUNCH_AGENTS_DIR}/com.ihomenerd.brain${SERVICE_SUFFIX}.plist"
+BRAIN_LOG="/tmp/ihomenerd${SERVICE_SUFFIX}.log"
+BRAIN_ERR="/tmp/ihomenerd${SERVICE_SUFFIX}.err"
+
+cat > "${BRAIN_PLIST}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.ihomenerd.brain</string>
+  <string>${BRAIN_LABEL}</string>
   <key>ProgramArguments</key>
   <array>
     <string>${INSTALL_DIR}/run-ihomenerd.sh</string>
@@ -412,43 +431,48 @@ cat > "${LAUNCH_AGENTS_DIR}/com.ihomenerd.brain.plist" <<EOF
     <integer>4096</integer>
   </dict>
   <key>StandardOutPath</key>
-  <string>/tmp/ihomenerd.log</string>
+  <string>${BRAIN_LOG}</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/ihomenerd.err</string>
+  <string>${BRAIN_ERR}</string>
 </dict>
 </plist>
 EOF
 
-load_launch_agent "com.ihomenerd.brain" "${LAUNCH_AGENTS_DIR}/com.ihomenerd.brain.plist"
-ok "iHomeNerd launchd agent loaded"
+load_launch_agent "${BRAIN_LABEL}" "${BRAIN_PLIST}"
+ok "iHomeNerd launchd agent loaded (${BRAIN_LABEL})"
 
 if [[ "$MAC_LLM_BACKEND" == "mlx" ]]; then
-    cat > "${INSTALL_DIR}/run-mlx.sh" <<'RUNMLX'
+    cat > "${INSTALL_DIR}/run-mlx.sh" <<RUNMLX
 #!/usr/bin/env bash
 set -euo pipefail
 
 log_exit() {
-    local code=$?
+    local code=\$?
     local signal=""
-    if [[ $code -gt 128 ]]; then
-        signal=" (signal $((code - 128)): $(kill -l $((code - 128)) 2>/dev/null || echo "SIG?"))"
+    if [[ \$code -gt 128 ]]; then
+        signal=" (signal \$((code - 128)): \$(kill -l \$((code - 128)) 2>/dev/null || echo "SIG?"))"
     fi
-    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] mlx_lm.server exited with code ${code}${signal}" >&2
+    echo "[\$(date -u +%Y-%m-%dT%H:%M:%SZ)] mlx_lm.server exited with code \${code}\${signal}" >&2
 }
 trap log_exit EXIT
 
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-exec "${MLX_VENV_DIR}/bin/python" -m mlx_lm.server --host 127.0.0.1 --port "${MLX_SERVER_PORT}" --model "${MLX_MODEL}"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH"
+exec "${MLX_VENV_DIR}/bin/mlx_lm.server" --host 127.0.0.1 --port "${MLX_SERVER_PORT}" --model "${MLX_MODEL}"
 RUNMLX
     chmod +x "${INSTALL_DIR}/run-mlx.sh"
 
-    cat > "${LAUNCH_AGENTS_DIR}/com.ihomenerd.mlx.plist" <<EOF
+    MLX_LABEL="com.ihomenerd.mlx${SERVICE_SUFFIX}"
+    MLX_PLIST="${LAUNCH_AGENTS_DIR}/com.ihomenerd.mlx${SERVICE_SUFFIX}.plist"
+    MLX_LOG="/tmp/ihomenerd-mlx${SERVICE_SUFFIX}.log"
+    MLX_ERR="/tmp/ihomenerd-mlx${SERVICE_SUFFIX}.err"
+
+    cat > "${MLX_PLIST}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.ihomenerd.mlx</string>
+  <string>${MLX_LABEL}</string>
   <key>ProgramArguments</key>
   <array>
     <string>${INSTALL_DIR}/run-mlx.sh</string>
@@ -483,34 +507,41 @@ RUNMLX
     <integer>4096</integer>
   </dict>
   <key>StandardOutPath</key>
-  <string>/tmp/ihomenerd-mlx.log</string>
+  <string>${MLX_LOG}</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/ihomenerd-mlx.err</string>
+  <string>${MLX_ERR}</string>
 </dict>
 </plist>
 EOF
 
-    load_launch_agent "com.ihomenerd.mlx" "${LAUNCH_AGENTS_DIR}/com.ihomenerd.mlx.plist"
-    ok "MLX launchd agent loaded on 127.0.0.1:${MLX_SERVER_PORT}"
+    load_launch_agent "${MLX_LABEL}" "${MLX_PLIST}"
+    ok "MLX launchd agent loaded on 127.0.0.1:${MLX_SERVER_PORT} (${MLX_LABEL})"
 fi
 
 OLLAMA_CLI="$(find_ollama_cli || true)"
-if [[ -n "$OLLAMA_CLI" ]]; then
-    cat > "${INSTALL_DIR}/run-ollama.sh" <<'RUNOLLAMA'
+if [[ "${IHN_SKIP_OLLAMA:-0}" == "1" ]]; then
+    ok "Skipping Ollama setup (IHN_SKIP_OLLAMA=1)"
+elif [[ -n "$OLLAMA_CLI" ]]; then
+    cat > "${INSTALL_DIR}/run-ollama.sh" <<RUNOLLAMA
 #!/usr/bin/env bash
 set -euo pipefail
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH"
 exec "${OLLAMA_CLI}" serve
 RUNOLLAMA
     chmod +x "${INSTALL_DIR}/run-ollama.sh"
 
-    cat > "${LAUNCH_AGENTS_DIR}/com.ihomenerd.ollama.plist" <<EOF
+    OLLAMA_LABEL="com.ihomenerd.ollama${SERVICE_SUFFIX}"
+    OLLAMA_PLIST="${LAUNCH_AGENTS_DIR}/com.ihomenerd.ollama${SERVICE_SUFFIX}.plist"
+    OLLAMA_LOG="/tmp/ihomenerd-ollama${SERVICE_SUFFIX}.log"
+    OLLAMA_ERR="/tmp/ihomenerd-ollama${SERVICE_SUFFIX}.err"
+
+    cat > "${OLLAMA_PLIST}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.ihomenerd.ollama</string>
+  <string>${OLLAMA_LABEL}</string>
   <key>ProgramArguments</key>
   <array>
     <string>${INSTALL_DIR}/run-ollama.sh</string>
@@ -543,14 +574,14 @@ RUNOLLAMA
     <integer>4096</integer>
   </dict>
   <key>StandardOutPath</key>
-  <string>/tmp/ihomenerd-ollama.log</string>
+  <string>${OLLAMA_LOG}</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/ihomenerd-ollama.err</string>
+  <string>${OLLAMA_ERR}</string>
 </dict>
 </plist>
 EOF
 
-    load_launch_agent "com.ihomenerd.ollama" "${LAUNCH_AGENTS_DIR}/com.ihomenerd.ollama.plist"
+    load_launch_agent "${OLLAMA_LABEL}" "${OLLAMA_PLIST}"
     ok "Ollama launchd agent loaded"
 
     if [[ ${#MODELS_TO_PULL[@]} -gt 0 ]]; then
@@ -576,18 +607,18 @@ step "Almost there"
 
 say "Waiting for the Brain to wake up..."
 for i in $(seq 1 30); do
-    if curl -sk https://localhost:17777/discover >/dev/null 2>&1; then
+    if curl -sk "https://localhost:${IHN_PORT}/discover" >/dev/null 2>&1; then
         break
     fi
     sleep 2
 done
 
-DISCOVER_PAYLOAD="$(curl -sk https://localhost:17777/discover 2>/dev/null || true)"
-HEALTH_PAYLOAD="$(curl -sk https://localhost:17777/health 2>/dev/null || true)"
+DISCOVER_PAYLOAD="$(curl -sk "https://localhost:${IHN_PORT}/discover" 2>/dev/null || true)"
+HEALTH_PAYLOAD="$(curl -sk "https://localhost:${IHN_PORT}/health" 2>/dev/null || true)"
 if [[ -n "$DISCOVER_PAYLOAD" ]]; then
     ok "iHomeNerd Brain is up on this Mac"
 else
-    fail "iHomeNerd did not respond on https://localhost:17777"
+    fail "iHomeNerd did not respond on https://localhost:${IHN_PORT}"
 fi
 
 if echo "$HEALTH_PAYLOAD" | grep -q '"ok":true'; then
@@ -608,8 +639,9 @@ echo -e "${BOLD}${GREEN}╔═════════════════�
 echo -e "${BOLD}${GREEN}║                                                      ║${NC}"
 echo -e "${BOLD}${GREEN}║   ${BRAIN}  iHomeNerd Brain is ready on this Mac!       ║${NC}"
 echo -e "${BOLD}${GREEN}║                                                      ║${NC}"
-echo -e "${BOLD}${GREEN}║   Local:   https://localhost:17777                    ║${NC}"
-echo -e "${BOLD}${GREEN}║   LAN:     https://${LAN_IP}:17777$(printf '%*s' $((21 - ${#LAN_IP})) '')║${NC}"
+LAN_URL="https://${LAN_IP}:${IHN_PORT}"
+printf "${BOLD}${GREEN}║   Local:   https://localhost:%-5s                    ║${NC}\n" "${IHN_PORT}"
+printf "${BOLD}${GREEN}║   LAN:     %-40s ║${NC}\n" "${LAN_URL}"
 echo -e "${BOLD}${GREEN}║                                                      ║${NC}"
 echo -e "${BOLD}${GREEN}║   ${DIM}Install the iHomeNerd trust profile or CA${NC}${BOLD}${GREEN}      ║${NC}"
 echo -e "${BOLD}${GREEN}║   ${DIM}once per household to avoid browser warnings.${NC}${BOLD}${GREEN}  ║${NC}"
@@ -617,13 +649,13 @@ echo -e "${BOLD}${GREEN}║                                                     
 echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════════╝${NC}"
 echo ""
 say "Commands:"
-echo -e "  ${DIM}Status:${NC}   launchctl print user/$(id -u)/com.ihomenerd.brain"
-echo -e "  ${DIM}Stop:${NC}     launchctl bootout user/$(id -u)/com.ihomenerd.brain"
-echo -e "  ${DIM}Start:${NC}    launchctl bootstrap user/$(id -u) ~/Library/LaunchAgents/com.ihomenerd.brain.plist"
+echo -e "  ${DIM}Status:${NC}   launchctl print user/$(id -u)/${BRAIN_LABEL}"
+echo -e "  ${DIM}Stop:${NC}     launchctl bootout user/$(id -u)/${BRAIN_LABEL}"
+echo -e "  ${DIM}Start:${NC}    launchctl bootstrap user/$(id -u) ${BRAIN_PLIST}"
 echo ""
 
 if [[ "${IHN_SKIP_OPEN:-0}" != "1" ]] && command -v open >/dev/null 2>&1; then
-    open "https://localhost:17777" >/dev/null 2>&1 || true
+    open "https://localhost:${IHN_PORT}" >/dev/null 2>&1 || true
 fi
 
 say "Enjoy your new Brain! ${HOUSE}"
