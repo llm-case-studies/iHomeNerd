@@ -6,6 +6,7 @@
 **Implementation host:** `Acer-HL`
 **Base branch:** `origin/main` (`2c81a1d`)
 **Working branch:** `feature/iphone-to-mac-brain/pairing-approval`
+**Working commit:** `667d4d1`
 **Validation host:** `iMac-Debian`
 **Runtime host:** `mac-mini` (build/deploy to iPhone 12 Pro Max)
 **Verdict:** IMPLEMENTED — ready for validation
