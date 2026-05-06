@@ -2,10 +2,11 @@
 
 ## Active sprint
 
-- `active/2026-05-05_android-build-provenance-surface/`
+- `active/2026-05-06_android-nsd-observability-and-mdns-truthfulness/`
 
 ## Queued sprint candidates
 
+- `queued/2026-05-05_android-build-provenance-surface/`
 - `queued/2026-05-05_android-nsd-observability-and-mdns-truthfulness/`
 
 ## Why these are ready
