@@ -99,7 +99,10 @@ struct MacSetupScreen: View {
         .background(IhnColor.bgPrimary.ignoresSafeArea())
         .navigationBarHidden(true)
         .task {
-            await runtime.refreshPairingState()
+            while !Task.isCancelled {
+                await runtime.refreshPairingState()
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+            }
         }
     }
 

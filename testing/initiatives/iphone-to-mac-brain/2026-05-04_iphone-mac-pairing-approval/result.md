@@ -9,7 +9,7 @@
 **Working commit:** `667d4d1`
 **Validation host:** `iMac-Debian`
 **Runtime host:** `mac-mini` (build/deploy to iPhone 12 Pro Max)
-**Verdict:** IMPLEMENTED — ready for validation
+**Verdict:** IMPLEMENTED — Codex follow-up build check passed, ready for real-device validation
 
 ## Summary
 
@@ -18,27 +18,35 @@ A Mac can POST a pairing request to `:17778`, the iPhone shows it in
 MacSetupScreen with Approve/Deny controls, and the Mac polls for status.
 Replaced the stale Gemma 4 reference with the validated Qwen2.5 1.5B default.
 
+Codex follow-up on mac-mini fixed one Swift compile issue, added a polling
+refresh loop for newly created requests, added compatibility aliases for the
+Mac-side route contract, and tightened the validation request around the
+security boundary.
+
 ## Changed Files
 
 | File | Changes |
 |---|---|
-| `mobile/ios/ihn-home/IhnHome/Runtime/NodeRuntime.swift` | +270 lines — PairingStore actor, POST/GET pairing routes, async manifest with live state, Qwen2.5 default |
-| `mobile/ios/ihn-home/IhnHome/Screens/MacSetupScreen.swift` | +114 lines — Pairing requests section, Approve/Deny buttons, status badges |
+| `mobile/ios/ihn-home/IhnHome/Runtime/NodeRuntime.swift` | PairingStore actor, POST/GET pairing routes, async manifest with live state, route aliases, Qwen2.5 default |
+| `mobile/ios/ihn-home/IhnHome/Screens/MacSetupScreen.swift` | Pairing requests section, Approve/Deny buttons, status badges, periodic refresh while visible |
+| `testing/initiatives/iphone-to-mac-brain/2026-05-04_iphone-mac-pairing-approval/request.md` | Validation request, including security-boundary probes |
 
 ## New Routes
 
 ### POST /setup/mac/pairing
 
 Accepts JSON body with required `hostname` and `ip` fields, optional `arch`
-and `backend`. Returns 201 with `requestId`, `status: "pending"`, `pollUrl`,
-`createdAt`, and `expiresAt`.
+and `backend`. Also accepts `hostName`, `lanIp`, `architecture`, and
+`requestedBackend` aliases for Mac-side clients. Returns 201 with `id`,
+`requestId`, `status: "pending"`, `pollUrl`, `createdAt`, and `expiresAt`.
 
 Invalid bodies (missing/empty hostname or ip) return 400 with a detail message.
 
 ### GET /setup/mac/pairing/{id}
 
 Returns the pairing request status: `pending`, `approved`, `denied`, or
-`expired`. Response includes `hostname`, `ip`, `arch`, `backend`, timestamps.
+`expired`. Response includes `id`, `requestId`, `hostname`, `ip`, `arch`,
+`backend`, timestamps.
 
 Unknown request IDs return 404. Expired requests are marked `expired` on poll.
 
@@ -48,6 +56,8 @@ Now served asynchronously and includes live pairing state:
 - `pairing.pendingRequests`: count of pending requests
 - `pairing.latestRequest`: most recent request with id, hostname, status, timestamp
 - `pairing.pairingEndpoint`: the POST endpoint URL
+- `pairing.requestUrl`: alias for the POST endpoint URL
+- `pairing.approvalSurface`: `iphone_app`
 
 ## PairingStore Actor
 
@@ -69,7 +79,7 @@ Thread-safe actor managing in-memory pairing requests with:
 - Status badge: PENDING (yellow), APPROVED (green), DENIED (red), EXPIRED (gray)
 - Approve/Deny buttons on pending requests call the runtime's actor methods
 - Status card shows pending request count when > 0
-- `.task` modifier refreshes pairing state on view appear
+- `.task` modifier refreshes pairing state while the screen is visible
 
 ## Gemma 4 Fix
 
@@ -94,12 +104,24 @@ Swift code reviewed for:
 - Identifiable/Codable/Sendable conformance
 - Existing routes backward compatibility
 
-No syntax errors identified. Build verification must happen on `mac-mini`
-with Xcode — see validation request.
+Codex follow-up local build check on mac-mini:
+
+```bash
+xcodegen generate
+xcodebuild -project IhnHome.xcodeproj -scheme IhnHome \
+  -destination 'generic/platform=iOS Simulator' \
+  -configuration Debug -derivedDataPath ./build build CODE_SIGNING_ALLOWED=NO
+```
+
+Result: `BUILD SUCCEEDED`.
+
+This is a simulator compile/build check only. Real-device build, deploy, launch,
+and HTTP route validation still belong to the iMac-Debian/mac-mini/iPhone 12 Pro
+Max validator flow.
 
 ## Validation Status
 
-Pending — see
+Pending real-device validation — see
 `testing/initiatives/iphone-to-mac-brain/2026-05-04_iphone-mac-pairing-approval/request.md`
 for the validation plan.
 
@@ -107,3 +129,7 @@ for the validation plan.
 
 None from implementation side. The code is ready for Xcode build and iPhone
 deployment on `mac-mini`.
+
+Note: Codex's direct remote Makefile build attempt from this session hit SSH
+host-key verification friction. That does not block the normal validator path;
+validators should use the established iMac-Debian to mac-mini SSH setup.

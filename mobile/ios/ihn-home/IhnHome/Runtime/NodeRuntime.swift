@@ -1051,18 +1051,20 @@ final class NodeRuntime: ObservableObject {
 
     nonisolated private static func handleCreatePairing(request: HTTPRequest,
                                                          snapshot: BootstrapSnapshot) async -> Data {
-        guard let body = request.body, !body.isEmpty,
-              let dict = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else {
+        guard !request.body.isEmpty,
+              let dict = try? JSONSerialization.jsonObject(with: request.body) as? [String: Any] else {
             return HTTPResponse.json(["detail": "expected JSON body"], status: 400)
         }
-        guard let hostname = dict["hostname"] as? String, !hostname.trimmingCharacters(in: .whitespaces).isEmpty else {
+        let rawHostname = (dict["hostname"] as? String) ?? (dict["hostName"] as? String)
+        let rawIP = (dict["ip"] as? String) ?? (dict["lanIp"] as? String)
+        guard let hostname = rawHostname, !hostname.trimmingCharacters(in: .whitespaces).isEmpty else {
             return HTTPResponse.json(["detail": "missing or empty 'hostname'"], status: 400)
         }
-        guard let ip = dict["ip"] as? String, !ip.trimmingCharacters(in: .whitespaces).isEmpty else {
+        guard let ip = rawIP, !ip.trimmingCharacters(in: .whitespaces).isEmpty else {
             return HTTPResponse.json(["detail": "missing or empty 'ip'"], status: 400)
         }
-        let arch = dict["arch"] as? String ?? ""
-        let backend = dict["backend"] as? String ?? ""
+        let arch = (dict["arch"] as? String) ?? (dict["architecture"] as? String) ?? ""
+        let backend = (dict["backend"] as? String) ?? (dict["requestedBackend"] as? String) ?? ""
         let req = await snapshot.pairingStore.create(
             hostname: hostname.trimmingCharacters(in: .whitespaces),
             ip: ip.trimmingCharacters(in: .whitespaces),
@@ -1072,6 +1074,7 @@ final class NodeRuntime: ObservableObject {
         let base = requestBaseURL(snapshot: snapshot, request: request)
         let formatter = ISO8601DateFormatter()
         let payload: [String: Any] = [
+            "id": req.id,
             "requestId": req.id,
             "status": req.status.rawValue,
             "pollUrl": "\(base)/setup/mac/pairing/\(req.id)",
@@ -1092,6 +1095,7 @@ final class NodeRuntime: ObservableObject {
         }
         let formatter = ISO8601DateFormatter()
         let payload: [String: Any] = [
+            "id": req.id,
             "requestId": req.id,
             "hostname": req.hostname,
             "ip": req.ip,
@@ -1132,7 +1136,9 @@ final class NodeRuntime: ObservableObject {
             "oneTimeToken": false,
             "caKeyHandoff": false,
             "csrSigning": false,
+            "requestUrl": "\(base)/setup/mac/pairing",
             "pairingEndpoint": "\(base)/setup/mac/pairing",
+            "approvalSurface": "iphone_app",
             "pendingRequests": count.pending,
         ]
 
@@ -1193,37 +1199,6 @@ final class NodeRuntime: ObservableObject {
         <p>Other endpoints: <code>/setup/ca.crt</code> · <code>/setup/trust-status</code> · <code>/setup/ihomenerd.mobileconfig</code></p>
         </body></html>
         """
-    }
-
-    nonisolated private static func macSetupManifest(_ s: BootstrapSnapshot, request: HTTPRequest) -> [String: Any] {
-        let base = requestBaseURL(snapshot: s, request: request)
-        let latestReq: PairingRequest? = nil // sync access not available; see async variant
-        var manifest: [String: Any] = [
-            "product": product,
-            "version": version,
-            "setupRole": "iphone_concierge",
-            "status": "installer_pending",
-            "hostname": s.hostname,
-            "setupUrl": "\(base)/setup/mac",
-            "manifestUrl": "\(base)/setup/mac/manifest",
-            "homeCa": [
-                "fingerprintSha256": s.caFingerprint,
-                "certUrl": "\(base)/setup/ca.crt",
-            ] as [String: Any],
-            "mac": [
-                "recommendedBackend": "mlx_macos",
-                "requiresAppleSilicon": true,
-                "installerTrust": "developer_id_notarized_or_mac_app_store",
-            ] as [String: Any],
-            "pairing": [
-                "requiresUserApproval": true,
-                "oneTimeToken": false,
-                "caKeyHandoff": false,
-                "csrSigning": false,
-                "pairingEndpoint": "\(base)/setup/mac/pairing",
-            ] as [String: Any],
-        ]
-        return manifest
     }
 
     nonisolated private static func macSetupHTML(_ s: BootstrapSnapshot, request: HTTPRequest) -> String {

@@ -79,7 +79,7 @@ Save as:
 evidence/02_create_pairing.json
 ```
 
-Expected: 201 response with `requestId`, `status: "pending"`, `pollUrl`.
+Expected: 201 response with `requestId`, `id`, `status: "pending"`, `pollUrl`.
 
 ## Probe 3: Poll Pending Status
 
@@ -107,7 +107,10 @@ Save as:
 evidence/04_manifest_with_pairing.json
 ```
 
-Expected: manifest includes `pairingRequestStatus` or similar field.
+Expected: manifest includes live pairing state such as pending request count,
+latest request metadata, and the POST endpoint URL. It should also advertise
+that pairing requires iPhone approval and does not use CA-key handoff or CSR
+signing.
 
 ## Probe 5: Invalid Pairing Request
 
@@ -156,6 +159,30 @@ Record the UI behavior as:
 evidence/07_ui_approval.txt
 ```
 
+## Probe 8: Security Boundary
+
+From iMac-Debian, verify that the setup service does not expose private trust
+material or LAN-accessible approval shortcuts:
+
+```bash
+curl -i http://<iphone-ip>:17778/setup/ca.key
+curl -i -X POST http://<iphone-ip>:17778/setup/mac/pairing/<requestId>/approve
+curl -i -X POST http://<iphone-ip>:17778/setup/mac/pairing/<requestId>/deny
+curl -s http://<iphone-ip>:17778/setup/mac/manifest | python3 -m json.tool
+```
+
+Save as:
+
+```text
+evidence/08_security_boundary.txt
+```
+
+Expected:
+- `/setup/ca.key` is not served.
+- LAN approve/deny URLs are not served; approval/denial happens only in the iPhone app UI.
+- Manifest does not include private key material, approval tokens, or a client-side approval secret.
+- Manifest pairing section has `requiresUserApproval: true`, `oneTimeToken: false`, `caKeyHandoff: false`, and `csrSigning: false`.
+
 ## Pass Criteria
 
 - Existing routes (`/setup/mac`, `/setup/mac/manifest`, `/setup/ca.crt`, etc.) still respond correctly.
@@ -167,3 +194,4 @@ evidence/07_ui_approval.txt
 - MacSetupScreen shows pending requests with Approve/Deny controls.
 - No Gemma 4 reference appears in `/setup/mac` HTML output.
 - No CA private key is exposed through any route.
+- No unauthenticated LAN route can approve or deny a pairing request.
