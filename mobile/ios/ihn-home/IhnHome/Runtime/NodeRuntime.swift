@@ -12,6 +12,108 @@ import UIKit
 // expand this into the full surface (Command Center bundle, on-device
 // Home CA + .mobileconfig install, /v1/* endpoints).
 
+// MARK: - Pairing request model
+
+enum PairingStatus: String, Sendable, Codable {
+    case pending
+    case approved
+    case denied
+    case expired
+}
+
+struct PairingRequest: Sendable, Identifiable, Codable {
+    let id: String
+    let hostname: String
+    let ip: String
+    let arch: String
+    let backend: String
+    let createdAt: Date
+    var status: PairingStatus
+    let expiresAt: Date
+
+    var age: TimeInterval { Date().timeIntervalSince(createdAt) }
+    var expired: Bool { Date() > expiresAt }
+}
+
+// Thread-safe store for in-flight Mac pairing requests. The bootstrap
+// listener on :17778 writes new requests and polls status; the main-actor
+// UI reads pending requests and calls approve/deny.
+actor PairingStore {
+    private var requests: [String: PairingRequest] = [:]
+    private let expiryInterval: TimeInterval = 300
+
+    func create(hostname: String, ip: String, arch: String, backend: String) -> PairingRequest {
+        expireStale()
+        let id = UUID().uuidString
+        let now = Date()
+        let req = PairingRequest(
+            id: id,
+            hostname: hostname,
+            ip: ip,
+            arch: arch,
+            backend: backend,
+            createdAt: now,
+            status: .pending,
+            expiresAt: now.addingTimeInterval(expiryInterval)
+        )
+        requests[id] = req
+        return req
+    }
+
+    func get(id: String) -> PairingRequest? {
+        expireStale()
+        guard var req = requests[id] else { return nil }
+        if req.expired {
+            req.status = .expired
+            requests[id] = req
+        }
+        return req
+    }
+
+    func approve(id: String) -> Bool {
+        expireStale()
+        guard var req = requests[id], req.status == .pending, !req.expired else { return false }
+        req.status = .approved
+        requests[id] = req
+        return true
+    }
+
+    func deny(id: String) -> Bool {
+        expireStale()
+        guard var req = requests[id], req.status == .pending, !req.expired else { return false }
+        req.status = .denied
+        requests[id] = req
+        return true
+    }
+
+    func pendingRequests() -> [PairingRequest] {
+        expireStale()
+        return requests.values.filter { $0.status == .pending && !$0.expired }
+    }
+
+    func latestRequest() -> PairingRequest? {
+        expireStale()
+        return requests.values
+            .filter { !$0.expired }
+            .sorted { $0.createdAt > $1.createdAt }
+            .first
+    }
+
+    func requestCount() -> (pending: Int, total: Int) {
+        expireStale()
+        let active = requests.values.filter { !$0.expired }
+        return (active.filter { $0.status == .pending }.count, active.count)
+    }
+
+    private func expireStale() {
+        let now = Date()
+        for (id, var req) in requests where now > req.expiresAt && req.status == .pending {
+            req.status = .expired
+            requests[id] = req
+        }
+    }
+}
+
 // Sendable bag of identity/network info handed to nonisolated connection
 // handlers. Avoids reaching back into the @MainActor NodeRuntime from the
 // NWListener queue.
@@ -33,6 +135,7 @@ private struct BootstrapSnapshot: Sendable {
     let leafFingerprint: String
     let mobileconfig: Data
     let port: Int
+    let pairingStore: PairingStore
 }
 
 @MainActor
@@ -51,6 +154,10 @@ final class NodeRuntime: ObservableObject {
     @Published private(set) var requestCount: Int = 0
     @Published private(set) var connectionFailures: Int = 0
     @Published private(set) var bootstrapState: String = "—"
+    @Published private(set) var pendingPairingCount: Int = 0
+    @Published private(set) var pairingRequests: [PairingRequest] = []
+
+    let pairingStore = PairingStore()
 
     private var listener: NWListener?
     private var bootstrapListener: NWListener?
@@ -223,7 +330,8 @@ final class NodeRuntime: ObservableObject {
             caFingerprint: ca.fingerprintSHA256,
             leafFingerprint: identity.fingerprintSHA256,
             mobileconfig: MobileConfig.build(ca: ca, hostname: host),
-            port: Int(Self.bootstrapPort.rawValue)
+            port: Int(Self.bootstrapPort.rawValue),
+            pairingStore: pairingStore
         )
         let bootstrapParams = NWParameters.tcp
         bootstrapParams.allowLocalEndpointReuse = true
@@ -286,6 +394,25 @@ final class NodeRuntime: ObservableObject {
         homeCA = nil
         isRunning = false
         startedAt = nil
+    }
+
+    func approvePairing(id: String) async -> Bool {
+        let ok = await pairingStore.approve(id: id)
+        if ok { await refreshPairingState() }
+        return ok
+    }
+
+    func denyPairing(id: String) async -> Bool {
+        let ok = await pairingStore.deny(id: id)
+        if ok { await refreshPairingState() }
+        return ok
+    }
+
+    func refreshPairingState() async {
+        let requests = await pairingStore.pendingRequests()
+        let count = await pairingStore.requestCount()
+        pairingRequests = requests.sorted { $0.createdAt > $1.createdAt }
+        pendingPairingCount = count.pending
     }
 
     // MARK: - Connection handling (nonisolated, runs on the listener queue)
@@ -877,6 +1004,15 @@ final class NodeRuntime: ObservableObject {
             var buffer = accumulated
             if let data, !data.isEmpty { buffer.append(data) }
             if let request = HTTPRequest.parse(buffer) {
+                if isAsyncBootstrapRoute(request) {
+                    Task {
+                        let response = await handleAsyncBootstrap(request: request, snapshot: snapshot)
+                        connection.send(content: response, completion: .contentProcessed { _ in
+                            connection.cancel()
+                        })
+                    }
+                    return
+                }
                 let response = respondBootstrap(to: request, snapshot: snapshot)
                 connection.send(content: response, completion: .contentProcessed { _ in
                     connection.cancel()
@@ -891,6 +1027,83 @@ final class NodeRuntime: ObservableObject {
         }
     }
 
+    nonisolated private static func isAsyncBootstrapRoute(_ request: HTTPRequest) -> Bool {
+        if request.method == "POST" && request.path == "/setup/mac/pairing" { return true }
+        if request.method == "GET" && request.path.hasPrefix("/setup/mac/pairing/") { return true }
+        if request.method == "GET" && request.path == "/setup/mac/manifest" { return true }
+        return false
+    }
+
+    nonisolated private static func handleAsyncBootstrap(request: HTTPRequest,
+                                                          snapshot: BootstrapSnapshot) async -> Data {
+        if request.method == "POST", request.path == "/setup/mac/pairing" {
+            return await handleCreatePairing(request: request, snapshot: snapshot)
+        }
+        if request.method == "GET", request.path.hasPrefix("/setup/mac/pairing/") {
+            let id = String(request.path.dropFirst("/setup/mac/pairing/".count))
+            return await handlePollPairing(id: id, snapshot: snapshot)
+        }
+        if request.method == "GET", request.path == "/setup/mac/manifest" {
+            return await handleManifestAsync(snapshot: snapshot, request: request)
+        }
+        return HTTPResponse.text(404, "Not found\n")
+    }
+
+    nonisolated private static func handleCreatePairing(request: HTTPRequest,
+                                                         snapshot: BootstrapSnapshot) async -> Data {
+        guard let body = request.body, !body.isEmpty,
+              let dict = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else {
+            return HTTPResponse.json(["detail": "expected JSON body"], status: 400)
+        }
+        guard let hostname = dict["hostname"] as? String, !hostname.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return HTTPResponse.json(["detail": "missing or empty 'hostname'"], status: 400)
+        }
+        guard let ip = dict["ip"] as? String, !ip.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return HTTPResponse.json(["detail": "missing or empty 'ip'"], status: 400)
+        }
+        let arch = dict["arch"] as? String ?? ""
+        let backend = dict["backend"] as? String ?? ""
+        let req = await snapshot.pairingStore.create(
+            hostname: hostname.trimmingCharacters(in: .whitespaces),
+            ip: ip.trimmingCharacters(in: .whitespaces),
+            arch: arch.trimmingCharacters(in: .whitespaces),
+            backend: backend.trimmingCharacters(in: .whitespaces)
+        )
+        let base = requestBaseURL(snapshot: snapshot, request: request)
+        let formatter = ISO8601DateFormatter()
+        let payload: [String: Any] = [
+            "requestId": req.id,
+            "status": req.status.rawValue,
+            "pollUrl": "\(base)/setup/mac/pairing/\(req.id)",
+            "createdAt": formatter.string(from: req.createdAt),
+            "expiresAt": formatter.string(from: req.expiresAt),
+        ]
+        return HTTPResponse.json(payload, status: 201)
+    }
+
+    nonisolated private static func handlePollPairing(id: String,
+                                                       snapshot: BootstrapSnapshot) async -> Data {
+        let trimmed = id.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else {
+            return HTTPResponse.json(["detail": "missing request id"], status: 400)
+        }
+        guard let req = await snapshot.pairingStore.get(id: trimmed) else {
+            return HTTPResponse.json(["detail": "pairing request not found"], status: 404)
+        }
+        let formatter = ISO8601DateFormatter()
+        let payload: [String: Any] = [
+            "requestId": req.id,
+            "hostname": req.hostname,
+            "ip": req.ip,
+            "arch": req.arch,
+            "backend": req.backend,
+            "status": req.status.rawValue,
+            "createdAt": formatter.string(from: req.createdAt),
+            "expiresAt": formatter.string(from: req.expiresAt),
+        ]
+        return HTTPResponse.json(payload)
+    }
+
     nonisolated private static func respondBootstrap(to request: HTTPRequest, snapshot: BootstrapSnapshot) -> Data {
         switch (request.method, request.path) {
         case ("GET", "/setup/ca.crt"):
@@ -901,13 +1114,57 @@ final class NodeRuntime: ObservableObject {
             return HTTPResponse.mobileconfig(snapshot.mobileconfig)
         case ("GET", "/setup/mac"):
             return HTTPResponse.html(macSetupHTML(snapshot, request: request))
-        case ("GET", "/setup/mac/manifest"):
-            return HTTPResponse.json(macSetupManifest(snapshot, request: request))
         case ("GET", "/"):
             return HTTPResponse.html(bootstrapIndexHTML(snapshot))
         default:
             return HTTPResponse.text(404, "Not found\n")
         }
+    }
+
+    nonisolated private static func handleManifestAsync(snapshot: BootstrapSnapshot,
+                                                         request: HTTPRequest) async -> Data {
+        let base = requestBaseURL(snapshot: snapshot, request: request)
+        let latestReq = await snapshot.pairingStore.latestRequest()
+        let count = await snapshot.pairingStore.requestCount()
+
+        var pairingInfo: [String: Any] = [
+            "requiresUserApproval": true,
+            "oneTimeToken": false,
+            "caKeyHandoff": false,
+            "csrSigning": false,
+            "pairingEndpoint": "\(base)/setup/mac/pairing",
+            "pendingRequests": count.pending,
+        ]
+
+        if let req = latestReq {
+            let formatter = ISO8601DateFormatter()
+            pairingInfo["latestRequest"] = [
+                "requestId": req.id,
+                "hostname": req.hostname,
+                "status": req.status.rawValue,
+                "createdAt": formatter.string(from: req.createdAt),
+            ] as [String: Any]
+        }
+
+        return HTTPResponse.json([
+            "product": product,
+            "version": version,
+            "setupRole": "iphone_concierge",
+            "status": "installer_pending",
+            "hostname": snapshot.hostname,
+            "setupUrl": "\(base)/setup/mac",
+            "manifestUrl": "\(base)/setup/mac/manifest",
+            "homeCa": [
+                "fingerprintSha256": snapshot.caFingerprint,
+                "certUrl": "\(base)/setup/ca.crt",
+            ] as [String: Any],
+            "mac": [
+                "recommendedBackend": "mlx_macos",
+                "requiresAppleSilicon": true,
+                "installerTrust": "developer_id_notarized_or_mac_app_store",
+            ] as [String: Any],
+            "pairing": pairingInfo,
+        ])
     }
 
     nonisolated private static func bootstrapIndexHTML(_ s: BootstrapSnapshot) -> String {
@@ -940,7 +1197,8 @@ final class NodeRuntime: ObservableObject {
 
     nonisolated private static func macSetupManifest(_ s: BootstrapSnapshot, request: HTTPRequest) -> [String: Any] {
         let base = requestBaseURL(snapshot: s, request: request)
-        return [
+        let latestReq: PairingRequest? = nil // sync access not available; see async variant
+        var manifest: [String: Any] = [
             "product": product,
             "version": version,
             "setupRole": "iphone_concierge",
@@ -962,15 +1220,17 @@ final class NodeRuntime: ObservableObject {
                 "oneTimeToken": false,
                 "caKeyHandoff": false,
                 "csrSigning": false,
+                "pairingEndpoint": "\(base)/setup/mac/pairing",
             ] as [String: Any],
         ]
+        return manifest
     }
 
     nonisolated private static func macSetupHTML(_ s: BootstrapSnapshot, request: HTTPRequest) -> String {
         let base = requestBaseURL(snapshot: s, request: request)
         let certURL = "\(base)/setup/ca.crt"
         let manifestURL = "\(base)/setup/mac/manifest"
-        let model = "mlx-community/gemma-4-e2b-it-4bit"
+        let model = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
         let previewCommand = """
         curl -fsSL https://raw.githubusercontent.com/llm-case-studies/iHomeNerd/main/install-ihomenerd-macos.sh -o /tmp/install-ihomenerd-macos.sh
         IHN_MAC_LLM_BACKEND=mlx IHN_MLX_MODEL=\(model) IHN_SETUP_SOURCE_URL=\(base) bash /tmp/install-ihomenerd-macos.sh

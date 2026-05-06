@@ -20,6 +20,11 @@ struct MacSetupScreen: View {
                 statusCard
                     .padding(16)
 
+                if runtime.isRunning, !runtime.pairingRequests.isEmpty {
+                    pairingRequestsSection
+                        .padding(16)
+                }
+
                 VStack(spacing: 10) {
                     IhnButton(
                         title: runtime.isRunning ? "iPhone setup server is running" : "Start iPhone setup server",
@@ -93,6 +98,9 @@ struct MacSetupScreen: View {
         }
         .background(IhnColor.bgPrimary.ignoresSafeArea())
         .navigationBarHidden(true)
+        .task {
+            await runtime.refreshPairingState()
+        }
     }
 
     private var setupURLs: [String] {
@@ -113,6 +121,12 @@ struct MacSetupScreen: View {
                  ? "Open the local setup address from the Mac you want to promote."
                  : "Strong iPhones can host a session node now. When you want always-on service and larger models, promote a Mac.")
                 .ihnSecondary()
+            if runtime.isRunning, runtime.pendingPairingCount > 0 {
+                Text("\(runtime.pendingPairingCount) pending pairing request\(runtime.pendingPairingCount == 1 ? "" : "s")")
+                    .font(IhnFont.sans(13, weight: .semibold))
+                    .foregroundStyle(IhnColor.warning)
+                    .padding(.top, 2)
+            }
             if runtime.isRunning, !runtime.caFingerprintSHA256.isEmpty {
                 Text("Home CA \(elide(runtime.caFingerprintSHA256))")
                     .font(IhnFont.mono(11))
@@ -130,6 +144,106 @@ struct MacSetupScreen: View {
                         .strokeBorder(runtime.isRunning ? IhnColor.successSoftBd : IhnColor.accentSoftBd, lineWidth: 1)
                 )
         )
+    }
+
+    private var pairingRequestsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("PAIRING REQUESTS")
+                .font(IhnFont.sans(11, weight: .semibold))
+                .tracking(1.0)
+                .foregroundStyle(IhnColor.warning)
+
+            ForEach(runtime.pairingRequests) { req in
+                pairingRequestCard(req)
+            }
+        }
+    }
+
+    private func pairingRequestCard(_ req: PairingRequest) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(req.hostname)
+                        .font(IhnFont.sans(15, weight: .semibold))
+                        .foregroundStyle(IhnColor.textPrimary)
+                    Text(req.ip)
+                        .font(IhnFont.mono(12))
+                        .foregroundStyle(IhnColor.textSecondary)
+                }
+                Spacer()
+                statusBadge(req.status)
+            }
+
+            HStack(spacing: 12) {
+                if !req.arch.isEmpty {
+                    Label(req.arch, systemImage: "cpu")
+                        .font(IhnFont.mono(10))
+                        .foregroundStyle(IhnColor.textSecondary)
+                }
+                if !req.backend.isEmpty {
+                    Label(req.backend, systemImage: "brain")
+                        .font(IhnFont.mono(10))
+                        .foregroundStyle(IhnColor.textSecondary)
+                }
+                Text(relativeAge(req.createdAt))
+                    .font(IhnFont.mono(10))
+                    .foregroundStyle(IhnColor.textSecondary)
+            }
+
+            Text(elideRequestId(req.id))
+                .font(IhnFont.mono(9))
+                .foregroundStyle(IhnColor.textTertiary)
+                .padding(.top, 2)
+
+            if req.status == .pending {
+                HStack(spacing: 10) {
+                    IhnButton(title: "Approve", icon: "checkmark.shield.fill", variant: .primary) {
+                        Task { await runtime.approvePairing(id: req.id) }
+                    }
+                    IhnButton(title: "Deny", icon: "xmark.shield.fill", variant: .danger) {
+                        Task { await runtime.denyPairing(id: req.id) }
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: IhnRadius.card)
+                .fill(IhnColor.bgSurface)
+                .overlay(RoundedRectangle(cornerRadius: IhnRadius.card).strokeBorder(req.status == .pending ? IhnColor.warning.opacity(0.4) : IhnColor.border, lineWidth: 1))
+        )
+    }
+
+    private func statusBadge(_ status: PairingStatus) -> some View {
+        let (label, color): (String, Color) = {
+            switch status {
+            case .pending: return ("PENDING", IhnColor.warning)
+            case .approved: return ("APPROVED", IhnColor.success)
+            case .denied: return ("DENIED", IhnColor.error)
+            case .expired: return ("EXPIRED", IhnColor.textSecondary)
+            }
+        }()
+        return Text(label)
+            .font(IhnFont.sans(10, weight: .bold))
+            .tracking(0.8)
+            .foregroundStyle(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.12))
+            .clipShape(Capsule())
+    }
+
+    private func relativeAge(_ date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 60 { return "just now" }
+        if interval < 3600 { return "\(Int(interval / 60))m ago" }
+        return "\(Int(interval / 3600))h ago"
+    }
+
+    private func elideRequestId(_ id: String) -> String {
+        guard id.count > 12 else { return id }
+        return "\(id.prefix(8))…"
     }
 
     private func elide(_ raw: String) -> String {

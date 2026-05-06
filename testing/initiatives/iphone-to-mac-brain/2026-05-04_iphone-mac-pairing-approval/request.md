@@ -3,199 +3,167 @@
 **Date issued:** 2026-05-05
 **Initiative:** `iphone-to-mac-brain`
 **Sprint:** `2026-05-04_iphone-mac-pairing-approval`
-**Product branch:** `feature/iphone-to-mac-brain/pairing-approval`
-**Validator branch:** `validation/iphone-to-mac-brain/pairing-approval`
+**Target branch:** `feature/iphone-to-mac-brain/pairing-approval`
+**Validation branch:** `validation/iphone-to-mac-brain/pairing-approval`
 **Validation host:** `iMac-Debian`
-**Build/deploy host:** `mac-mini`
-**Device:** iPhone 12 Pro Max
+**Runtime host:** `mac-mini` (build/deploy to iPhone 12 Pro Max)
 
 ## What You Are Validating
 
-Validate that the iPhone-hosted Mac setup flow now has a real iPhone-owned
-pairing approval step.
+The iPhone MacSetupScreen now shows pending Mac pairing requests with
+Approve/Deny controls. The bootstrap service on :17778 accepts POST
+pairing requests from the Mac and returns pollable request IDs.
 
-The Mac may request pairing and poll status. The iPhone user must approve or
-deny from the app UI. No unauthenticated LAN route may approve a Mac.
-
-## Product Commit Under Test
-
-Record:
+## Branch Setup
 
 ```bash
-git rev-parse HEAD
+git status --short --branch
+git fetch origin
+git switch -c validation/iphone-to-mac-brain/pairing-approval origin/feature/iphone-to-mac-brain/pairing-approval
 ```
 
-from the product branch on the build host.
+## Build and Deploy
 
-## Preflight
+Build the iOS app on mac-mini and deploy to iPhone 12 Pro Max:
 
-Confirm:
-
-- iPhone 12 Pro Max is attached, paired, and trusted by `mac-mini`
-- the app can build/deploy using the existing iOS workflow
-- the phone and validator host are on the same LAN
-- the iPhone app is launched and hosting is enabled
-
-Save as:
-
-```text
-evidence/01_preflight.txt
+```bash
+ssh mac-mini 'cd ~/Projects/iHomeNerd && git fetch origin && git switch feature/iphone-to-mac-brain/pairing-approval && git pull --ff-only'
 ```
 
-## Build And Deploy
+Build with Xcode, deploy to iPhone, launch the app.
 
-On `mac-mini`, build and install the product branch to iPhone 12 Pro Max using
-the existing Makefile or documented iOS workflow.
+## Evidence Paths
 
-Save build/deploy logs as:
-
-```text
-evidence/02_build_deploy.txt
-```
-
-If Developer Trust blocks launch, resolve it on the device and record the
-steps. This is not a product failure unless the app still cannot launch after
-trust is granted.
-
-## Baseline Route Smoke
-
-From the validator host or `mac-mini`, probe:
-
-```text
-GET /setup/trust-status
-GET /setup/ca.crt
-GET /setup/mac
-GET /setup/mac/manifest
-```
-
-Save:
-
-```text
-evidence/03_baseline_routes.txt
-evidence/04_manifest.json
-```
-
-Assert:
-
-- `/setup/mac/manifest` returns HTTP 200 JSON
-- `pairing.requiresUserApproval` is true
-- `pairing.oneTimeToken` is false
-- `pairing.caKeyHandoff` is false
-- `pairing.csrSigning` is false
-- manifest exposes a safe way to create or discover pairing requests
-- `/setup/mac` no longer points developers at the known-bad Gemma 4 MLX model
-
-## Create Pairing Request
-
-Create a pairing request from the Mac-side route contract implemented by the
-product branch. Use realistic Mac facts:
-
-```json
-{
-  "hostName": "mac-mini",
-  "lanIp": "192.168.0.220",
-  "requestedBackend": "mlx_macos",
-  "installerVersion": "dev-source"
-}
-```
-
-Save request/response as:
-
-```text
-evidence/05_create_pairing_request.txt
-```
-
-Assert:
-
-- HTTP status is successful
-- response includes a request id
-- initial status is `pending`
-- response includes or implies a poll URL
-
-## Pending Status Poll
-
-Poll the request before approving it on the phone.
-
-Save as:
-
-```text
-evidence/06_pending_status.txt
-```
-
-Assert status is `pending`.
-
-## iPhone UI Approval
-
-On the iPhone, verify that the request is visible in the app UI with useful
-facts:
-
-- host name
-- LAN IP
-- requested backend
-- request age or timestamp
-- request id or short fingerprint
-
-Approve the request on the iPhone.
-
-Record manual evidence:
-
-```text
-evidence/07_iphone_approval_notes.txt
-```
-
-Screenshots are useful if available, but notes are acceptable.
-
-## Approved Status Poll
-
-Poll the same request after approval.
-
-Save as:
-
-```text
-evidence/08_approved_status.txt
-```
-
-Assert status is `approved`.
-
-## Denial Path
-
-Create a second request, deny it on the iPhone, and poll the result.
-
-Save as:
-
-```text
-evidence/09_denied_status.txt
-```
-
-Assert status is `denied`.
-
-## Security Checks
-
-Probe for unsafe behavior:
-
-- Home CA private key is not exposed at obvious URLs, including `/setup/ca.key`
-- manifest does not include private key material
-- manifest does not include a hidden approval token meant for the iPhone UI
-- there is no unauthenticated LAN route that approves a request
-- there is no certificate identity handoff yet
-
-Save as:
-
-```text
-evidence/10_security_checks.txt
-```
-
-## Result
-
-Fill:
+Write result to:
 
 ```text
 testing/initiatives/iphone-to-mac-brain/2026-05-04_iphone-mac-pairing-approval/result.md
 ```
 
-Verdict values:
+Put raw output under:
 
-- `PASS`
-- `PASS with findings`
-- `BLOCKED`
-- `FAIL`
+```text
+testing/initiatives/iphone-to-mac-brain/2026-05-04_iphone-mac-pairing-approval/evidence/
+```
+
+## Probe 1: Existing Routes Still Work
+
+From iMac-Debian, after starting the setup server on iPhone:
+
+```bash
+curl -s http://<iphone-ip>:17778/setup/mac/manifest | python3 -m json.tool
+curl -s http://<iphone-ip>:17778/setup/mac | head -20
+```
+
+Save as:
+
+```text
+evidence/01_existing_routes.txt
+```
+
+Check that manifest includes pairing section with `requiresUserApproval: true`.
+
+## Probe 2: Create a Pairing Request (from Mac perspective)
+
+From iMac-Debian (simulating a Mac):
+
+```bash
+curl -s -X POST http://<iphone-ip>:17778/setup/mac/pairing \
+  -H "Content-Type: application/json" \
+  -d '{"hostname":"test-mac","ip":"192.168.1.100","arch":"arm64","backend":"mlx"}' | python3 -m json.tool
+```
+
+Save as:
+
+```text
+evidence/02_create_pairing.json
+```
+
+Expected: 201 response with `requestId`, `status: "pending"`, `pollUrl`.
+
+## Probe 3: Poll Pending Status
+
+```bash
+curl -s http://<iphone-ip>:17778/setup/mac/pairing/<requestId> | python3 -m json.tool
+```
+
+Save as:
+
+```text
+evidence/03_poll_pending.json
+```
+
+Expected: `status: "pending"`, hostname, ip, arch, backend fields.
+
+## Probe 4: Manifest Includes Pairing State
+
+```bash
+curl -s http://<iphone-ip>:17778/setup/mac/manifest | python3 -m json.tool
+```
+
+Save as:
+
+```text
+evidence/04_manifest_with_pairing.json
+```
+
+Expected: manifest includes `pairingRequestStatus` or similar field.
+
+## Probe 5: Invalid Pairing Request
+
+```bash
+curl -s -X POST http://<iphone-ip>:17778/setup/mac/pairing \
+  -H "Content-Type: application/json" \
+  -d '{"hostname":""}' | python3 -m json.tool
+```
+
+Save as:
+
+```text
+evidence/05_invalid_pairing.json
+```
+
+Expected: 400 with detail message about missing/empty hostname.
+
+## Probe 6: Stale Gemma 4 Reference
+
+```bash
+curl -s http://<iphone-ip>:17778/setup/mac | grep -i "gemma"
+```
+
+Save as:
+
+```text
+evidence/06_no_gemma4.txt
+```
+
+Expected: no match (Gemma 4 should not appear).
+
+## Probe 7: MacSetupScreen UI (manual)
+
+On the iPhone:
+- Start the setup server
+- Create a pairing request from iMac-Debian (probe 2)
+- Verify the MacSetupScreen shows the pending request
+- Approve the request
+- Verify the polling endpoint returns `approved`
+- Create another request and deny it
+- Verify polling returns `denied`
+
+Record the UI behavior as:
+
+```text
+evidence/07_ui_approval.txt
+```
+
+## Pass Criteria
+
+- Existing routes (`/setup/mac`, `/setup/mac/manifest`, `/setup/ca.crt`, etc.) still respond correctly.
+- `POST /setup/mac/pairing` creates a pending request with a valid JSON body.
+- `POST /setup/mac/pairing` rejects invalid bodies with 400.
+- `GET /setup/mac/pairing/{id}` returns `pending`, `approved`, or `denied`.
+- Unknown request ID returns 404.
+- Manifest reflects current pairing request state.
+- MacSetupScreen shows pending requests with Approve/Deny controls.
+- No Gemma 4 reference appears in `/setup/mac` HTML output.
+- No CA private key is exposed through any route.
