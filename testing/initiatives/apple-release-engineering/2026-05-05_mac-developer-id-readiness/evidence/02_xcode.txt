@@ -1,0 +1,6 @@
+$ xcodebuild -version
+Xcode 26.4.1
+Build version 17E202
+
+$ xcode-select -p
+/Applications/Xcode.app/Contents/Developer

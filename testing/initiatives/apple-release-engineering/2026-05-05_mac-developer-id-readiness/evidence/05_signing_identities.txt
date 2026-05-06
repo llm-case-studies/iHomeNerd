@@ -1,0 +1,8 @@
+$ security find-identity -v -p codesigning
+     0 valid identities found
+
+$ security default-keychain -d user
+    "/Users/alex/Library/Keychains/login.keychain-db"
+
+$ security list-keychains -d user
+    "/Users/alex/Library/Keychains/login.keychain-db"

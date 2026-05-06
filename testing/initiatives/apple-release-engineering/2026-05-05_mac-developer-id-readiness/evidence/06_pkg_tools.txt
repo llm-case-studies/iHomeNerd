@@ -1,0 +1,37 @@
+$ pkgbuild --version
+pkgbuild: option `--version' requires an argument
+Usage: pkgbuild [options] --root <root-path> [--component-plist <plist-path>] <package-output-path>
+	Build a package from an xcodebuild destination root
+
+Usage: pkgbuild --analyze --root <root-path> <plist-output-path>
+	Create template component plist from an xcodebuild destination root
+
+Usage: pkgbuild [options] {--component <component-path>} <package-output-path>
+	Build a package from one or more previously-built bundles
+
+See pkgbuild(1) for details.
+
+$ productbuild --version
+productbuild: option `--version' requires an argument
+Usage: productbuild [--product <requirements-plist>] {--component <component-path> <install-path>} <product-output-path>
+	Build product with a self-contained bundle, e.g. for the Mac App Store
+
+Usage: productbuild {--content <content-path>} <product-output-path>
+	Build product with in-app content
+
+Usage: productbuild [--product <requirements-plist>] {--root <root-path> <install-path>} <product-output-path>
+	Build product with an xcodebuild destination root
+
+Usage: productbuild [options] --distribution <dist-path> [--package-path <search-path>] <product-output-path>
+	Build product with a distribution and the packages it references
+
+Usage: productbuild --synthesize [--product <requirements-plist>] {--package <pkg-path>} <distribution-output-path>
+	Synthesize and write a distribution from component packages
+
+See productbuild(1) for details.
+
+$ xcrun -f pkgbuild
+/usr/bin/pkgbuild
+
+$ xcrun -f productbuild
+/usr/bin/productbuild

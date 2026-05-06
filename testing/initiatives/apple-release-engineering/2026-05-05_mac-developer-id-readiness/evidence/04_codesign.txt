@@ -1,0 +1,10 @@
+$ codesign --version
+codesign: unrecognized option `--version'
+Usage: codesign -s identity [-fv*] [-o flags] [-r reqs] [-i ident] path ... # sign
+       codesign -v [-v*] [-R=<req string>|-R <req file path>] path|[+]pid ... # verify
+       codesign -d [options] path ... # display contents
+       codesign -h pid ... # display hosting paths
+       codesign --validate-constraint path ... # check the supplied constraint plist
+
+$ xcrun -f codesign
+/usr/bin/codesign
