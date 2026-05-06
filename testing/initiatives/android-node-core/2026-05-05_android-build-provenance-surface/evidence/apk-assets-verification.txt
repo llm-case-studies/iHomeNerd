@@ -1,0 +1,19 @@
+APK asset verification from app-debug.apk (built 2026-05-06 00:35)
+Commit at build time: feae71f
+
+WEB ASSETS (bundled Command Center):
+  assets/index.html          (414 bytes)  -- PRESENT
+  assets/assets/index-CvGfoLAD.js   (600KB) -- PRESENT
+  assets/assets/index-CyKXrGpB.css  (35KB)  -- PRESENT
+
+ASR MODELS:
+  assets/asr-models/moonshine-base-en/LICENSE         (13KB)  -- PRESENT
+  assets/asr-models/moonshine-base-en/decoder_model_merged.ort  (109MB) -- PRESENT
+  assets/asr-models/moonshine-base-en/encoder_model.ort        (31MB)  -- PRESENT
+  assets/asr-models/moonshine-base-en/tokens.txt               (549KB) -- PRESENT
+  assets/asr-models/moonshine-base-es/ (Spanish model also bundled)
+
+TRUTHFULNESS CONFIRMATION:
+  bundled_web_assets_present: true  [VERIFIED]
+  asr_prerequisites_present: true   [VERIFIED]
+  degraded_capability_state: false  [VERIFIED]

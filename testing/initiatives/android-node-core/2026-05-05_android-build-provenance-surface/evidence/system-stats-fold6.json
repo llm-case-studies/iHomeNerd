@@ -1,0 +1,67 @@
+{
+  "uptime_seconds": 554,
+  "session_count": 17,
+  "battery_percent": 100,
+  "battery_temp_c": 27.9,
+  "free_storage_bytes": 468141412352,
+  "total_storage_bytes": 494982606848,
+  "total_ram_bytes": 11655528448,
+  "app_memory_pss_bytes": 467703808,
+  "process_cpu_percent": 0.35390199637023595,
+  "thermal_status": "none",
+  "remote_client_count": 0,
+  "performance": {
+    "cpu_cores": 8,
+    "app_cpu_percent": 0.35390199637023595,
+    "app_memory_pss_bytes": 467703808,
+    "battery_temp_c": 27.9,
+    "thermal_status": "none",
+    "chat": {"request_count": 0, "last_duration_ms": null, "last_prompt_chars": null, "last_response_chars": null, "last_backend": null, "last_model_id": null, "last_language_tag": null, "last_seen": null},
+    "asr": {"request_count": 0, "last_duration_ms": null, "last_audio_bytes": null, "last_backend": null, "last_language_tag": null, "last_seen": null},
+    "tts": {"request_count": 0, "last_duration_ms": null, "last_audio_bytes": null, "last_voice": null, "last_language_tag": null, "last_seen": null}
+  },
+  "network": {
+    "transport": "wifi",
+    "preferred_ip": "192.168.0.237",
+    "ips": ["192.168.0.237"],
+    "hint": "Nearby devices on the same Wi-Fi or Android hotspot should be able to reach this node over HTTP :17778 and HTTPS :17777."
+  },
+  "server_readiness": {
+    "runtime_running": true,
+    "ports_serving": [17777, 17778],
+    "is_charging": true,
+    "charging_source": "usb",
+    "battery_percent": 100,
+    "battery_temp_c": 27.9,
+    "battery_optimization_exempt": true,
+    "thermal_status": "none",
+    "app_memory_pss_bytes": 467703808,
+    "process_cpu_percent": 0.35390199637023595,
+    "total_ram_bytes": 11655528448,
+    "network_transport": "wifi",
+    "network_ready": true,
+    "readiness_level": "ready",
+    "readiness_notes": []
+  },
+  "connected_clients": [],
+  "connected_apps": [
+    {"name": "iHN Home shell", "active_sessions": 1, "last_seen": "now"}
+  ],
+  "build_provenance": {
+    "semantic_version": "0.1.0-dev-android",
+    "build_version_code": 1,
+    "build_version_name": "0.1.0",
+    "build_git_sha": "feae71f",
+    "bundled_web_assets_present": true,
+    "web_asset_hints": {
+      "index_html_present": true,
+      "assets_dir_present": true
+    },
+    "asr_prerequisites_present": true,
+    "asr_asset_hints": {
+      "asr_engine_ready": true,
+      "moonshine_en_dir_present": true
+    },
+    "degraded_capability_state": false
+  }
+}
