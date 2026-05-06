@@ -86,6 +86,21 @@ POST /v1/summarize    — summarize text
 
 Apps like [PronunCo](https://github.com/llm-case-studies/pronunco) and TelPro-Bro can discover and connect to iHomeNerd for local AI capabilities. See `docs/PRODUCT_SPEC.md` for the full integration protocol.
 
+## office-clerk
+
+Cross-project coordination service for multi-repo, multi-host agent work:
+
+```bash
+node service/server.js
+```
+
+Endpoints on `http://127.0.0.1:17790`:
+
+- `POST /v1/log` — append structured JSON updates
+- `GET /v1/state` — current actor state
+- `GET /v1/summary` — compact narrative summary
+- `POST /v1/chat/completions` — compatibility response backed by summary text
+
 ## Related projects
 
 - [RoadNerd](https://github.com/llm-case-studies/RoadNerd) — portable offline IT diagnostics (separate project, different deployment model)
