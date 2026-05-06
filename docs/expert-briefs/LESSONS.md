@@ -59,3 +59,47 @@ Lessons:
 - **Validation can produce product fixes.** Evidence sprints should be allowed
   to close with "PASS with findings" when the path works but a default, doc, or
   installer assumption needs immediate correction.
+
+## 2026-05-06 — Cross-Repo Client Validation Needs Real Homes
+
+Context:
+
+- Initiative: `uniform-web-ui`
+- iHomeNerd sprint:
+  `feature/uniform-web-ui/speech-extraction-plugin-namespace`
+- Paired client sprint:
+  `PronunCo` `feature/local-companion-plugin-namespace-adoption`
+- Validation host: `iMac-Debian`
+
+Lessons:
+
+- **Client repos need their own evidence lanes.** The `feature/...` vs
+  `validation/...` split worked well in practice. Product branches should hold
+  implementation only; paired rollout notes and evidence should land on the
+  client repo's `validation/<initiative>/<sprint>` branch.
+- **Pre-seed client repos on the validation host.** The first validator stalled
+  because `PronunCo` was not checked out on `iMac-Debian`. Cross-repo prompts
+  should not assume a client repo exists; host preparation must create a real
+  validation checkout first.
+- **Pre-seed the dependency harness too.** A repo checkout alone is not enough
+  for client validation. UI test dependencies and any runtime harness needed for
+  live probes should be installed or copied before handing the sprint to a
+  validator.
+- **Keep paired old/new platform worktrees available.** Having
+  `iHomeNerd` old-contract and new-contract worktrees side by side on the
+  validation host made dual-stack client verification much cleaner than
+  repeatedly switching one checkout.
+- **Distinguish workflow validation from stronger runtime validation.** A
+  second reviewer who confirms branch usage, test flow, and source-level
+  contract alignment is useful, but it does not replace earlier live backend
+  probing. Result notes should say clearly which one happened.
+- **Preserve merge order in the docs.** For contract migrations, the validation
+  result should restate the expected merge order explicitly:
+  `client feature -> platform feature -> cleanup sprint`.
+
+Follow-up:
+
+- Add host-readiness notes to future client validation kickoff prompts:
+  repo path, branch, dependency state, and any paired platform worktrees.
+- Treat the first successful client validation host setup as reusable
+  infrastructure, not as one-off sprint glue.
