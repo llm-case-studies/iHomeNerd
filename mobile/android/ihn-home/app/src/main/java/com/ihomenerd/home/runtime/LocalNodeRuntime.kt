@@ -1062,6 +1062,7 @@ object LocalNodeRuntime {
                     .put("hint", state.localNetworkHint ?: JSONObject.NULL)
             )
             .put("server_readiness", serverReadinessJson(state, batteryPercent, batteryTempC, thermalStatus, processCpuPercent, totalRamBytes, appMemoryPssBytes))
+            .put("service_advertisement", nsdRegistrationJson())
             .put("connected_clients", connectedClients)
             .put("connected_apps", connectedApps)
             .put("build_provenance", buildProvenanceJson())
@@ -1078,6 +1079,19 @@ object LocalNodeRuntime {
             .put("homeCa", JSONObject().put("present", false))
             .put("serverCert", JSONObject().put("present", false))
         return AndroidTlsManager.trustStatusJson(context, state.nodeName, state.localIp, state.localIps)
+    }
+
+    private fun nsdRegistrationJson(): JSONObject {
+        val nsdState = AndroidServiceAdvertiser.registrationState.value
+        return JSONObject()
+            .put("attempted", nsdState.attempted)
+            .put("currently_registered", nsdState.currentlyRegistered)
+            .put("lifecycle_state", nsdState.lifecycleState)
+            .put("service_type", nsdState.serviceType ?: JSONObject.NULL)
+            .put("service_name", nsdState.serviceName ?: JSONObject.NULL)
+            .put("hostname", nsdState.hostname ?: JSONObject.NULL)
+            .put("port", nsdState.port ?: JSONObject.NULL)
+            .put("last_error_code", nsdState.lastErrorCode ?: JSONObject.NULL)
     }
 
     private fun healthJson(): JSONObject {
@@ -1107,6 +1121,7 @@ object LocalNodeRuntime {
             .put("network_ips", JSONArray(state.localIps))
             .put("port", state.port)
             .put("server_readiness", serverReadinessJson(state, batteryPercent, batteryTempC, thermalStatus, processCpuPercent, totalRamBytes, appMemoryPssBytes))
+            .put("service_advertisement", nsdRegistrationJson())
             .put("build_provenance", buildProvenanceJson())
     }
 
