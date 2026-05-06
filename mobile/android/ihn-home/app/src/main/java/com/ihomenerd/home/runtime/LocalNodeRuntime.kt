@@ -1064,6 +1064,7 @@ object LocalNodeRuntime {
             .put("server_readiness", serverReadinessJson(state, batteryPercent, batteryTempC, thermalStatus, processCpuPercent, totalRamBytes, appMemoryPssBytes))
             .put("connected_clients", connectedClients)
             .put("connected_apps", connectedApps)
+            .put("build_provenance", buildProvenanceJson())
     }
 
     private fun trustStatusJson(): JSONObject {
@@ -1106,6 +1107,7 @@ object LocalNodeRuntime {
             .put("network_ips", JSONArray(state.localIps))
             .put("port", state.port)
             .put("server_readiness", serverReadinessJson(state, batteryPercent, batteryTempC, thermalStatus, processCpuPercent, totalRamBytes, appMemoryPssBytes))
+            .put("build_provenance", buildProvenanceJson())
     }
 
     private fun discoverJson(): JSONObject {
@@ -1692,6 +1694,42 @@ object LocalNodeRuntime {
             .put("quality_profiles", JSONArray(nodeQualityProfiles()))
             .put("suggested_roles", JSONArray(listOf("travel-node", "light-specialist", "pronunco-helper")))
             .put("hostname", state.nodeName)
+    }
+
+    private fun buildProvenanceJson(): JSONObject {
+        val context = appContext
+        
+        val hasIndexHtml = try {
+            context?.assets?.open("index.html")?.use { it.read() } != null
+        } catch (e: Exception) { false }
+        val hasAssetsDir = try {
+            (context?.assets?.list("assets")?.isNotEmpty()) == true
+        } catch (e: Exception) { false }
+
+        val asrAvailable = context?.let { AndroidAsrEngine.isReady(it) } ?: false
+        val hasMoonshineBaseEn = try {
+            (context?.assets?.list("asr-models/moonshine-base-en")?.isNotEmpty()) == true
+        } catch (e: Exception) { false }
+        
+        val webAssetsPresent = hasIndexHtml || hasAssetsDir
+        val asrAssetsPresent = asrAvailable || hasMoonshineBaseEn
+
+        return JSONObject()
+            .put("semantic_version", VERSION)
+            .put("build_version_code", com.ihomenerd.home.BuildConfig.VERSION_CODE)
+            .put("build_version_name", com.ihomenerd.home.BuildConfig.VERSION_NAME)
+            .put("build_git_sha", com.ihomenerd.home.BuildConfig.GIT_SHA)
+            .put("bundled_web_assets_present", webAssetsPresent)
+            .put("web_asset_hints", JSONObject()
+                .put("index_html_present", hasIndexHtml)
+                .put("assets_dir_present", hasAssetsDir)
+            )
+            .put("asr_prerequisites_present", asrAssetsPresent)
+            .put("asr_asset_hints", JSONObject()
+                .put("asr_engine_ready", asrAvailable)
+                .put("moonshine_en_dir_present", hasMoonshineBaseEn)
+            )
+            .put("degraded_capability_state", !webAssetsPresent || !asrAssetsPresent)
     }
 
     private fun serverReadinessJson(

@@ -1,3 +1,16 @@
+fun getGitSha(): String {
+    return try {
+        val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+            .redirectErrorStream(true)
+            .start()
+        process.waitFor()
+        val sha = process.inputStream.bufferedReader().readText().trim()
+        if (sha.isNotEmpty()) sha else "unknown"
+    } catch (e: Exception) {
+        "unknown"
+    }
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -13,6 +26,8 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+
+        buildConfigField("String", "GIT_SHA", "\"${getGitSha()}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -37,6 +52,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
