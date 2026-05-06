@@ -85,16 +85,34 @@ Use the smoke level that matches the sprint:
 
 ## Near-Term Milestones
 
-1. Live iPhone route smoke for `/setup/mac` and `/setup/mac/manifest`.
-2. Cross-platform `/v1/chat` contract cleanup.
-3. Real Mac mini MLX sidecar smoke through iHN.
-4. macOS preflight and installer hardening.
-5. iPhone approve/deny pairing flow.
-6. Token-gated certificate handoff.
+1. Completed: live iPhone route smoke for `/setup/mac` and
+   `/setup/mac/manifest`.
+2. Completed: cross-platform `/v1/chat` contract cleanup.
+3. Completed: real Mac mini MLX sidecar smoke through iHN.
+4. Completed: macOS preflight, runtime, and launchd installer hardening.
+5. Active: iPhone approve/deny pairing flow.
+6. Next: token-gated certificate handoff.
+
+## Release Engineering Dependency
+
+Customer-facing Mac promotion depends on Apple release engineering, but product
+pairing work can continue in parallel.
+
+Track Apple signing, notarization, packaging, and App Store/TestFlight work in:
+
+- `docs/expert-briefs/initiatives/apple-release-engineering/`
+
+Near-term dependency split:
+
+- `iphone-to-mac-brain`: pairing UX, token-gated trust handoff, Mac setup
+  product flow.
+- `apple-release-engineering`: Developer ID readiness, notarization proof,
+  installer wrapper shape, iOS/TestFlight/App Store release discipline.
 
 ## Source Docs
 
 - `docs/expert-briefs/initiatives/iphone-to-mac-brain/LESSONS.md`
+- `docs/expert-briefs/initiatives/apple-release-engineering/README.md`
 - `docs/IPHONE_TO_MAC_BRAIN_SETUP_VISION_2026-05-01.md`
 - `docs/APPLE_SILICON_NATIVE_MLX_HOSTING_2026-05-01.md`
 - `mobile/testing/requests/IPHONE_TO_MAC_BRAIN_SETUP_AND_MLX_PROVIDER_TEST_REQUEST_2026-05-02.md`

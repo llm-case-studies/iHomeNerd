@@ -8,12 +8,14 @@
 | `2026-05-03_mac-mini-mlx-sidecar-smoke` | completed | `validation/iphone-to-mac-brain/mac-mini-mlx-sidecar-smoke` | `iMac-Debian` | `mac-mini` | PASS with findings; Qwen2.5 sidecar works, Gemma 4 default rejected | real MLX runtime available |
 | `2026-05-04_mac-mlx-runtime-preflight` | completed | `feature/iphone-to-mac-brain/mac-mlx-runtime-preflight` | `Acer-HL` | `mac-mini` | PASS with 2 low-severity findings; evidence in `testing/initiatives/...` | route smoke + real sidecar smoke complete |
 | `2026-05-04_mac-launchd-sidecar-service` | completed | `feature/iphone-to-mac-brain/mac-launchd-sidecar-service` | `Acer-HL` | `mac-mini` | PASS with 2 low-severity findings; evidence in `testing/initiatives/...` | runtime preflight complete |
-| `2026-05-04_iphone-mac-pairing-approval` | queued | `feature/iphone-to-mac-brain/pairing-approval` | Swift-aware host | `mac-mini` | `iMac-Debian` | route smoke complete |
+| `2026-05-04_iphone-mac-pairing-approval` | active | `feature/iphone-to-mac-brain/pairing-approval` | `Acer-HL` or Swift-aware host | `mac-mini` | `iMac-Debian` | route smoke complete |
 | `2026-05-04_token-gated-cert-handoff` | queued | `feature/iphone-to-mac-brain/token-gated-cert-handoff` | Swift/Python split | `mac-mini` | `iMac-Debian` | pairing approval complete |
 
 ## Current Priority
 
-Next queued lane: `2026-05-04_iphone-mac-pairing-approval`.
+Active lane: `2026-05-04_iphone-mac-pairing-approval`.
+
+Next queued lane: `2026-05-04_token-gated-cert-handoff`.
 
 The nearest evidence gaps are now closed:
 

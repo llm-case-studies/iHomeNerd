@@ -2,6 +2,7 @@
 
 | Sprint | Status | Request | Result | Evidence |
 |---|---|---|---|---|
+| `2026-05-04_iphone-mac-pairing-approval` | active | `2026-05-04_iphone-mac-pairing-approval/request.md` | `2026-05-04_iphone-mac-pairing-approval/result.md` | `2026-05-04_iphone-mac-pairing-approval/evidence/` |
 | `2026-05-04_mac-launchd-sidecar-service` | completed / PASS with findings | `2026-05-04_mac-launchd-sidecar-service/request.md` | `2026-05-04_mac-launchd-sidecar-service/result.md` | `2026-05-04_mac-launchd-sidecar-service/evidence/` |
 | `2026-05-04_mac-mlx-runtime-preflight` | completed / PASS with findings | `2026-05-04_mac-mlx-runtime-preflight/request.md` | `2026-05-04_mac-mlx-runtime-preflight/result.md` | `2026-05-04_mac-mlx-runtime-preflight/evidence/` |
 | `2026-05-03_mac-mini-mlx-sidecar-smoke` | completed / PASS with findings | `2026-05-03_mac-mini-mlx-sidecar-smoke/request.md` | `2026-05-03_mac-mini-mlx-sidecar-smoke/result.md` | `2026-05-03_mac-mini-mlx-sidecar-smoke/evidence/` |
