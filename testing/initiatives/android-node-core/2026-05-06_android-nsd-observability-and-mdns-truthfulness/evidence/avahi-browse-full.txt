@@ -1,0 +1,12 @@
++ enp4s0f0 IPv6 iHomeNerd on sm-f956u                         _ihomenerd._tcp      local
++ enp4s0f0 IPv4 iHomeNerd on sm-f956u                         _ihomenerd._tcp      local
+= enp4s0f0 IPv6 iHomeNerd on sm-f956u                         _ihomenerd._tcp      local
+   hostname = [sm-f956u.local]
+   address = [192.168.0.237]
+   port = [17777]
+   txt = ["version=0.1.0-dev-android" "role=brain" "hostname=sm-f956u.local"]
+= enp4s0f0 IPv4 iHomeNerd on sm-f956u                         _ihomenerd._tcp      local
+   hostname = [sm-f956u.local]
+   address = [192.168.0.237]
+   port = [17777]
+   txt = ["version=0.1.0-dev-android" "role=brain" "hostname=sm-f956u.local"]
