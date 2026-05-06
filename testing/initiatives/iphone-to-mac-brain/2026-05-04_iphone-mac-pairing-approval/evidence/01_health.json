@@ -1,0 +1,24 @@
+{
+    "available_capabilities": [
+        "text_to_speech",
+        "speech_to_text",
+        "transcribe_audio",
+        "analyze_image",
+        "chat"
+    ],
+    "binding": "0.0.0.0",
+    "hostname": "iphone",
+    "models": {},
+    "network_ips": [
+        "192.168.0.220"
+    ],
+    "ok": true,
+    "ollama": false,
+    "port": 17777,
+    "product": "iHomeNerd",
+    "providers": [
+        "ios_local"
+    ],
+    "status": "ok",
+    "version": "0.1.0-dev-ios"
+}

@@ -1,0 +1,11 @@
+{
+  "arch" : "arm64",
+  "backend" : "mlx_macos",
+  "createdAt" : "2026-05-06T02:06:42Z",
+  "expiresAt" : "2026-05-06T02:11:42Z",
+  "hostname" : "mac-mini-m1.local",
+  "id" : "2F081F0A-7583-4951-981C-3BEF05EBDF80",
+  "ip" : "192.168.0.221",
+  "requestId" : "2F081F0A-7583-4951-981C-3BEF05EBDF80",
+  "status" : "pending"
+}

@@ -1,0 +1,7 @@
+Grep for "gemma" (case-insensitive) across:
+  - GET /setup/mac HTML
+  - GET /setup/mac/manifest JSON
+  - Source code on feature/iphone-to-mac-brain/pairing-approval (grepped NodeRuntime.swift)
+
+Result: Zero matches. Model referenced in setup HTML is "mlx-community/Qwen2.5-1.5B-Instruct-4bit".
+EXIT:1 (grep found no matches)

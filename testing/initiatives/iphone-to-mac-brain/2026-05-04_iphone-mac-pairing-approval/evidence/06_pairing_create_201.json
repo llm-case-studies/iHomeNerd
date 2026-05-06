@@ -1,0 +1,9 @@
+{
+  "createdAt" : "2026-05-06T02:06:42Z",
+  "expiresAt" : "2026-05-06T02:11:42Z",
+  "id" : "2F081F0A-7583-4951-981C-3BEF05EBDF80",
+  "pollUrl" : "http://192.168.0.220:17778/setup/mac/pairing/2F081F0A-7583-4951-981C-3BEF05EBDF80",
+  "requestId" : "2F081F0A-7583-4951-981C-3BEF05EBDF80",
+  "status" : "pending"
+}
+HTTP_CODE:201

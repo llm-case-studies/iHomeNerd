@@ -1,0 +1,34 @@
+{
+    "homeCa": {
+        "certUrl": "http://192.168.0.220:17778/setup/ca.crt",
+        "fingerprintSha256": "50:67:99:18:61:C9:5E:3F:1A:01:18:62:2B:13:F7:3A:BC:98:3F:1B:E1:C2:48:43:BE:C5:9B:DF:0F:16:3F:D5"
+    },
+    "hostname": "iphone",
+    "mac": {
+        "installerTrust": "developer_id_notarized_or_mac_app_store",
+        "recommendedBackend": "mlx_macos",
+        "requiresAppleSilicon": true
+    },
+    "manifestUrl": "http://192.168.0.220:17778/setup/mac/manifest",
+    "pairing": {
+        "approvalSurface": "iphone_app",
+        "caKeyHandoff": false,
+        "csrSigning": false,
+        "latestRequest": {
+            "createdAt": "2026-05-06T02:06:42Z",
+            "hostname": "mac-mini-m1.local",
+            "requestId": "2F081F0A-7583-4951-981C-3BEF05EBDF80",
+            "status": "pending"
+        },
+        "oneTimeToken": false,
+        "pairingEndpoint": "http://192.168.0.220:17778/setup/mac/pairing",
+        "pendingRequests": 1,
+        "requestUrl": "http://192.168.0.220:17778/setup/mac/pairing",
+        "requiresUserApproval": true
+    },
+    "product": "iHomeNerd",
+    "setupRole": "iphone_concierge",
+    "setupUrl": "http://192.168.0.220:17778/setup/mac",
+    "status": "installer_pending",
+    "version": "0.1.0-dev-ios"
+}

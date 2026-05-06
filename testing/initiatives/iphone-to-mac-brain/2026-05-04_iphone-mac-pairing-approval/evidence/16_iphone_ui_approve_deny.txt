@@ -1,0 +1,24 @@
+iPhone UI approve/deny behavior (code-level verification):
+
+The MacSetupScreen.swift includes a pairingRequestsSection that renders a card
+for each pending PairingRequest (status == .pending). Each card shows:
+  - hostname, ip, arch, backend, age
+  - Request ID (truncated)
+  - "Approve" button (shield checkmark) -> calls runtime.approvePairing(id:)
+  - "Deny" button (shield xmark) -> calls runtime.denyPairing(id:)
+
+approvePairing()/denyPairing() operate on the PairingStore actor, which:
+  - Only transitions from .pending status
+  - Enforces expiry (5-minute window)
+  - Rejects stale/expired requests
+
+The screen polls runtime.refreshPairingState() every 2 seconds to update
+pairingRequests and pendingPairingCount live.
+
+Status badges shown: PENDING (yellow), APPROVED (green), DENIED (red),
+EXPIRED (gray).
+
+Manual verification: The UI could not be directly verified from the remote
+validation host. Code review confirms the approve/deny buttons are rendered
+and wired to the PairingStore actor. The pairing request created via the
+API (2F081F0A-...) appeared in the manifest with status "pending".

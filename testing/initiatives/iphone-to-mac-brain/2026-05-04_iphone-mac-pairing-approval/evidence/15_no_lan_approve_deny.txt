@@ -1,0 +1,10 @@
+Probing LAN approve/deny shortcuts:
+
+POST /setup/mac/pairing/{id}/approve  -> 404 Not found
+POST /setup/mac/pairing/{id}/deny     -> 404 Not found
+PUT  /setup/mac/pairing/{id}          -> 404 Not found
+GET  /setup/mac/pairing/              -> 400 missing request id
+
+No LAN-based approve/deny endpoint exists. Approval is only possible through
+the iPhone UI (MacSetupScreen) which calls NodeRuntime.approvePairing/denyPairing
+on the main actor.

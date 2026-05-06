@@ -1,0 +1,14 @@
+{
+    "homeCa": {
+        "fingerprintSha256": "50:67:99:18:61:C9:5E:3F:1A:01:18:62:2B:13:F7:3A:BC:98:3F:1B:E1:C2:48:43:BE:C5:9B:DF:0F:16:3F:D5",
+        "present": true
+    },
+    "hostname": "iphone",
+    "product": "iHomeNerd",
+    "serverCert": {
+        "fingerprintSha256": "6A:01:77:14:6B:4F:F8:0F:EB:CA:B5:A3:FA:17:BB:70:21:4C:B3:34:28:2D:16:5F:07:49:63:1C:DC:65:4C:60",
+        "present": true
+    },
+    "status": "trusted",
+    "version": "0.1.0-dev-ios"
+}
