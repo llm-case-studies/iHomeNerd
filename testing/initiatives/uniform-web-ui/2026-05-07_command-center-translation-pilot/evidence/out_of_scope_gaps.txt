@@ -1,0 +1,56 @@
+Out-of-Scope Gaps
+==================
+
+Date: 2026-05-07
+
+These gaps are recorded as known limitations, not failures.
+They match the out-of-scope list from the sprint brief and request.md.
+
+1. Non-pilot UI languages (zh, ko, ja, de, it, pt)
+---------------------------------------------------
+File: frontend/src/lib/i18n.ts, landing/src/i18n.ts
+  Each has only 111 translation keys (vs 185 for en/es/fr/ru).
+  ~44 scoped Command Center keys fall back to English.
+  Languages: Chinese (zh), Korean (ko), Japanese (ja),
+             German (de), Italian (it), Portuguese (pt).
+
+2. ScoutFlow modal copy
+-------------------------
+File: landing/src/ScoutFlow.tsx
+  All modal content is hard-coded English.
+  Not i18n-backed. Landing only component.
+
+3. Landing-page narrative sections and setup cards
+---------------------------------------------------
+File: landing/src/LandingPage.tsx (and sub-components)
+  Narrative text, hero sections, feature descriptions, setup path
+  cards are hard-coded English strings in JSX. Some share i18n keys
+  with the Command Center but landing-specific content is not
+  localized.
+
+4. TranslatePanel source/target language option names
+------------------------------------------------------
+File: frontend/src/components/TranslatePanel.tsx (lines 7-15)
+  const LANGUAGES = [
+    { code: 'auto', name: 'Auto Detect' },
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'zh', name: 'Chinese' },
+    { code: 'ja', name: 'Japanese' },
+  ];
+  Language names are hard-coded English. These are the values the
+  Translate backend receives (language codes), but the display names
+  shown to the user are not localized.
+
+5. System low-level diagnostic values
+--------------------------------------
+  Model IDs, backend names, route names, capability IDs, hostnames,
+  API-derived status values, metric numbers — intentionally untranslated.
+  These are product/technical tokens or runtime values.
+
+6. No new language codes added
+--------------------------------
+  SUPPORTED_UI_LANGUAGES unchanged at 10 languages.
+  No new UI language selectors or routes added.

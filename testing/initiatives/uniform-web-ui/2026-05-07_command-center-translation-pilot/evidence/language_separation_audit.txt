@@ -1,0 +1,70 @@
+Language Separation Audit
+==========================
+
+Date: 2026-05-07
+
+1. document.documentElement.lang
+--------------------------------
+Source: frontend/src/lib/languageUtils.ts (line 26, 32)
+Mechanism:
+  - setDocumentLang(code): sets document.documentElement.lang = code
+  - persistLanguage(code): calls setDocumentLang + localStorage.setItem
+  - initLanguagePersistence(): calls resolveInitialLanguage(), sets initial lang,
+    listens to 'languageChanged' event to persist
+  - resolveInitialLanguage(): checks ?lng URL param first, then localStorage,
+    then DEFAULT_UI_LANGUAGE ('en')
+  Landing uses identical mechanism (landing/src/lib/languageUtils.ts)
+
+Result: PASS - Works as designed (client-side, can't verify in headless curl
+but code audit confirms correct implementation)
+
+2. localStorage key: ihomenerd.ui.language
+-------------------------------------------
+Source: frontend/src/lib/languageUtils.ts (line 4)
+  const STORAGE_KEY = 'ihomenerd.ui.language';
+  Landing uses same key (landing/src/lib/languageUtils.ts line 4)
+
+  Verified in built JS bundle: "ihomenerd.ui.language" string present.
+
+Result: PASS
+
+3. Chat language (i18n.language)
+---------------------------------
+Source: frontend/src/components/ChatPanel.tsx (line 56)
+  api.chat(apiMessages, null, i18n.language)
+  Chat sends i18n.language (UI language) as the chat language parameter.
+  This is by design - Chat language = UI locale.
+
+Result: PASS - i18n.language correctly passed to chat API
+
+4. Talk ASR/TTS language separation
+-------------------------------------
+Source: frontend/src/components/TalkPanel.tsx
+  TTS_LANG_MAP (line 15-19): Maps UI language codes to BCP-47 tags:
+    es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU'
+  The Talk panel has:
+    - selectedAsrLanguage state (separate from UI locale)
+    - voice.languageTag (BCP-47 tags per voice from TTS backend)
+    - recognition language selector (separate control)
+  TTS default derives from i18n.language via TTS_LANG_MAP but voice
+  selection is independent.
+
+Result: PASS - BCP-47 tags used for ASR/TTS, separate controls exist
+
+5. Translate source/target language separation
+-----------------------------------------------
+Source: frontend/src/components/TranslatePanel.tsx
+  const [sourceLang, setSourceLang] = useState('auto');
+  const [targetLang, setTargetLang] = useState('es');
+  Source and target language are separate React states, independent from
+  i18n.language (UI locale).
+
+Result: PASS - Source/target controls remain separate from UI locale
+
+6. SUPPORTED_UI_LANGUAGES
+---------------------------
+Source: frontend/src/lib/languages.ts (lines 7-18)
+  All 10 supported languages (en, zh, ko, ja, ru, de, fr, it, es, pt).
+  No new codes added in this sprint.
+
+Result: PASS - No language codes added, as expected

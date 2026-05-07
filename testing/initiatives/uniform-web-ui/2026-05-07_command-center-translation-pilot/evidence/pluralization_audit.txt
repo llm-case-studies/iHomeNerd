@@ -1,0 +1,35 @@
+Pluralization Audit
+====================
+
+Date: 2026-05-07
+Source: frontend/src/lib/i18n.ts
+
+Plural key pairs: _one / _other
+
+  Base key             English _one               English _other
+  --------             ------------               --------------
+  talk.matchingVoices  {{count}} matching voice   {{count}} matching voices
+  talk.localLanguages  {{count}} local language   {{count}} local languages
+  sys.nodesCount       {{count}} node             {{count}} nodes
+
+Per-language results:
+
+  Spanish (es):
+    talk.matchingVoices: _one=OK, _other=OK, {{count}}=present
+    talk.localLanguages: _one=OK, _other=OK, {{count}}=present
+    sys.nodesCount:      _one=OK, _other=OK, {{count}}=present
+
+  French (fr):
+    talk.matchingVoices: _one=OK, _other=OK, {{count}}=present
+    talk.localLanguages: _one=OK, _other=OK, {{count}}=present
+    sys.nodesCount:      _one=OK, _other=OK, {{count}}=present
+
+  Russian (ru):
+    talk.matchingVoices: _one=OK, _other=OK, {{count}}=present
+    talk.localLanguages: _one=OK, _other=OK, {{count}}=present
+    sys.nodesCount:      _one=OK, _other=OK, {{count}}=present
+
+All three plural pairs are intact across all pilot languages.
+No orphaned _one or _other keys. {{count}} placeholder present in all.
+
+Result: PASS

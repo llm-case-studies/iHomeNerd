@@ -21,9 +21,8 @@ This initiative exists to make that split real in code.
 
 ## Current Active Sprints
 
-- `active/2026-05-07_command-center-language-parity/` — aligns landing and
-  Command Center language behavior, including shared language options, `?lng=`
-  handoff, local persistence, document language, and visible UI string cleanup
+- `active/2026-05-07_command-center-translation-pilot/` — first localization
+  pilot for Command Center panel keys in Spanish, French, and Russian
 - `active/2026-05-04_speech-extraction-plugin-namespace/` — first implementation follow-up from the completed client-surface panel; extracts core speech routes, adds plugin namespace, and splits `/capabilities`
 - `active/2026-05-03_frontend-model-selector/` — SPA consumer of `/v1/models` + `/v1/models/load`
 - `active/2026-05-03_ios-uniform-web-serving/` — iOS serves the bundled Command Center
@@ -32,6 +31,12 @@ This initiative exists to make that split real in code.
 ## Completed Discussion Sprints
 
 - `active/2026-05-04_client-surface-boundary-review/` — complete on `main`; produced the boundary model and the first coding recommendation
+
+## Promoted Implementation Sprints
+
+- `active/2026-05-07_command-center-language-parity/` — promoted to `main` on
+  2026-05-07; left an intentional follow-up gap for non-English translations of
+  the newly keyed Command Center panel strings
 
 ## Foundation Doc
 
