@@ -16,14 +16,18 @@ Start with safety:
 
 git status --short --branch
 git fetch origin
+git fetch origin docs/uniform-web-ui/command-center-translation-pilot-sprint
 python3 tools/branch-map/branch_map.py --repo . --base origin/main
 
 If there are uncommitted changes, stop and report them. Do not stash, commit,
 or discard anything unless Alex explicitly approves.
 
-Create the sprint branch from origin/main:
+Create the sprint branch from the sprint setup branch if this pack has not
+landed on main yet:
 
-git switch -c feature/uniform-web-ui/command-center-translation-pilot origin/main
+git switch -c feature/uniform-web-ui/command-center-translation-pilot origin/docs/uniform-web-ui/command-center-translation-pilot-sprint
+
+If origin/main already contains this sprint pack, use origin/main instead.
 
 If the implementation branch already exists locally, switch to it and report
 current status before editing.

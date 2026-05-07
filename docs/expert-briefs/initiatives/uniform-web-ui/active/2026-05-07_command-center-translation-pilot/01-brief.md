@@ -23,12 +23,18 @@ for Spanish, French, and Russian only, using the existing language plumbing.
 ## Execution Fence
 
 - Repo: `iHomeNerd`
-- Base branch: `origin/main`
+- Base branch: `origin/docs/uniform-web-ui/command-center-translation-pilot-sprint`
+  until this sprint pack lands on `main`; then use `origin/main`
 - Working branch: `feature/uniform-web-ui/command-center-translation-pilot`
 - Merge target: `main` after validation
 - Implementation host: `Acer-HL`
 - Smoke host: `Acer-HL` or any Node/Vite-capable host
 - Validation host: `iMac-Debian`
+
+Temporary branch-base exception: this sprint pack is born on an unmerged docs
+setup branch. If you run the sprint before that setup branch lands on `main`,
+base the implementation branch from the docs setup branch so the kickoff,
+brief, and testing request are present in the working tree.
 
 ## References
 
