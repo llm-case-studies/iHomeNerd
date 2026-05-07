@@ -13,8 +13,11 @@ it: 111 keys
 es: 111 keys
 pt: 111 keys
 
-Note: All 77 new keys (Chat/Talk/Translate/System panel strings) have translations for all 10 supported languages.
-The 77 new keys represent the panel-specific strings (chat.*, talk.*, trans.*, sys.*, help.*, docs.*, inv.*, agent.*, build.*).
-The remaining ~81 keys that exist in en but lack non-en translations are the original landing-page strings
-(hw_*, nav_*, hero_*, sec_*, feat_*, cta_*, footer_*, tab_*, docs_*, talk_*, trans_*, inv_*, agent_*, build_*, sys_*)
-which were already present pre-sprint and have full non-en translations.
+Note: English has 192 translation keys, while each non-English language block
+currently has 111 keys. The panel-specific keys added in this sprint
+(chat.*, talk.*, trans.*, sys.* and related Command Center strings) are present
+in English and fall back to English for non-English UI languages.
+
+This matches the recorded result.md gap. The language plumbing is validated,
+but a follow-up localization sprint is needed to add reviewed non-English
+translations for the new panel-specific keys.

@@ -19,8 +19,9 @@ python3 tools/branch-map/branch_map.py --repo . --base origin/main  # PASS
 `en`, `zh`, `ko`, `ja`, `ru`, `de`, `fr`, `it`, `es`, `pt`
 
 Both `frontend/src/lib/languages.ts` and `landing/src/lib/languages.ts` share the
-identical `SUPPORTED_UI_LANGUAGES` array. Each language has full translations for
-all 77 new panel keys plus existing landing-page keys.
+identical `SUPPORTED_UI_LANGUAGES` array. English has the full expanded key set;
+non-English language blocks still fall back to English for the newly added panel
+keys, as recorded in the known gap below.
 
 ## Persistence And Handoff
 
