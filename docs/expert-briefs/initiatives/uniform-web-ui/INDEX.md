@@ -2,6 +2,7 @@
 
 | Sprint | Status | Branch | Implementation Host | Build Host | Validation | Notes |
 |---|---|---|---|---|---|---|
+| `2026-05-07_command-center-translation-cjk` | ready | `feature/uniform-web-ui/command-center-translation-cjk` | `Acer-HL` | any Node/Vite host | `iMac-Debian` / `validation/uniform-web-ui/command-center-translation-cjk` | Add Chinese, Korean, and Japanese translations for scoped Command Center keys; check CJK readability, punctuation, wrapping, and visual fit. |
 | `2026-05-07_command-center-translation-de-it-pt` | promoted | `feature/uniform-web-ui/command-center-translation-de-it-pt` | `Acer-HL` | any Node/Vite host | `iMac-Debian` / `validation/uniform-web-ui/command-center-translation-de-it-pt` | Add German, Italian, and Portuguese translations for scoped Command Center keys; check German layout pressure. Promoted to `main` on 2026-05-07. |
 | `2026-05-07_command-center-translation-pilot` | promoted | `feature/uniform-web-ui/command-center-translation-pilot` | `Acer-HL` | any Node/Vite host | `iMac-Debian` / `validation/uniform-web-ui/command-center-translation-pilot` | Add reviewed first-pass `es`, `fr`, and `ru` translations for Command Center keys that still fall back to English after language parity. Promoted to `main` on 2026-05-07. |
 | `2026-05-07_command-center-language-parity` | promoted | `feature/uniform-web-ui/command-center-language-parity` | `Acer-HL` | any Node/Vite host | `iMac-Debian` / `validation/uniform-web-ui/command-center-language-parity` | Align landing and Command Center language behavior: shared options, `?lng=` handoff, persistence, document language, and visible hard-coded English cleanup. Promoted to `main` on 2026-05-07. |
@@ -35,3 +36,6 @@
   localization remain separate follow-ups.
 - `command-center-translation-de-it-pt` should follow the same scoped workflow
   for `de`, `it`, and `pt`; German label length deserves explicit validation.
+- `command-center-translation-cjk` should complete scoped Command Center
+  coverage for `zh`, `ko`, and `ja`; validate CJK punctuation, wrapping, and
+  compact-control readability rather than only key counts.
