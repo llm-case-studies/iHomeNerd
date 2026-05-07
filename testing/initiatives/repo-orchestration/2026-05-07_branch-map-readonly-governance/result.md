@@ -1,10 +1,27 @@
 # Result - BranchMap Read-Only Governance
 
-- Verdict: PASS (implementation smoke-ready)
+- Verdict: PASS (implementation smoke-ready, follow-up fix applied)
 - Product commit: `92b094181809d14f4b7f1e518c87043a11d79a14`
+- Follow-up fix commit: (see below)
 - Implementation host: `Acer-HL` (OpenCode on Linux)
 - Validation host: `iMac-Debian`
 - Validator branch: `validation/repo-orchestration/branch-map-readonly-governance`
+
+## Follow-Up Fix: Git Worktree Support (2026-05-06)
+
+**Issue:** BranchMap failed in Git worktrees because `tools/branch-map/branch_map.py`
+checked `os.path.isdir(os.path.join(repo_path, ".git"))`. In Git worktrees,
+`.git` is a file (pointing to the main repo), not a directory.
+
+**Fix:** Replaced the directory check with a read-only `git rev-parse --git-dir`
+call via a new `is_git_repo()` helper. This correctly detects both normal repos
+and worktrees.
+
+**Tests added:** `test_cli_worktree_support` — creates a worktree via
+`git worktree add`, verifies `.git` is a file, runs the CLI in the worktree,
+and confirms it succeeds.
+
+**All 31 tests passing** (30 original + 1 new worktree test).
 
 ## Commands Run
 

@@ -466,6 +466,56 @@ class TestIntegration(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
 
+    def test_cli_worktree_support(self):
+        subprocess.run(
+            ["git", "checkout", "feature/init-a/sprint-one"],
+            cwd=self.repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        wt_path = os.path.join(self.tmpdir, "worktree")
+        subprocess.run(
+            ["git", "worktree", "add", wt_path, "main"],
+            cwd=self.repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertTrue(os.path.isfile(os.path.join(wt_path, ".git")),
+                        ".git should be a file in a worktree")
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                os.path.join(os.path.dirname(__file__), "..", "branch_map.py"),
+                "--repo", wt_path,
+                "--base", "main",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0,
+                         f"CLI should succeed in a git worktree; stderr: {result.stderr}")
+        self.assertIn("BranchMap Report", result.stdout)
+
+        subprocess.run(
+            ["git", "worktree", "remove", wt_path],
+            cwd=self.repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        subprocess.run(
+            ["git", "checkout", "main"],
+            cwd=self.repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

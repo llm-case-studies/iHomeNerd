@@ -54,6 +54,14 @@ def git_ref_exists(ref: str, cwd: str) -> bool:
         return False
 
 
+def is_git_repo(path: str) -> bool:
+    try:
+        run_git(["rev-parse", "--git-dir"], path)
+        return True
+    except RuntimeError:
+        return False
+
+
 @dataclass
 class BranchInfo:
     full_name: str
@@ -447,7 +455,7 @@ def main() -> None:
     args = parser.parse_args()
 
     repo_path = os.path.abspath(args.repo)
-    if not os.path.isdir(os.path.join(repo_path, ".git")):
+    if not is_git_repo(repo_path):
         print(f"Error: '{repo_path}' is not a git repository", file=sys.stderr)
         sys.exit(1)
 
