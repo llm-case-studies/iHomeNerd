@@ -21,8 +21,6 @@ This initiative exists to make that split real in code.
 
 ## Current Active Sprints
 
-- `active/2026-05-07_command-center-translation-pilot/` — first localization
-  pilot for Command Center panel keys in Spanish, French, and Russian
 - `active/2026-05-04_speech-extraction-plugin-namespace/` — first implementation follow-up from the completed client-surface panel; extracts core speech routes, adds plugin namespace, and splits `/capabilities`
 - `active/2026-05-03_frontend-model-selector/` — SPA consumer of `/v1/models` + `/v1/models/load`
 - `active/2026-05-03_ios-uniform-web-serving/` — iOS serves the bundled Command Center
@@ -34,6 +32,9 @@ This initiative exists to make that split real in code.
 
 ## Promoted Implementation Sprints
 
+- `active/2026-05-07_command-center-translation-pilot/` — promoted to `main`
+  on 2026-05-07; adds first-pass Spanish, French, and Russian translations for
+  scoped Command Center panel keys
 - `active/2026-05-07_command-center-language-parity/` — promoted to `main` on
   2026-05-07; left an intentional follow-up gap for non-English translations of
   the newly keyed Command Center panel strings
