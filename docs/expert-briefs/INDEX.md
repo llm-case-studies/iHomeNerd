@@ -22,6 +22,9 @@ request owns the validation lane**.
 |---|---|---|
 | `uniform-web-ui` | One canonical Command Center SPA served by every node. | `initiatives/uniform-web-ui/INDEX.md` |
 | `iphone-to-mac-brain` | Phone-first onboarding into an Apple Silicon Mac home brain. | `initiatives/iphone-to-mac-brain/INDEX.md` |
+| `android-node-core` | Android node runtime correctness and device-observability work. | `initiatives/android-node-core/INDEX.md` |
+| `apple-release-engineering` | Apple signing, notarization, and release-readiness work. | `initiatives/apple-release-engineering/INDEX.md` |
+| `repo-orchestration` | Multi-agent branch, sprint, validation, and handoff governance. | `initiatives/repo-orchestration/INDEX.md` |
 
 ## Lessons
 
