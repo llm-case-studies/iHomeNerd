@@ -2,6 +2,7 @@
 
 | Sprint | Status | Request | Result | Evidence |
 |---|---|---|---|---|
+| `2026-05-07_command-center-language-parity` | active | `2026-05-07_command-center-language-parity/request.md` | `2026-05-07_command-center-language-parity/result.md` | `2026-05-07_command-center-language-parity/evidence/` |
 | `2026-05-04_speech-extraction-plugin-namespace` | active | `2026-05-04_speech-extraction-plugin-namespace/request.md` | `2026-05-04_speech-extraction-plugin-namespace/result.md` | `2026-05-04_speech-extraction-plugin-namespace/evidence/` |
 | `2026-05-03_frontend-model-selector` | implemented | legacy: `mobile/testing/requests/FRONTEND_MODEL_SELECTOR_TEST_REQUEST_2026-05-03.md` | pending validation | DeepSeek evidence on branch |
 | `2026-05-03_ios-chat-contract-unification` | active | `2026-05-03_ios-chat-contract-unification/request.md` | `2026-05-03_ios-chat-contract-unification/result.md` | pending |
