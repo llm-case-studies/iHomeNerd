@@ -11,16 +11,20 @@ Before switching branches, check:
 ```bash
 git status --short --branch
 git fetch origin
+git fetch origin docs/repo-orchestration/branch-map-sprint-setup
 ```
 
 If the worktree is dirty, stop and report the files. Do not overwrite local
 changes.
 
-Create the implementation branch from current `origin/main`:
+Create the implementation branch from the sprint setup branch if this pack has
+not landed on `main` yet:
 
 ```bash
-git switch -c feature/repo-orchestration/branch-map-readonly-governance origin/main
+git switch -c feature/repo-orchestration/branch-map-readonly-governance origin/docs/repo-orchestration/branch-map-sprint-setup
 ```
+
+If `origin/main` already contains this sprint pack, use `origin/main` instead.
 
 Do not work on `main`.
 

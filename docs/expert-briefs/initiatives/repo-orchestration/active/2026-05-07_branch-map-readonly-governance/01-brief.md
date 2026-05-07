@@ -17,7 +17,8 @@ and uses Git facts already present in the checkout.
 ## Execution Fence
 
 - Repo: `iHomeNerd`
-- Base branch: `origin/main`
+- Base branch: `origin/docs/repo-orchestration/branch-map-sprint-setup` until
+  this sprint pack lands on `main`; then use `origin/main`
 - Working branch: `feature/repo-orchestration/branch-map-readonly-governance`
 - Merge target: `main` after validation
 - Implementation host: `Acer-HL`
@@ -26,6 +27,11 @@ and uses Git facts already present in the checkout.
 
 This is tooling work. Do not change backend, frontend, landing, browser
 extension, Android, or iOS product behavior.
+
+Temporary branch-base exception: this sprint pack is born on an unmerged docs
+setup branch. If you run the sprint before that setup branch lands on `main`,
+base the implementation branch from the docs setup branch so the kickoff,
+brief, and testing request are present in the working tree.
 
 ## References
 
