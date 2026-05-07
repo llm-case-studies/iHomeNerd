@@ -1,7 +1,7 @@
 # Result - BranchMap Read-Only Governance
 
 - Verdict: PASS (implementation smoke-ready)
-- Product commit: `1c26d95050b7bf38600d73788efba16f33b62ced`
+- Product commit: `92b094181809d14f4b7f1e518c87043a11d79a14`
 - Implementation host: `Acer-HL` (OpenCode on Linux)
 - Validation host: `iMac-Debian`
 - Validator branch: `validation/repo-orchestration/branch-map-readonly-governance`
