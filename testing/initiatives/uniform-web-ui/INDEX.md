@@ -2,6 +2,7 @@
 
 | Sprint | Status | Request | Result | Evidence |
 |---|---|---|---|---|
+| `2026-05-07_command-center-translation-cjk` | ready | `2026-05-07_command-center-translation-cjk/request.md` | `2026-05-07_command-center-translation-cjk/result.md` | `2026-05-07_command-center-translation-cjk/evidence/` |
 | `2026-05-07_command-center-translation-de-it-pt` | validated/promoted | `2026-05-07_command-center-translation-de-it-pt/request.md` | `2026-05-07_command-center-translation-de-it-pt/result.md` | `2026-05-07_command-center-translation-de-it-pt/evidence/` |
 | `2026-05-07_command-center-translation-pilot` | validated/promoted | `2026-05-07_command-center-translation-pilot/request.md` | `2026-05-07_command-center-translation-pilot/result.md` | `2026-05-07_command-center-translation-pilot/evidence/` |
 | `2026-05-07_command-center-language-parity` | validated/promoted | `2026-05-07_command-center-language-parity/request.md` | `2026-05-07_command-center-language-parity/result.md` | `2026-05-07_command-center-language-parity/evidence/` |
