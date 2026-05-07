@@ -1,11 +1,12 @@
 # Result - BranchMap Read-Only Governance
 
-- Verdict: PASS (implementation smoke-ready, follow-up fix applied)
+- Verdict: PASS (implementation smoke-ready, follow-up fix validated)
 - Product commit: `92b094181809d14f4b7f1e518c87043a11d79a14`
-- Follow-up fix commit: (see below)
+- Follow-up fix commit: `74a0cfbc8017c480bdc267e5e608baff6655a079`
 - Implementation host: `Acer-HL` (OpenCode on Linux)
 - Validation host: `iMac-Debian`
-- Validator branch: `validation/repo-orchestration/branch-map-readonly-governance`
+- Validator branch (initial): `validation/repo-orchestration/branch-map-readonly-governance`
+- Validator branch (worktree fix): `validation/repo-orchestration/branch-map-readonly-governance-worktree-fix`
 
 ## Follow-Up Fix: Git Worktree Support (2026-05-06)
 
@@ -84,6 +85,38 @@ Not available on this implementation host (Linux). Expected paths:
 
 These are macOS paths not present on the current implementation host. The validation host (`iMac-Debian`) should have these available.
 
+## Worktree Fix Validation (2026-05-06)
+
+**Validator branch:** `validation/repo-orchestration/branch-map-readonly-governance-worktree-fix`
+
+**Tests:**
+```bash
+$ python3 tools/branch-map/tests/test_branch_map.py -v
+Ran 31 tests in 0.971s — OK
+
+test_cli_worktree_support ... ok
+```
+
+All 31 tests pass including the new `test_cli_worktree_support` test that:
+1. Creates a Git worktree via `git worktree add`
+2. Verifies `.git` is a file (not a directory) in the worktree
+3. Runs the CLI in the worktree
+4. Confirms it succeeds and produces expected output
+
+**Worktree CLI smoke:**
+```bash
+$ git worktree add /tmp/worktree main
+$ test -f /tmp/worktree/.git && echo ".git is a FILE (worktree)"  # confirmed
+$ python3 tools/branch-map/branch_map.py --repo /tmp/worktree --base origin/main
+BranchMap Report     # produced successfully from worktree
+```
+
+**iHomeNerd text + JSON smoke:** Both formats produced valid output. 42 branches analyzed against `origin/main`.
+- Text output: ✅ (expected warnings confirmed: wip/testing diverged, staging divergent, office-clerk-bootstrap cross-repo vocab, local main behind, validation without feature, etc.)
+- JSON output: ✅ valid JSON, parses with `python3 -m json.tool`
+
+**Read-only verification:** Before and after `git for-each-ref refs/heads` identical. No branches created, switched, deleted, renamed, merged, rebased, or pushed. Current branch unchanged (`validation/repo-orchestration/branch-map-readonly-governance-worktree-fix`).
+
 ## Validation Handoff Notes for `iMac-Debian`
 
 1. Checkout `validation/repo-orchestration/branch-map-readonly-governance` from `origin/feature/repo-orchestration/branch-map-readonly-governance`
@@ -105,5 +138,5 @@ These are macOS paths not present on the current implementation host. The valida
 tools/branch-map/branch_map.py      — main CLI
 tools/branch-map/README.md          — usage and warning documentation
 tools/branch-map/tests/__init__.py  — test package
-tools/branch-map/tests/test_branch_map.py  — 30 tests (all passing)
+tools/branch-map/tests/test_branch_map.py  — 31 tests (all passing)
 ```
