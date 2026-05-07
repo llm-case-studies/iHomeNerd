@@ -1,0 +1,48 @@
+# Public Face
+
+## Goal
+
+Make every public iHomeNerd surface tell the same true story:
+
+- what the product is
+- who it is for
+- what is real today
+- what is still preview
+- how open/public it actually is
+
+## Philosophy
+
+The public face is a product surface, not a marketing afterthought.
+
+For iHomeNerd that means all of these count:
+
+- root homepage
+- staging homepage
+- README
+- GitHub repo metadata
+- license and trust signals
+- screenshots and demo assets
+- crawl metadata such as canonical URLs, `robots.txt`, and sitemap
+
+## Current Active Sprints
+
+- `active/2026-05-07_public-face-foundation/` — create the public-face
+  knowledge base, capture the 2026-05-07 research thread, and define the first
+  execution backlog
+
+## Likely Follow-Ups
+
+- root/staging narrative alignment
+- GitHub trust-surface cleanup
+- SEO/discoverability baseline
+- public evidence pack
+- licensing/opening decision cleanup
+
+## Foundation Docs
+
+- `docs/public-face/README.md`
+- `docs/public-face/INDEX.md`
+- `docs/public-face/research/2026-05-07_external-ai-impressions.md`
+- `docs/public-face/audits/2026-05-07_public-surface-audit.md`
+- `docs/public-face/backlog/2026-05-07_public-face-workstreams.md`
+- `docs/WEB_PRICING_AND_LAUNCH_PLAN_2026-04-10.md`
