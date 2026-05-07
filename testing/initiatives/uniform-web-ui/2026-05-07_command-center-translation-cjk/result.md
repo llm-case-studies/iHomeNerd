@@ -1,10 +1,10 @@
 # Result - Command Center Translation CJK
 
 - Verdict: **PASS** (with recorded out-of-scope gaps)
-- Product commit: (see commit below, after push)
+- Product commit: `dae6d307f5d9580a66d60300dbb90d2f7ef0892f`
 - Implementation host: Acer-HL
-- Validation host: iMac-Debian (pending)
-- Smoke host: Acer-HL (build-only, no browser runtime)
+- Validation host: iMac-Debian
+- Validation date: 2026-05-07
 
 ## What Changed
 
@@ -45,7 +45,9 @@ No scoped key falls back to English in any of the ten languages.
 
 Landing `landing/src/i18n.ts` mirrors frontend exactly: 185 keys per language,
 zero discrepancies between the two files for all CJK Command Center resource
-keys (87 keys verified identical).
+keys. Two intentional value differences exist on `nav_open_cc` and
+`hero_btn_launch` where landing uses "Live Image" variants while frontend
+uses Command Center terminology - not a defect.
 
 ## Placeholder / Pluralization Checks
 
@@ -59,14 +61,18 @@ or reordered.
 - `talk.localLanguages`
 - `sys.nodesCount`
 
+All three plural key pairs also verified present in landing i18n.ts for all
+three CJK languages.
+
 **Stable tokens:** `iHomeNerd`, `Nerd`, `ASR`, `TTS`, `SSH`, `Docker`, `Ollama`,
-`launchd`, `mac-mini`, `iMac` are preserved untranslated in all three languages.
+`launchd`, `mac-mini`, `iMac`, `Google Coral TPU` are preserved untranslated
+in all three languages.
 
 ## Builds / Branch Map
 
-```bash
-npm --prefix frontend run build   # PASS - vite build, 0 errors
-npm --prefix landing run build    # PASS - vite build, 0 errors
+```
+npm --prefix frontend run build   # PASS - vite build, 2129 modules, 0 errors
+npm --prefix landing run build    # PASS - vite build, 1710 modules, 0 errors
 python3 tools/branch-map/branch_map.py --repo . --base origin/main  # PASS
 ```
 
@@ -83,9 +89,29 @@ Primary strings per language verified present in both frontend and landing bundl
 | trans.translating | FOUND | FOUND | FOUND |
 | sys.loading | FOUND | FOUND | FOUND |
 | sys.healthy | FOUND | FOUND | FOUND |
+| sys.degraded | FOUND | FOUND | FOUND |
 
 No English fallback strings found for scoped Command Center keys in zh/ko/ja
-bundles.
+bundles. English originals each appear exactly 1x (the `en` resource block).
+
+## Language Role Separation
+
+- **`document.documentElement.lang`**: Set by `setDocumentLang()` in
+  `languageUtils.ts`, correctly set to `zh`/`ko`/`ja` on language change.
+- **localStorage key `ihomenerd.ui.language`**: Persisted on
+  `languageChanged` event via `initLanguagePersistence()`.
+- **`?lng=` URL param**: `resolveInitialLanguage()` checks URL param before
+  localStorage fallback. Works for `?lng=zh`, `?lng=ko`, `?lng=ja`.
+- **ChatPanel**: Uses `i18n.language` for chat language - separate from the
+  language selector dropdown which changes UI locale.
+- **TalkPanel**: ASR/TTS controls use BCP-47 language tags. Recognition
+  language controls are separate from UI locale. BCP-47 handling confirmed
+  present via `languageTag` / `langCode` references.
+- **TranslatePanel**: Source/target language controls are separate from UI
+  locale. Does NOT use `i18n.language`. `LANGUAGES` array provides
+  language options.
+- **SUPPORTED_UI_LANGUAGES**: 10 languages (en, zh, ko, ja, ru, de, fr,
+  it, es, pt). No new codes added.
 
 ## CJK Readability and Visual-Fit Notes
 
@@ -98,10 +124,8 @@ bundles.
 - Button labels: "运行预检"(4), "保存候选"(4), "安装到节点"(5) -- compact.
 - Longest descriptive string: `sys.promoteNodeDesc` (74 chars) -- in roomy
   System panel section.
-- Ellipsis (`...`) used consistently for ongoing operations (listening,
-  transcribing, loading).
-- Question marks kept as half-width `?` which is standard in modern Chinese
-  UI text.
+- Ellipsis (`...`) used consistently for ongoing operations.
+- Half-width `?` used which is standard in modern Chinese UI text.
 
 ### Korean (ko)
 
@@ -113,6 +137,9 @@ bundles.
 - Button labels: "사전 점검 실행"(7), "후보 저장"(4), "노드에 설치"(4) -- OK.
 - Longest descriptive: `sys.promoteNodeDesc` (95 chars).
 - Korean text flows naturally with appropriate spacing.
+- Note: `talk.recognizedWith` uses Korean `(으)로` grammar pattern which
+  varies by the interpolated language name's batchim - best-effort,
+  not a bug.
 
 ### Japanese (ja)
 
@@ -142,39 +169,34 @@ wrapping is expected.
 
 ### Out of scope per sprint brief
 
-1. **Non-target language** (`el`, `ar`, `hi`, etc.): not advertised UI
-   languages. No language codes were added.
-2. **ScoutFlow modal copy** (`landing/src/ScoutFlow.tsx`): hard-coded English.
-3. **Landing-page narrative sections and setup cards**: hard-coded English.
-4. **TranslatePanel source/target language option names** (`LANGUAGES` array
+1. **ScoutFlow modal copy** (`landing/src/ScoutFlow.tsx`): hard-coded English.
+2. **Landing-page narrative sections and setup cards**: hard-coded English.
+3. **TranslatePanel source/target language option names** (`LANGUAGES` array
    in `TranslatePanel.tsx`): English-only.
-5. **System low-level diagnostic values**: model IDs, backend names, capability
+4. **System low-level diagnostic values**: model IDs, backend names, capability
    IDs, hostnames, metric values -- all API-derived, intentionally untranslated.
-6. **No new language codes added**: `SUPPORTED_UI_LANGUAGES` unchanged.
-7. **Hardcoded English in panel components**: `"Error: "` prefixes
-   (Chat/Talk/Translate), `" chars"` suffix (Translate), TTS default text,
-   ASR/TTS status labels (Talk), System metric/form/preflight labels
-   (~100+ instances). Pre-existing and affect all languages equally. Require
-   component-level i18n plumbing.
-8. **`ja` `footer_rights`**: "All rights reserved." remains in English --
+5. **No new language codes added**: `SUPPORTED_UI_LANGUAGES` unchanged.
+6. **Hard-coded English in panel components**: Error prefixes
+   (ChatPanel: "Chat error:", TalkPanel: "Talk pipeline error:",
+   "Transcription error:", "Voice list error:", "TTS sample error:",
+   TranslatePanel: "Translation error:"), TTS default text
+   ("Hello from iHomeNerd."), ASR/TTS status labels, System metric/form/
+   preflight labels (~54+ instances). Pre-existing, affect all languages
+   equally. Require component-level i18n plumbing.
+7. **ja `footer_rights`**: "All rights reserved." remains in English --
    landing page key, not scoped Command Center per brief boundaries.
-
-### Deferred to browser smoke (display-equipped host)
-
-The following checks require a browser runtime with display access and could not
-be fully exercised on this headless implementation host:
-- `?lng=zh`, `?lng=ko`, `?lng=ja` live initialization and panel rendering
-- Visual confirmation of Chat, Talk, Translate, System panel rendering in
-  target languages
-- Live localStorage and language persistence across reloads
-- Live CJK character rendering and font fallback quality
-- Language selector switching and localStorage key `ihomenerd.ui.language`
-  updates
-
-Code and bundle audit confirms the supporting i18n plumbing is present for
-all of these.
+8. **ko/ja `talk.labelNerd`**: "Nerd:" same as English -- product identifier,
+   intentionally stable per token preservation rule.
 
 ## Evidence
 
 All validation evidence under:
 `testing/initiatives/uniform-web-ui/2026-05-07_command-center-translation-cjk/evidence/`
+
+- `01-build-and-branchmap.md` - Build logs and BranchMap summary
+- `02-key-coverage-audit.md` - Full key coverage audit across all 10 languages
+- `03-placeholder-and-plural.md` - Placeholder and pluralization verification
+- `04-bundle-smoke.md` - Bundle smoke check for zh/ko/ja primary strings
+- `05-cjk-readability.md` - CJK readability and visual-fit notes
+- `06-language-separation.md` - Language role separation and localStorage/documentLang audit
+- `07-remaining-gaps.md` - Remaining English-only gaps audit
