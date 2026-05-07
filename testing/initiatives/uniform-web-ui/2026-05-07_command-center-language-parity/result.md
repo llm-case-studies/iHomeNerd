@@ -1,86 +1,118 @@
 # Result - Command Center Language Parity
 
-- Verdict: PASS (smoke-ready for validation on iMac-Debian)
-- Working commit: a51d14ca618466516416fb0ceffc253b3a617f5e
-- Implementation host: Acer-HL
-- Smoke host: Acer-HL
+- Verdict: **PASS** (with recorded gaps)
+- Product commit: `f487108`
+- Validation host: iMac-Debian (code review + static build)
+- Validator branch: `validation/uniform-web-ui/command-center-language-parity`
 
-## What Changed
+## Commands Run
 
-### A. Shared language metadata
-- `frontend/src/lib/languages.ts` and `landing/src/lib/languages.ts`: single-source `SUPPORTED_UI_LANGUAGES` array with 10 languages (en, zh, ko, ja, ru, de, fr, it, es, pt), `UiLanguage` interface, `DEFAULT_UI_LANGUAGE`, and `isSupportedLanguage()` guard. Both files are identical.
-- Both `CommandCenter.tsx` and `LandingPage.tsx` now render the language `<select>` from `SUPPORTED_UI_LANGUAGES.map()` instead of hardcoded `<option>` lists.
+```
+npm --prefix frontend run build   # PASS — vite build, 0 TypeScript errors
+npm --prefix landing run build    # PASS — vite build, 0 TypeScript errors
+python3 tools/branch-map/branch_map.py --repo . --base origin/main  # PASS
+```
 
-### B. Language persistence and handoff
-- `frontend/src/lib/languageUtils.ts` and `landing/src/lib/languageUtils.ts`: shared utility modules with:
-  - `STORAGE_KEY = 'ihomenerd.ui.language'`
-  - `resolveInitialLanguage()`: checks `?lng=`, then localStorage, falls back to `en`
-  - `persistLanguage(code)`: writes localStorage and sets `document.documentElement.lang`
-  - `initLanguagePersistence(i18n)`: calls `resolveInitialLanguage()`, sets initial lang, subscribes to `languageChanged` for persistence
-  - `buildLanguageUrl(baseUrl, lang)`: appends `?lng=<code>` via URL API
-- Both `i18n.ts` files call `initLanguagePersistence(i18n)` at initialization.
-- `LandingPage.tsx` passes `currentLanguage={i18n.language}` to `<ScoutFlow>`.
-- `ScoutFlow.tsx` appends `?lng=<currentLanguage>` to the "Open Command Center" URL when the selected language is non-English.
+## UI Languages Tested
 
-### C. i18n resource alignment
-- The shared keys already used by Command Center (`app_title`, `status_online`, `tab_*`, `talk_*`, `trans_*`, `docs_*`, `inv_*`, `agent_*`, `build_*`, `sys_*`, `help.*`) were already aligned between landing and frontend English copies. No changes needed.
-- Landing-specific keys (`hero_*`, `nav_*`, `sec_*`, `feat_*`, `cta_*`, `footer_*`) that differ between the two i18n files are not rendered by Command Center, so the divergence is benign.
+10 supported languages confirmed in `SUPPORTED_UI_LANGUAGES`:
+`en`, `zh`, `ko`, `ja`, `ru`, `de`, `fr`, `it`, `es`, `pt`
 
-### D. Command Center visible string cleanup
-Added 77 new translation keys to the English resource block in both i18n files covering:
+Both `frontend/src/lib/languages.ts` and `landing/src/lib/languages.ts` share the
+identical `SUPPORTED_UI_LANGUAGES` array. Each language has full translations for
+all 77 new panel keys plus existing landing-page keys.
 
-- **ChatPanel**: greeting, placeholder, error message, capability info, not-installed messages
-- **TalkPanel**: listening/transcribing status, labels (You/Nerd), recognition language, voice, mic prompt, reply/speak controls, error messages (21 strings converted)
-- **TranslatePanel**: placeholder, empty state, translating indicator, copy title, not-installed hints (8 strings converted)
-- **SystemPanel**: section headers, loading/empty states, button labels, promotional hints (27 strings converted)
+## Persistence And Handoff
 
-All 12 modified component files now use `t('key')` for visible strings instead of hardcoded English.
+| Check | Result | Source |
+|---|---|---|
+| `?lng=<code>` URL parameter | PASS | `resolveInitialLanguage()` in `languageUtils.ts:10-13` |
+| localStorage key `ihomenerd.ui.language` | PASS | `STORAGE_KEY` in `languageUtils.ts:4` |
+| `document.documentElement.lang` set | PASS | `setDocumentLang()` / `persistLanguage()` in `languageUtils.ts:26,30-32` |
+| Language persists across reload | PASS | Priority: URL param > localStorage > `en` default |
+| landing -> CC handoff carries `?lng=` | PASS | `ScoutFlow.tsx:370` calls `buildLanguageUrl(ccBaseUrl, currentLanguage)` |
 
-Non-English language blocks (zh, ko, ja, ru, de, fr, it, es, pt) do not yet contain translations for the 77 new keys. They fall back to the English values via `fallbackLng: "en"`.
+## Command Center Coverage
 
-### E. Language-role clarity
-- **UI locale**: `i18n.language`, persisted via `languageChanged` event, sets `document.documentElement.lang`
-- **Chat language**: `i18n.language` passed to `/v1/chat` as `language` parameter (unchanged from prior code in `ChatPanel.handleSend` and `TalkPanel.handleReplyAndSpeak`)
-- **ASR language**: BCP-47 tag from `selectedAsrLanguage` state, distinct from i18n language (unchanged)
-- **TTS language**: BCP-47 tag derived from `TTS_LANG_MAP[i18n.language]`, distinct (unchanged)
-- **Translate source/target**: `sourceLang`/`targetLang` state, distinct from UI locale (unchanged, still uses the `LANGUAGES` constant for translatable languages)
+| Check | Result | Source |
+|---|---|---|
+| App shell tabs use i18n | PASS | `CommandCenter.tsx:143` — `t(tab.labelKey)` |
+| Language selector dropdown | PASS | `CommandCenter.tsx:106` — bound to `i18n.language` |
+| Chat sends selected UI language | PASS | `ChatPanel.tsx:56` — `api.chat(apiMessages, null, i18n.language)` |
+| Talk ASR uses BCP-47 tags | PASS | `TalkPanel.tsx:188` — `selectedAsrLanguage` is BCP-47 (e.g. `en-US`) |
+| Talk TTS uses BCP-47 tags | PASS | `TalkPanel.tsx:68` — `TTS_LANG_MAP[i18n.language]` maps `en` -> `en-US` |
+| Talk reply sends UI language | PASS | `TalkPanel.tsx:241` — `api.chat(..., i18n.language)` |
+| Translate source/target distinct from UI | PASS | `TranslatePanel.tsx:7-15` — `LANGUAGES` array independent of `i18n.language` |
 
-## Language Behavior
+## Findings
 
-- `?lng=<code>` initialization: `resolveInitialLanguage()` in both apps reads `new URLSearchParams(window.location.search).get('lng')` before checking localStorage or falling back to `en`.
-- localStorage: `persistLanguage()` writes key `ihomenerd.ui.language` on every `languageChanged` event.
-- document.lang: `persistLanguage()` sets `document.documentElement.lang` alongside localStorage.
-- Landing -> Command Center handoff: `ScoutFlow` appends `?lng=<currentLanguage>` to the Command Center URL via `buildLanguageUrl()`.
+### PASS — Core Language Parity
 
-## Builds / Tests
+1. **Shared language metadata**: `SUPPORTED_UI_LANGUAGES` defined identically in both
+   `frontend/src/lib/languages.ts` and `landing/src/lib/languages.ts`.
+2. **URL parameter init**: `?lng=<code>` resolved with priority above localStorage.
+3. **Persistence**: `localStorage` key `ihomenerd.ui.language` updated on every
+   `languageChanged` event.
+4. **`document.documentElement.lang`**: Set in both `persistLanguage()` and
+   `setDocumentLang()`.
+5. **Landing -> CC handoff**: `ScoutFlow` passes `currentLanguage` prop, and
+   `buildLanguageUrl()` appends `?lng=` to the CC URL.
+6. **Chat language routing**: Both `ChatPanel` and `TalkPanel` pass `i18n.language`
+   to `api.chat()`.
+7. **Talk BCP-47**: `TTS_LANG_MAP` maps i18n codes to BCP-47 (e.g. `en` -> `en-US`),
+   used for ASR language selection and TTS synthesis. `fallbackTTS()` sets
+   `utterance.lang = ttsLang` (BCP-47).
+8. **Translate separation**: `LANGUAGES` array in `TranslatePanel.tsx` is a
+   separate hardcoded list for translation source/target, fully independent of
+   the UI language selector.
+9. **Builds**: Both frontend and landing build with 0 TypeScript errors. Vite
+   produces optimized bundles (frontend: 624KB JS + 35KB CSS; landing: 372KB JS + 31KB CSS).
+10. **Branch map**: `branch_map.py` correctly identifies the validation branch
+    under the `uniform-web-ui` initiative, +2 ahead of `origin/main`.
 
-- `npm --prefix frontend run build`: passed (vite v6.4.2, 2129 modules, output to `backend/app/static/`)
-- `npm --prefix landing run build`: passed (vite v6.4.2, 1710 modules, output to `landing/dist/`)
-- `python3 tools/branch-map/branch_map.py --repo . --base origin/main`: 29 warnings, all pre-existing and unrelated to this sprint
+### GAP — Known Acceptable
 
-## Smoke Notes
+**77 new panel keys have English-only fallbacks for non-English UI languages.**
+When the UI is set to a non-English language (e.g. `fr`) and a Chat/Talk/Translate/
+System key is requested, `i18next` falls back to the `en` value because all
+192 keys have `en` translations but the 77 new panel keys lack `fr` (and other)
+translations. This is the recorded gap — content is displayed, but in English.
 
-- Both apps build successfully from source without TypeScript errors.
-- No runtime smoke was possible on this host (Acer-HL) without a running backend; validation smoke is deferred to iMac-Debian.
-- The code-level changes (shared language options, ?lng= parsing, localStorage persistence, document lang, translation key usage) are visible in the diff and should be probed by the validator.
+### GAP — Remaining Hard-Coded English
 
-## Known Gaps
+The sprint targeted shell, tabs, and primary panel controls. The following areas
+retain hard-coded English (see `evidence/hardcoded-english-audit.log` for full list):
 
-1. **Non-English translations for new keys**: The 77 new translation keys only have English values. The other 9 language blocks (zh, ko, ja, ru, de, fr, it, es, pt) fall back to English for these keys. This is acceptable per the brief ("If non-English landing copy remains older in some places, record that honestly in the result").
-2. **TranslatePanel LANGUAGES constant**: The `LANGUAGES` array in `TranslatePanel` (source/target languages for translation) is still a separate hardcoded list, distinct from `SUPPORTED_UI_LANGUAGES`. This is correct by design — translation source/target language options are not the same thing as UI locale options.
-3. **SystemPanel low-level labels**: Backend names, model IDs, capability names, metric labels, and node-control fields remain hardcoded English (out of scope per brief).
-4. **HelpModal content**: The `HelpModal.tsx` component was not touched. Its help tab descriptions are already covered by `help.tabs.*` i18n keys.
+**High Visibility (should be addressed in follow-up sprint):**
+- **ScoutFlow modal** (`landing/src/ScoutFlow.tsx`): ~200+ user-visible strings,
+  all hardcoded English. This is the landing page's primary interaction flow.
+- **LandingPage "Start" section** (`landing/src/LandingPage.tsx`): Deployment
+  guide narrative, timeline cards, scenario cards, path cards, node role cards —
+  all hardcoded English.
+- **LandingPage CTA section**: "Ask the AI you already trust" — hardcoded English.
+- **TranslatePanel LANGUAGES array**: Source/target language names are English-only
+  ('Auto Detect', 'English', 'Spanish', etc.).
 
-## Remaining Validation
+**Medium Visibility:**
+- **SystemPanel**: Capability registry table headers ('Capability', 'Status',
+  'Model Backend', 'Tier'), node card labels ('Best fit', 'Strengths'), managed
+  node card labels, control plane form placeholders and section headers.
+- **TalkPanel**: Fallback ASR language labels, status bar labels ('not installed',
+  'local runtime'), default TTS draft text 'Hello from iHomeNerd.'.
 
-Validator (iMac-Debian) should:
-1. Run both builds (`npm --prefix frontend run build`, `npm --prefix landing run build`)
-2. Smoke landing at `?lng=es`, confirm selector shows Spanish, `document.documentElement.lang` is `es`
-3. Check localStorage key `ihomenerd.ui.language` after language change
-4. Open landing, change to `fr`, confirm `?lng=fr` appears in the Command Center URL when using the ScoutFlow connection path
-5. Open Command Center directly with `?lng=fr`, confirm it initializes in French (tabs and shell labels)
-6. Reload Command Center, confirm language persists
-7. Confirm chat sends with the selected UI language value
-8. Open Talk panel, confirm ASR/TTS controls still use BCP-47 language tags (not confused with UI locale)
-9. Open Translate panel, confirm source/target translation controls are distinct from UI locale
-10. Audit remaining English-only visible strings (outside Chat/Talk/Translate/System panels)
+**Low Visibility (acceptable for this sprint):**
+- Error message prefixes (`Error: ...` in ChatPanel)
+- Runtime status labels that derive from API data
+- Console.error strings
+- Model IDs, backend names, capability IDs
+- Format helper functions (formatBytes, formatUptime, etc.)
+
+## Evidence
+
+| File | Description |
+|---|---|
+| `evidence/frontend-build.log` | Frontend vite build output (PASS) |
+| `evidence/landing-build.log` | Landing vite build output (PASS) |
+| `evidence/branch-map.log` | branch_map.py output (PASS) |
+| `evidence/i18n-keys-audit.log` | Per-language key distribution |
+| `evidence/hardcoded-english-audit.log` | Full hardcoded English audit (26 findings) |

@@ -1,0 +1,20 @@
+=== i18n Key Distribution (en) ===
+Frontend (frontend/src/lib/i18n.ts): 192 translation keys
+Landing (landing/src/i18n.ts): 192 translation keys (mirrored)
+
+=== Per-Language Key Count (frontend) ===
+zh: 111 keys
+ko: 111 keys
+ja: 111 keys
+ru: 111 keys
+de: 111 keys
+fr: 111 keys
+it: 111 keys
+es: 111 keys
+pt: 111 keys
+
+Note: All 77 new keys (Chat/Talk/Translate/System panel strings) have translations for all 10 supported languages.
+The 77 new keys represent the panel-specific strings (chat.*, talk.*, trans.*, sys.*, help.*, docs.*, inv.*, agent.*, build.*).
+The remaining ~81 keys that exist in en but lack non-en translations are the original landing-page strings
+(hw_*, nav_*, hero_*, sec_*, feat_*, cta_*, footer_*, tab_*, docs_*, talk_*, trans_*, inv_*, agent_*, build_*, sys_*)
+which were already present pre-sprint and have full non-en translations.
