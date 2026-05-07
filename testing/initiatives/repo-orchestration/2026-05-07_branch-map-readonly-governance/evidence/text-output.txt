@@ -1,0 +1,199 @@
+BranchMap Report
+Repository: /home/alex/Projects/iHomeNerd-coding
+Base: origin/main
+Branches: 43
+======================================================================
+
+  Initiative: android-node-core
+  ------------------------------------------------------------
+
+    feature/android-node-core/build-provenance-surface  [feature] +4 -17 diverged mb:f7bc24a mb-date:2026-05-05
+      tip: 5b986d4 (2026-05-06)
+      WARNING: [INFO] feature branch 'feature/android-node-core/build-provenance-surface' has no nearby validation evidence ('validation/android-node-core/build-provenance-surface' not found)
+
+    feature/android-node-core/build-provenance-surface  [feature] +4 -17 diverged mb:f7bc24a mb-date:2026-05-05
+      tip: 5b986d4 (2026-05-06)
+      WARNING: [INFO] feature branch 'feature/android-node-core/build-provenance-surface' has no nearby validation evidence ('validation/android-node-core/build-provenance-surface' not found)
+
+    feature/android-node-core/nsd-observability-and-mdns-truthfulness  [feature] +3 -5 diverged mb:5819a1d mb-date:2026-05-06
+      tip: fc8a807 (2026-05-06)
+      WARNING: [INFO] feature branch 'feature/android-node-core/nsd-observability-and-mdns-truthfulness' has no nearby validation evidence ('validation/android-node-core/nsd-observability-and-mdns-truthfulness' not found)
+
+    feature/android-node-core/nsd-observability-and-mdns-truthfulness  [feature] +3 -5 diverged mb:5819a1d mb-date:2026-05-06
+      tip: fc8a807 (2026-05-06)
+      WARNING: [INFO] feature branch 'feature/android-node-core/nsd-observability-and-mdns-truthfulness' has no nearby validation evidence ('validation/android-node-core/nsd-observability-and-mdns-truthfulness' not found)
+
+  Initiative: apple-release-engineering
+  ------------------------------------------------------------
+
+    feature/apple-release-engineering/mac-developer-id-readiness  [feature] +1 -11 diverged mb:2c81a1d mb-date:2026-05-05
+      tip: 8b03f4c (2026-05-05)
+      WARNING: [INFO] feature branch 'feature/apple-release-engineering/mac-developer-id-readiness' has no nearby validation evidence ('validation/apple-release-engineering/mac-developer-id-readiness' not found)
+
+  Initiative: iphone-to-mac-brain
+  ------------------------------------------------------------
+
+    feature/iphone-to-mac-brain/mac-launchd-sidecar-service  [feature] +3 -17 diverged mb:f7bc24a mb-date:2026-05-05
+      tip: 1756e95 (2026-05-05)
+
+    feature/iphone-to-mac-brain/mac-launchd-sidecar-service  [feature] +3 -17 diverged mb:f7bc24a mb-date:2026-05-05
+      tip: 1756e95 (2026-05-05)
+
+    feature/iphone-to-mac-brain/mac-mlx-runtime-preflight  [feature] +1 -22 diverged mb:8ab67ac mb-date:2026-05-04
+      tip: 6f1b55a (2026-05-04)
+
+    feature/iphone-to-mac-brain/mac-mlx-runtime-preflight  [feature] +1 -22 diverged mb:8ab67ac mb-date:2026-05-04
+      tip: 6f1b55a (2026-05-04)
+
+    feature/iphone-to-mac-brain/mlx-chat-contract-cleanup  [feature] -38 behind mb:cd16348 mb-date:2026-05-03
+      tip: cd16348 (2026-05-03)
+
+    feature/iphone-to-mac-brain/mlx-chat-contract-cleanup  [feature] -37 merged mb:1b64086 mb-date:2026-05-03
+      tip: 1b64086 (2026-05-03)
+
+    feature/iphone-to-mac-brain/pairing-approval  [feature] -9 behind mb:6548cb0 mb-date:2026-05-05
+      tip: 6548cb0 (2026-05-05)
+
+    feature/iphone-to-mac-brain/pairing-approval  [feature] -8 merged mb:32c93af mb-date:2026-05-05
+      tip: 32c93af (2026-05-05)
+
+    validation/iphone-to-mac-brain/ios-mac-setup-route-smoke  [validation] -28 merged mb:da723ac mb-date:2026-05-03
+      tip: da723ac (2026-05-03)
+      WARNING: validation branch 'validation/iphone-to-mac-brain/ios-mac-setup-route-smoke' exists without corresponding feature branch 'feature/iphone-to-mac-brain/ios-mac-setup-route-smoke'
+
+    validation/iphone-to-mac-brain/mac-launchd-sidecar-service  [validation] +1 -17 diverged mb:f7bc24a mb-date:2026-05-05
+      tip: 01af346 (2026-05-05)
+
+    validation/iphone-to-mac-brain/mac-mini-mlx-sidecar-smoke  [validation] +1 -27 diverged mb:7f84a8d mb-date:2026-05-03
+      tip: 765121f (2026-05-03)
+      WARNING: validation branch 'validation/iphone-to-mac-brain/mac-mini-mlx-sidecar-smoke' exists without corresponding feature branch 'feature/iphone-to-mac-brain/mac-mini-mlx-sidecar-smoke'
+
+    validation/iphone-to-mac-brain/mac-mlx-runtime-preflight  [validation] +2 -22 diverged mb:8ab67ac mb-date:2026-05-04
+      tip: 68d9508 (2026-05-04)
+
+    validation/iphone-to-mac-brain/mlx-chat-contract-cleanup  [validation] -30 merged mb:7dc2171 mb-date:2026-05-03
+      tip: 7dc2171 (2026-05-03)
+
+    validation/iphone-to-mac-brain/pairing-approval  [validation] -7 merged mb:c46a8ef mb-date:2026-05-05
+      tip: c46a8ef (2026-05-05)
+
+  Other / Ungrouped Branches
+  ------------------------------------------------------------
+
+    feature/android-model-catalog  [feature] -100 behind mb:cfb7bee mb-date:2026-05-02
+      tip: cfb7bee (2026-05-02)
+      WARNING: branch 'feature/android-model-catalog' is very far behind base (100 commits)
+
+    feature/android-server-profile-surface  [feature] -103 behind mb:0361989 mb-date:2026-05-02
+      tip: 0361989 (2026-05-02)
+      WARNING: branch 'feature/android-server-profile-surface' is very far behind base (103 commits)
+
+    feature/android-uniform-web-serving  [feature] -95 behind mb:759edd0 mb-date:2026-05-02
+      tip: 759edd0 (2026-05-02)
+      WARNING: branch 'feature/android-uniform-web-serving' is very far behind base (95 commits)
+
+    feature/expert-brief-initiative-structure  [feature] -41 merged mb:b2699f8 mb-date:2026-05-03
+      tip: b2699f8 (2026-05-03)
+
+    discussion/uniform-web-ui-adapter-families-and-client-ports  [discussion] +10 -93 diverged mb:206a8ab mb-date:2026-05-03
+      tip: e003b59 (2026-05-05)
+      WARNING: branch 'discussion/uniform-web-ui-adapter-families-and-client-ports' is very far behind base (93 commits)
+      WARNING: branch 'discussion/uniform-web-ui-adapter-families-and-client-ports' is ahead 10 and behind 93 and not clearly grouped by initiative
+
+    discussion/uniform-web-ui-client-surface-boundary-review  [discussion] +8 -93 diverged mb:206a8ab mb-date:2026-05-03
+      tip: 83adfcb (2026-05-04)
+      WARNING: branch 'discussion/uniform-web-ui-client-surface-boundary-review' is very far behind base (93 commits)
+      WARNING: branch 'discussion/uniform-web-ui-client-surface-boundary-review' is ahead 8 and behind 93 and not clearly grouped by initiative
+
+    wip/acer-hl  [wip] -105 behind mb:0b21580 mb-date:2026-04-29
+      tip: 0b21580 (2026-04-29)
+      WARNING: wip branch 'wip/acer-hl' is substantially diverged (ahead 0, behind 105)
+      WARNING: branch 'wip/acer-hl' is very far behind base (105 commits)
+
+    wip/acer-hl  [wip] +2 -104 diverged mb:62c9ad7 mb-date:2026-05-02
+      tip: 273a788 (2026-05-02)
+      WARNING: wip branch 'wip/acer-hl' is substantially diverged (ahead 2, behind 104)
+      WARNING: branch 'wip/acer-hl' is very far behind base (104 commits)
+      WARNING: branch 'wip/acer-hl' is ahead 2 and behind 104 and not clearly grouped by initiative
+
+    wip/testing  [wip] +32 -78 diverged mb:206a8ab mb-date:2026-05-03
+      tip: e3b651c (2026-05-06)
+      WARNING: wip branch 'wip/testing' is substantially diverged (ahead 32, behind 78)
+      WARNING: branch 'wip/testing' is very far behind base (78 commits)
+      WARNING: branch 'wip/testing' is ahead 32 and behind 78 and not clearly grouped by initiative
+
+    docs-macos-native-picker-width-fix  [none] +2 -126 diverged mb:11251d6 mb-date:2026-04-24
+      tip: 14aed3e (2026-04-28)
+      WARNING: branch 'docs-macos-native-picker-width-fix' is very far behind base (126 commits)
+      WARNING: branch 'docs-macos-native-picker-width-fix' is ahead 2 and behind 126 and not clearly grouped by initiative
+
+    gemini-ocr-feature  [none] -92 merged mb:b486b63 mb-date:2026-05-01
+      tip: b486b63 (2026-05-01)
+      WARNING: branch 'gemini-ocr-feature' is very far behind base (92 commits)
+
+    mac-mini  [none] -90 merged mb:741a7d6 mb-date:2026-05-01
+      tip: 741a7d6 (2026-05-01)
+      WARNING: branch 'mac-mini' does not follow known naming prefixes (discussion, docs, feature, fix, validation, wip)
+      WARNING: branch 'mac-mini' is very far behind base (90 commits)
+
+    main  [none] -105 behind mb:0b21580 mb-date:2026-04-29
+      tip: 0b21580 (2026-04-29)
+      WARNING: [INFO] local 'main' is behind 'origin/main' by 105 commits (expected in multi-host workflows)
+
+    main  [none] merged mb:13af4a3 mb-date:2026-05-06
+      tip: 13af4a3 (2026-05-06)
+
+    staging  [none] +13 -158 diverged mb:e277bb2 mb-date:2026-04-22
+      tip: 8da7be1 (2026-04-23)
+      WARNING: branch 'staging' is very far behind base (158 commits)
+      WARNING: branch 'staging' is ahead 13 and behind 158 and not clearly grouped by initiative
+
+  Initiative: repo-bootstrap
+  ------------------------------------------------------------
+
+    feature/repo-bootstrap/office-clerk-bootstrap  [feature] +1 ahead mb:13af4a3 mb-date:2026-05-06
+      tip: 5b8baf8 (2026-05-06)
+      WARNING: branch name contains 'office-clerk' vocabulary inside 'iHomeNerd-coding' repo
+      WARNING: branch name contains 'office_clerk' vocabulary inside 'iHomeNerd-coding' repo
+      WARNING: [INFO] feature branch 'feature/repo-bootstrap/office-clerk-bootstrap' has no nearby validation evidence ('validation/repo-bootstrap/office-clerk-bootstrap' not found)
+
+    feature/repo-bootstrap/office-clerk-bootstrap  [feature] +1 ahead mb:13af4a3 mb-date:2026-05-06
+      tip: 5b8baf8 (2026-05-06)
+      WARNING: branch name contains 'office-clerk' vocabulary inside 'iHomeNerd-coding' repo
+      WARNING: branch name contains 'office_clerk' vocabulary inside 'iHomeNerd-coding' repo
+      WARNING: [INFO] feature branch 'feature/repo-bootstrap/office-clerk-bootstrap' has no nearby validation evidence ('validation/repo-bootstrap/office-clerk-bootstrap' not found)
+
+  Initiative: repo-orchestration
+  ------------------------------------------------------------
+
+    feature/repo-orchestration/branch-map-readonly-governance  [feature] +2 ahead mb:13af4a3 mb-date:2026-05-06
+      tip: 56a8983 (2026-05-06)
+      WARNING: [INFO] feature branch 'feature/repo-orchestration/branch-map-readonly-governance' has no nearby validation evidence ('validation/repo-orchestration/branch-map-readonly-governance' not found)
+
+    docs/repo-orchestration/branch-map-sprint-setup  [docs] +2 ahead mb:13af4a3 mb-date:2026-05-06
+      tip: 56a8983 (2026-05-06)
+
+    docs/repo-orchestration/branch-map-sprint-setup  [docs] +2 ahead mb:13af4a3 mb-date:2026-05-06
+      tip: 56a8983 (2026-05-06)
+
+  Initiative: uniform-web-ui
+  ------------------------------------------------------------
+
+    feature/uniform-web-ui/frontend-model-selector  [feature] +2 -23 diverged mb:84c6af5 mb-date:2026-05-03
+      tip: 181e200 (2026-05-03)
+      WARNING: [INFO] feature branch 'feature/uniform-web-ui/frontend-model-selector' has no nearby validation evidence ('validation/uniform-web-ui/frontend-model-selector' not found)
+
+    feature/uniform-web-ui/frontend-model-selector  [feature] +2 -23 diverged mb:84c6af5 mb-date:2026-05-03
+      tip: 181e200 (2026-05-03)
+      WARNING: [INFO] feature branch 'feature/uniform-web-ui/frontend-model-selector' has no nearby validation evidence ('validation/uniform-web-ui/frontend-model-selector' not found)
+
+    feature/uniform-web-ui/speech-extraction-plugin-namespace  [feature] +2 -21 diverged mb:84b4749 mb-date:2026-05-04
+      tip: 19b30aa (2026-05-05)
+      WARNING: [INFO] feature branch 'feature/uniform-web-ui/speech-extraction-plugin-namespace' has no nearby validation evidence ('validation/uniform-web-ui/speech-extraction-plugin-namespace' not found)
+
+    feature/uniform-web-ui/speech-extraction-plugin-namespace  [feature] +2 -21 diverged mb:84b4749 mb-date:2026-05-04
+      tip: 19b30aa (2026-05-05)
+      WARNING: [INFO] feature branch 'feature/uniform-web-ui/speech-extraction-plugin-namespace' has no nearby validation evidence ('validation/uniform-web-ui/speech-extraction-plugin-namespace' not found)
+
+======================================================================
+Summary: 43 branches, 28 warning(s), 13 info note(s)
