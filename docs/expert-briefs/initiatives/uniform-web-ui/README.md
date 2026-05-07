@@ -21,8 +21,6 @@ This initiative exists to make that split real in code.
 
 ## Current Active Sprints
 
-- `active/2026-05-07_command-center-translation-cjk/` — final current Command
-  Center localization wave for Chinese, Korean, and Japanese
 - `active/2026-05-04_speech-extraction-plugin-namespace/` — first implementation follow-up from the completed client-surface panel; extracts core speech routes, adds plugin namespace, and splits `/capabilities`
 - `active/2026-05-03_frontend-model-selector/` — SPA consumer of `/v1/models` + `/v1/models/load`
 - `active/2026-05-03_ios-uniform-web-serving/` — iOS serves the bundled Command Center
@@ -34,6 +32,9 @@ This initiative exists to make that split real in code.
 
 ## Promoted Implementation Sprints
 
+- `active/2026-05-07_command-center-translation-cjk/` — promoted to `main` on
+  2026-05-07; completes scoped Command Center translations for all ten
+  advertised UI languages with the Chinese, Korean, and Japanese pass
 - `active/2026-05-07_command-center-translation-de-it-pt/` — promoted to
   `main` on 2026-05-07; adds German, Italian, and Portuguese translations for
   scoped Command Center panel keys
