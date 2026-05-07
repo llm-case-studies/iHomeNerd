@@ -375,7 +375,7 @@ export function SystemPanel() {
       <div className="flex items-center justify-center h-full">
         <div className="animate-pulse flex flex-col items-center">
           <Server size={32} className="text-accent mb-4" />
-          <div className="text-text-secondary">Loading system status...</div>
+          <div className="text-text-secondary">{t('sys.loading')}</div>
         </div>
       </div>
     );
@@ -390,16 +390,16 @@ export function SystemPanel() {
       className="max-w-6xl mx-auto w-full p-6 space-y-8 overflow-y-auto h-full"
     >
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard icon={Activity} label={t('sys_status')} value={health.status === 'ok' ? 'Healthy' : 'Degraded'} valueColor={health.status === 'ok' ? 'text-success' : 'text-warning'} />
-        <StatCard icon={Cpu} label="Active Models" value={`${Object.keys(health.models || {}).length} Loaded`} />
-        <StatCard icon={Network} label="Active Sessions" value={String(stats?.session_count ?? 0)} />
-        <StatCard icon={HardDrive} label="Free Storage" value={formatBytes(stats?.free_storage_bytes ?? stats?.storage_bytes ?? 0)} />
+        <StatCard icon={Activity} label={t('sys_status')} value={health.status === 'ok' ? t('sys.healthy') : t('sys.degraded')} valueColor={health.status === 'ok' ? 'text-success' : 'text-warning'} />
+        <StatCard icon={Cpu} label={t('sys.activeModels')} value={`${Object.keys(health.models || {}).length} Loaded`} />
+        <StatCard icon={Network} label={t('sys.activeSessions')} value={String(stats?.session_count ?? 0)} />
+        <StatCard icon={HardDrive} label={t('sys.freeStorage')} value={formatBytes(stats?.free_storage_bytes ?? stats?.storage_bytes ?? 0)} />
       </div>
 
       {stats?.uptime_seconds != null && (
         <div className="flex items-center gap-2 text-sm text-text-secondary px-1">
           <Clock size={14} />
-          <span>Uptime: {formatUptime(stats.uptime_seconds)}</span>
+          <span>{t('sys.uptime')} {formatUptime(stats.uptime_seconds)}</span>
         </div>
       )}
 
@@ -408,10 +408,10 @@ export function SystemPanel() {
           <div className="px-6 py-5 border-b border-border-color">
             <h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
               <Activity size={20} className="text-accent" />
-              Node Load
+              {t('sys.nodeLoad')}
             </h3>
             <p className="text-sm text-text-secondary mt-1">
-              Live Android runtime cost on this node, including the most recent local chat, ASR, and TTS runs.
+              {t('sys.nodeLoadDesc')}
             </p>
           </div>
           <div className="p-6 space-y-4">
@@ -427,7 +427,7 @@ export function SystemPanel() {
             <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 space-y-3">
               <div className="flex items-center gap-2 text-text-primary font-medium">
                 <Cpu size={18} className="text-accent" />
-                Last Chat Run
+                {t('sys.lastChatRun')}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 <Metric label="Requests" value={String(stats.performance.chat?.request_count ?? 0)} />
@@ -444,7 +444,7 @@ export function SystemPanel() {
             <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 space-y-3">
               <div className="flex items-center gap-2 text-text-primary font-medium">
                 <Mic size={18} className="text-accent" />
-                Last ASR Run
+                {t('sys.lastAsrRun')}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 <Metric label="Requests" value={String(stats.performance.asr?.request_count ?? 0)} />
@@ -459,7 +459,7 @@ export function SystemPanel() {
             <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 space-y-3">
               <div className="flex items-center gap-2 text-text-primary font-medium">
                 <Play size={18} className="text-accent" />
-                Last TTS Run
+                {t('sys.lastTtsRun')}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 <Metric label="Requests" value={String(stats.performance.tts?.request_count ?? 0)} />
@@ -479,16 +479,16 @@ export function SystemPanel() {
           <div>
             <h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
               <Server size={20} className="text-accent" />
-              {t('sys_nodes_title', 'Home Nodes')}
+              {t('sys.homeNodes')}
             </h3>
             <p className="text-sm text-text-secondary mt-1">
               {cluster.gateway?.hostname
                 ? `Gateway: ${cluster.gateway.hostname} (${cluster.gateway.ip})`
-                : 'The gateway is the control plane for node routing, trust, and managed actions.'}
+                : t('sys.gatewayDesc')}
             </p>
           </div>
           <span className="px-3 py-1 bg-bg-input text-text-secondary text-xs rounded-full border border-border-color">
-            {cluster.nodes?.length ?? 0} node{(cluster.nodes?.length ?? 0) === 1 ? '' : 's'}
+            {t('sys.nodesCount', { count: cluster.nodes?.length ?? 0 })}
           </span>
         </div>
         <div className="p-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -506,10 +506,10 @@ export function SystemPanel() {
         <div className="px-6 py-5 border-b border-border-color">
           <h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
             <ArrowRightLeft size={20} className="text-accent" />
-            {t('sys_control_plane_title', 'Gateway Control Plane')}
+            {t('sys.controlPlane')}
           </h3>
           <p className="text-sm text-text-secondary mt-1">
-            The gateway stays light and responsive. It routes work, checks updates, promotes SSH-reachable nodes, and starts or stops managed runtimes.
+            {t('sys.controlPlaneDesc')}
           </p>
         </div>
         <div className="p-6 space-y-6">
@@ -517,13 +517,13 @@ export function SystemPanel() {
             <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 space-y-4">
               <div className="flex items-center gap-2 text-text-primary font-medium">
                 <Search size={18} className="text-accent" />
-                Promote a Node by SSH
+                {t('sys.promoteNode')}
               </div>
               <p className="text-sm text-text-secondary">
-                Use this for a Linux box or Mac you can already reach over SSH. Linux uses the Docker path; macOS installs a user-level launchd service and reuses Ollama if the app is already present.
+                {t('sys.promoteNodeDesc')}
               </p>
               <p className="text-xs text-text-secondary/80">
-                The gateway uses its own SSH identity. If this Home node cannot already SSH into the target, preflight and promotion will fail even if your laptop can reach it.
+                {t('sys.sshNote')}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -598,21 +598,21 @@ export function SystemPanel() {
                   disabled={!form.host.trim() || !form.sshUser.trim() || controlBusy !== null}
                   className="px-4 py-2 rounded-xl bg-accent text-black font-medium disabled:opacity-50"
                 >
-                  {controlBusy === 'preflight' ? 'Checking...' : 'Run Preflight'}
+                  {controlBusy === 'preflight' ? t('sys.checking') : t('sys.runPreflight')}
                 </button>
                 <button
                   onClick={() => promoteNode(false)}
                   disabled={!preflight || controlBusy !== null}
                   className="px-4 py-2 rounded-xl border border-border-color text-text-primary disabled:opacity-50"
                 >
-                  {controlBusy === 'register' ? 'Saving...' : 'Save Candidate'}
+                  {controlBusy === 'register' ? t('sys.saving') : t('sys.saveCandidate')}
                 </button>
                 <button
                   onClick={() => promoteNode(true)}
                   disabled={!preflight || !preflight.support.promote || controlBusy !== null}
                   className="px-4 py-2 rounded-xl bg-success/15 border border-success/30 text-success disabled:opacity-50"
                 >
-                  {controlBusy === 'install' ? 'Installing...' : 'Install on Node'}
+                  {controlBusy === 'install' ? t('sys.installing') : t('sys.installOnNode')}
                 </button>
               </div>
 
@@ -631,7 +631,7 @@ export function SystemPanel() {
             <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5 space-y-4">
               <div className="flex items-center gap-2 text-text-primary font-medium">
                 <Terminal size={18} className="text-accent" />
-                Preflight Summary
+                {t('sys.preflightSummary')}
               </div>
               {preflight ? (
                 <>
@@ -689,7 +689,7 @@ export function SystemPanel() {
                 </>
               ) : (
                 <div className="text-sm text-text-secondary">
-                  Preflight tells you whether a node is a good gateway, GPU worker, or light specialist, and whether the gateway can install it automatically.
+                  {t('sys.preflightHint')}
                 </div>
               )}
             </div>
@@ -698,7 +698,7 @@ export function SystemPanel() {
           <div className="rounded-2xl border border-border-color bg-bg-input/20 p-5">
             <div className="flex items-center gap-2 text-text-primary font-medium mb-4">
               <Wrench size={18} className="text-accent" />
-              Managed Nodes
+              {t('sys.managedNodes')}
             </div>
             {managedNodes.length > 0 ? (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -716,7 +716,7 @@ export function SystemPanel() {
               </div>
             ) : (
               <div className="text-sm text-text-secondary">
-                No managed nodes yet. Start with an SSH-reachable Linux box, or preflight a mac-mini / iMac to see what runtime support is already there.
+                {t('sys.noManagedNodes')}
               </div>
             )}
           </div>
@@ -727,7 +727,7 @@ export function SystemPanel() {
         <div className="px-6 py-5 border-b border-border-color flex items-center justify-between">
           <h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
             <Server size={20} className="text-accent" />
-            {t('sys_registry')}
+            {t('sys.capabilityRegistry')}
           </h3>
           <span className="px-3 py-1 bg-success/10 text-success text-xs font-mono rounded-full border border-success/20">
             API: v1
@@ -763,7 +763,7 @@ export function SystemPanel() {
         <div className="px-6 py-5 border-b border-border-color">
           <h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
             <ShieldCheck size={20} className="text-accent" />
-            Connected Apps & Plugins
+            {t('sys.connectedApps')}
           </h3>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -788,7 +788,7 @@ export function SystemPanel() {
             })
           ) : (
             <div className="col-span-full text-center text-text-secondary py-4">
-              No plugins registered yet
+              {t('sys.noPlugins')}
             </div>
           )}
         </div>

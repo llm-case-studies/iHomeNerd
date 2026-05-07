@@ -12,10 +12,12 @@ import {
   Wifi,
   ArrowRight,
 } from 'lucide-react';
+import { buildLanguageUrl } from './lib/languageUtils';
 
 interface ScoutFlowProps {
   isOpen: boolean;
   onClose: () => void;
+  currentLanguage?: string;
 }
 
 type FlowStep = 'chooser' | 'found';
@@ -66,7 +68,7 @@ function getDockerSummary(platform: Platform): string {
   return 'Docker is the practical early-adopter path today, ideally on a spare machine or headless Linux box you can already SSH into, but it is not the low-friction default for a cold visitor.';
 }
 
-export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
+export default function ScoutFlow({ isOpen, onClose, currentLanguage }: ScoutFlowProps) {
   const [step, setStep] = useState<FlowStep>('chooser');
   const [platform] = useState<Platform>(detectPlatform);
   const [brainInfo, setBrainInfo] = useState<BrainInfo | null>(null);
@@ -363,7 +365,10 @@ export default function ScoutFlow({ isOpen, onClose }: ScoutFlowProps) {
               </div>
 
               <a
-                href={`https://${brainInfo.ip || 'localhost'}:${brainInfo.port || 17777}`}
+                href={(() => {
+                  const ccBaseUrl = `https://${brainInfo.ip || 'localhost'}:${brainInfo.port || 17777}`;
+                  return currentLanguage ? buildLanguageUrl(ccBaseUrl, currentLanguage) : ccBaseUrl;
+                })()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold transition-all hover:scale-[1.02]"

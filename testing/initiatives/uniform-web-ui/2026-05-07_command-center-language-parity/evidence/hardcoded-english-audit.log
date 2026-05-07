@@ -1,0 +1,106 @@
+=== HARD-CODED ENGLISH AUDIT ===
+Commit under test: f487108
+
+Each finding below represents a user-visible string that is NOT routed through i18n/t().
+
+--- HIGH VISIBILITY (shell, tabs, primary controls, empty/error states) ---
+
+1. frontend/src/components/ChatPanel.tsx:156
+   'Not installed on this node yet' — fallback route label in capability info footer
+   
+2. frontend/src/components/ChatPanel.tsx:25
+   'local route' — fallback when capability detail is missing
+   
+3. frontend/src/components/ChatPanel.tsx:26
+   'capability gated' — fallback tier label
+
+4. frontend/src/components/ChatPanel.tsx:74
+   `Error: ${message}` — English error prefix on chat failure
+
+5. frontend/src/components/TalkPanel.tsx:195
+   'Could not transcribe audio.' — English fallback error message
+
+6. frontend/src/components/TalkPanel.tsx:45-48
+   FALLBACK_ASR_LANGUAGES: labels 'English (US)', 'Español (ES)' — English in ASR language selector when backend provides none
+
+7. frontend/src/components/TalkPanel.tsx:59
+   'Hello from iHomeNerd.' — default TTS draft text
+
+8. frontend/src/components/TalkPanel.tsx:346-347,504-506
+   'not installed', 'local route', 'local runtime' — status bar backend labels
+
+9. frontend/src/components/TalkPanel.tsx:351
+   'Recognition:' — inline label prefix in status bar
+
+10. frontend/src/components/TranslatePanel.tsx:7-15
+    LANGUAGES array: 'Auto Detect', 'English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese'
+
+11. frontend/src/components/SystemPanel.tsx:742-743
+    Capability registry table headers: 'Capability', 'Status', 'Model Backend', 'Tier'
+
+12. frontend/src/components/SystemPanel.tsx:751
+    Status labels: 'Available', 'Coming Soon'
+
+13. frontend/src/components/SystemPanel.tsx:771-777
+    Connected apps: 'Active (N sessions)', 'Registered', 'Unknown' — English runtime labels
+
+14. frontend/src/components/SystemPanel.tsx:170-203
+    getNodeFit(): 'Gateway / Control Plane', 'GPU Worker', 'Light Specialist', workload/avoid descriptions
+
+--- MEDIUM VISIBILITY (panel sub-labels, secondary controls) ---
+
+15. frontend/src/components/SystemPanel.tsx (multiple lines)
+    NodeCard: 'Best fit', 'Recommended default models', 'Avoid by default', 'Strengths', 'Ollama:', 'Installed models:', 'Managed state:', 'Runtime:'
+
+16. frontend/src/components/SystemPanel.tsx (multiple lines)
+    ManagedNodeCard: 'Recommended roles', 'Suggested model pack', 'SSH:', 'Install path:', 'Automatic install:', 'No role guidance yet', 'No model pack recorded'
+
+17. frontend/src/components/SystemPanel.tsx (multiple lines)
+    Control plane errors: 'Preflight failed', 'Promote failed', 'Update check failed'
+
+18. frontend/src/components/SystemPanel.tsx:536,545,574
+    Form placeholders: 'Acer-HL.local or 192.168.0.8', 'alex', 'Optional friendly name'
+
+19. frontend/src/components/SystemPanel.tsx:580
+    'Discovered LAN candidates' section header
+
+20. frontend/src/components/SystemPanel.tsx (multiple lines)
+    Preflight section: 'ready (version)', 'not ready', 'No model pack suggested', 'Recommended roles', 'Recommended models', 'Strengths'
+
+21. frontend/src/components/SystemPanel.tsx:677-681
+    Support status: 'supported now', 'not yet supported', 'supported'
+
+--- LANDING PAGE (very high visibility, full-page narrative) ---
+
+22. landing/src/LandingPage.tsx (lines 143-163)
+    "Public Repo, Private Data" section — fully hardcoded English
+    Including: 'Public Repo, Private Data', 'View GitHub Repo', all descriptive paragraphs
+
+23. landing/src/LandingPage.tsx (lines 167-395)
+    "Start Without Lock-In" section and all sub-sections — fully hardcoded English
+    Including: 'Start Without Lock-In', 'Choose the clearest next step.', all timeline cards,
+    all path cards, all scenario cards, all node role cards, all descriptive text
+
+24. landing/src/LandingPage.tsx (line 305, 512)
+    'Link Copied', 'Copy This Page Link' — clipboard button labels
+
+25. landing/src/LandingPage.tsx (lines 493-533)
+    CTA section "Ask the AI you already trust." — fully hardcoded English
+    Including: 'Compare Paths', 'Choose Here Instead', all descriptive text
+
+--- SCOUTFLOW (very high visibility, modal) ---
+
+26. landing/src/ScoutFlow.tsx (entire file)
+    Almost entirely hardcoded English (~200+ user-visible strings)
+    Including: modal title, all chooser card titles and descriptions, scenario tiles,
+    platform summaries, connection error messages, button labels ('Try This Machine', 'Connect',
+    'Choose Another Path'), "Brain Found" status section, Docker caveats text
+
+--- LOW VISIBILITY (acceptable, out of scope) ---
+
+NOTE: The following categories are accepted as out of scope for this sprint:
+- Model IDs, backend names, capability IDs (e.g. 'gemma3:1b', 'transcribe_audio')
+- Hostnames, IP addresses, technical identifiers
+- Format functions producing metric labels (e.g. formatBytes, formatUptime)
+- Console.error strings, debug logging
+- CSS class names and HTML attribute values

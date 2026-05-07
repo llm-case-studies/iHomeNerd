@@ -25,25 +25,13 @@ export function ChatPanel({ capabilities = null }: ChatPanelProps) {
   const chatRoute = chatDetail?.backend || chatDetail?.model || 'local route';
   const chatTier = chatDetail?.tier || 'capability gated';
 
-  // Set initial greeting based on language
   useEffect(() => {
-    let greeting = "Hello! I am iHomeNerd, your local AI brain. How can I help you today?";
-    if (i18n.language === 'zh') greeting = "你好！我是 iHomeNerd，您的本地 AI 大脑。今天我能帮您什么？";
-    else if (i18n.language === 'ko') greeting = "안녕하세요! 저는 귀하의 로컬 AI 두뇌인 iHomeNerd입니다. 오늘 무엇을 도와드릴까요?";
-    else if (i18n.language === 'ja') greeting = "こんにちは！私はあなたのローカルAIブレイン、iHomeNerdです。今日はどのようなご用件でしょうか？";
-    else if (i18n.language === 'ru') greeting = "Привет! Я iHomeNerd, ваш локальный ИИ-мозг. Чем я могу помочь вам сегодня?";
-    else if (i18n.language === 'de') greeting = "Hallo! Ich bin iHomeNerd, Ihr lokales KI-Gehirn. Wie kann ich Ihnen heute helfen?";
-    else if (i18n.language === 'fr') greeting = "Bonjour ! Je suis iHomeNerd, votre cerveau IA local. Comment puis-je vous aider aujourd'hui ?";
-    else if (i18n.language === 'it') greeting = "Ciao! Sono iHomeNerd, il tuo cervello IA locale. Come posso aiutarti oggi?";
-    else if (i18n.language === 'es') greeting = "¡Hola! Soy iHomeNerd, tu cerebro de IA local. ¿Cómo puedo ayudarte hoy?";
-    else if (i18n.language === 'pt') greeting = "Olá! Sou o iHomeNerd, seu cérebro de IA local. Como posso ajudar você hoje?";
-
     setMessages([{
       id: '1',
       role: 'assistant',
-      content: greeting
+      content: t('chat.greeting'),
     }]);
-  }, [i18n.language]);
+  }, [i18n.language, t]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -77,7 +65,7 @@ export function ChatPanel({ capabilities = null }: ChatPanelProps) {
       ]);
     } catch (error) {
       console.error("Chat error:", error);
-      const message = error instanceof Error ? error.message : 'Could not reach the local AI brain.';
+      const message = error instanceof Error ? error.message : t('chat.errorMessage');
       setMessages((prev) => [
         ...prev,
         {
@@ -137,7 +125,7 @@ export function ChatPanel({ capabilities = null }: ChatPanelProps) {
       <div className="p-4 pt-0">
         {capabilities && !chatAvailable && (
           <div className="mb-3 rounded-xl border border-border-color bg-bg-surface px-4 py-3 text-sm text-text-secondary">
-            Chat is not active on this node yet. Install or enable a local dialogue backend before using this tab.
+            {t('chat.notInstalled')}
           </div>
         )}
         <div className="relative flex items-center">
@@ -148,8 +136,8 @@ export function ChatPanel({ capabilities = null }: ChatPanelProps) {
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={
               chatAvailable
-                ? (i18n.language === 'zh' ? "问问你的本地大脑任何问题..." : "Ask your local brain anything...")
-                : "Chat is not available on this node yet."
+                ? t('chat.placeholder')
+                : t('chat.notAvailablePlaceholder')
             }
             disabled={isLoading || !chatAvailable}
             className="w-full bg-bg-input border border-border-color rounded-xl py-4 pl-5 pr-14 text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
@@ -164,8 +152,8 @@ export function ChatPanel({ capabilities = null }: ChatPanelProps) {
         </div>
         <div className="text-center mt-3 text-xs text-text-secondary font-mono">
           {chatAvailable
-            ? `Capability: chat • ${chatRoute} • ${chatTier}`
-            : 'Capability: chat • Not installed on this node yet'}
+            ? t('chat.capabilityInfo', { route: chatRoute, tier: chatTier })
+            : t('chat.capabilityInfo', { route: 'Not installed on this node yet', tier: '' })}
         </div>
       </div>
     </div>

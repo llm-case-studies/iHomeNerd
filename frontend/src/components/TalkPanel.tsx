@@ -210,7 +210,7 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
       setLastAsrBackend(null);
     } catch (err) {
       console.error("Microphone access denied", err);
-      alert("Microphone access is required to use the Talk panel.");
+          alert(t('talk.microphoneRequired'));
     }
   };
 
@@ -357,31 +357,31 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
             {isRecording ? (
               <div className="flex items-center gap-2 text-error animate-pulse">
                 <div className="w-2 h-2 rounded-full bg-error"></div>
-                <span>Listening...</span>
+                <span>{t('talk.listening')}</span>
               </div>
             ) : isProcessing ? (
               <div className="flex items-center gap-2 text-accent animate-pulse">
                 <Loader2 size={16} className="animate-spin" />
-                <span>Transcribing locally...</span>
+                <span>{t('talk.transcribing')}</span>
               </div>
             ) : transcript ? (
               <>
                 <p className="text-lg text-text-secondary leading-relaxed text-center">
-                  You: "{transcript}"
+                  {t('talk.labelYou')}: "{transcript}"
                 </p>
                 {lastAsrLanguage && (
                   <p className="text-xs font-mono text-text-secondary text-center">
-                    Recognized with {lastAsrLanguage}
+                    {t('talk.recognizedWith', { language: lastAsrLanguage })}
                   </p>
                 )}
                 {reply && (
                   <p className="text-xl text-text-primary leading-relaxed text-center font-medium">
-                    Nerd: "{reply}"
+                    {t('talk.labelNerd')}: "{reply}"
                   </p>
                 )}
                 {!canReplyAndSpeak && (
                   <p className="text-sm text-text-secondary text-center">
-                    Transcript is available, but reply + speech are not enabled on this node yet.
+                    {t('talk.transcriptReplyClosed')}
                   </p>
                 )}
               </>
@@ -389,17 +389,17 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
               <div className="text-text-secondary text-center space-y-2">
                 {canTranscribe ? (
                   <p>
-                    Click the microphone to start speaking. <br/>
-                    Audio is routed through this node&apos;s local ASR runtime.
+                    {t('talk.micPrompt')} <br/>
+                    {t('talk.micPromptDetail')}
                   </p>
                 ) : (
                   <p>
-                    This node serves the Talk UI, but local ASR is not active yet.
+                    {t('talk.noAsr')}
                   </p>
                 )}
                 {capabilities && missingTalkCapabilities && (
                   <p className="text-xs font-mono">
-                    Missing: {missingTalkCapabilities}
+                    {t('talk.missing')} {missingTalkCapabilities}
                   </p>
                 )}
               </div>
@@ -410,10 +410,10 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
             <div className="mt-6 rounded-xl border border-border-color bg-bg-input/20 p-4 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <label className="text-sm text-text-secondary" htmlFor="talk-asr-language-select">
-                  Recognition Language
+                  {t('talk.recognitionLanguage')}
                 </label>
                 <span className="text-xs font-mono text-text-secondary">
-                  {supportedAsrLanguages.length} local language{supportedAsrLanguages.length === 1 ? '' : 's'}
+                  {t('talk.localLanguages', { count: supportedAsrLanguages.length })}
                 </span>
               </div>
               <select
@@ -429,7 +429,7 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
                 ))}
               </select>
               <div className="text-xs text-text-secondary">
-                This Motorola currently has local ASR models for English and Spanish only.
+                {t('talk.asrModelNote')}
               </div>
             </div>
           )}
@@ -438,10 +438,10 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
             <div className="mt-6 rounded-xl border border-border-color bg-bg-input/20 p-4 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <label className="text-sm text-text-secondary" htmlFor="talk-voice-select">
-                  Voice
+                  {t('talk.voiceLabel')}
                 </label>
                 <span className="text-xs font-mono text-text-secondary">
-                  {isLoadingVoices ? 'Loading voices...' : `${filteredVoices.length} matching voices`}
+                  {isLoadingVoices ? t('talk.loadingVoices') : t('talk.matchingVoices', { count: filteredVoices.length })}
                 </span>
               </div>
               <select
@@ -450,7 +450,7 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
                 onChange={(e) => setSelectedVoice(e.target.value)}
                 className="w-full bg-bg-input border border-border-color rounded-xl px-3 py-2 text-text-primary outline-none focus:border-accent transition-colors"
               >
-                <option value="">Auto ({ttsLang})</option>
+                <option value="">{t('talk.autoVoice')} ({ttsLang})</option>
                 {filteredVoices.map((voice) => (
                   <option key={voice.name} value={voice.name}>
                     {voice.languageTag} · {voice.name}
@@ -464,14 +464,14 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
             <div className="mt-8 space-y-3">
               <div className="rounded-xl border border-border-color bg-bg-input/50 p-4 space-y-3">
                 <div className="text-sm text-text-secondary">
-                  TTS-only mode is available on this node. Enter text to verify the live Android speech backend.
+                  {t('talk.ttsOnlyMode')}
                 </div>
                 <textarea
                   value={ttsDraft}
                   onChange={(e) => setTtsDraft(e.target.value)}
                   rows={3}
                   className="w-full bg-bg-input border border-border-color rounded-xl p-3 text-text-primary placeholder:text-text-secondary resize-none outline-none focus:border-accent transition-colors"
-                  placeholder="Enter text to speak..."
+                  placeholder={t('talk.enterTextToSpeak')}
                 />
                 <div className="flex justify-center">
                   <button
@@ -480,7 +480,7 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
                     className="flex items-center gap-2 px-4 py-2 bg-bg-input hover:bg-border-color text-text-primary rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
                   >
                     {isPlaying ? <StopCircle size={16} /> : <Play size={16} />}
-                    {isPlaying ? 'Speaking sample...' : 'Speak sample'}
+                    {isPlaying ? t('talk.speakingSample') : t('talk.speakSample')}
                   </button>
                 </div>
               </div>
@@ -495,7 +495,7 @@ export function TalkPanel({ capabilities = null }: TalkPanelProps) {
                 className="flex items-center gap-2 px-4 py-2 bg-bg-input hover:bg-border-color text-text-primary rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
               >
                 {isPlaying ? <StopCircle size={16} /> : <Play size={16} />}
-                {isPlaying ? 'Thinking & speaking...' : canReplyAndSpeak ? 'Ask Nerd & Speak' : 'Reply + speech unavailable'}
+                {isPlaying ? t('talk.thinkingAndSpeaking') : canReplyAndSpeak ? t('talk.replyAndSpeak') : t('talk.replyUnavailable')}
               </button>
             </div>
           )}

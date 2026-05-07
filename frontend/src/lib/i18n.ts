@@ -1,5 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { initLanguagePersistence } from './languageUtils';
 
 const resources = {
   en: {
@@ -114,7 +115,81 @@ const resources = {
       "help.tabs.investigate": "Investigate: Deep dive into system logs, diagnostics, and anomalies.",
       "help.tabs.agents": "Agents: Manage autonomous AI assistants and their tasks.",
       "help.tabs.builder": "Builder: Create custom dashboards, widgets, and UI components.",
-      "help.tabs.system": "System: Core system settings, updates, and maintenance tasks."
+      "help.tabs.system": "System: Core system settings, updates, and maintenance tasks.",
+      "chat.greeting": "Hello! I am iHomeNerd, your local AI brain. How can I help you today?",
+      "chat.placeholder": "Ask your local brain anything...",
+      "chat.capabilityInfo": "Capability: chat • {{route}} • {{tier}}",
+      "chat.notInstalled": "Chat is not active on this node yet. Install or enable a local dialogue backend before using this tab.",
+      "chat.notAvailablePlaceholder": "Chat is not available on this node yet.",
+      "chat.errorMessage": "Could not reach the local AI brain.",
+      "talk.listening": "Listening...",
+      "talk.transcribing": "Transcribing locally...",
+      "talk.recognizedWith": "Recognized with {{language}}",
+      "talk.recognitionLanguage": "Recognition Language",
+      "talk.voiceLabel": "Voice",
+      "talk.micPrompt": "Click the microphone to start speaking.",
+      "talk.micPromptDetail": "Audio is routed through this node's local ASR runtime.",
+      "talk.noAsr": "This node serves the Talk UI, but local ASR is not active yet.",
+      "talk.missing": "Missing:",
+      "talk.replyAndSpeak": "Ask Nerd & Speak",
+      "talk.thinkingAndSpeaking": "Thinking & speaking...",
+      "talk.replyUnavailable": "Reply + speech unavailable",
+      "talk.speakSample": "Speak sample",
+      "talk.speakingSample": "Speaking sample...",
+      "talk.ttsOnlyMode": "TTS-only mode is available on this node. Enter text to verify the live speech backend.",
+      "talk.enterTextToSpeak": "Enter text to speak...",
+      "talk.microphoneRequired": "Microphone access is required to use the Talk panel.",
+      "talk.autoVoice": "Auto",
+      "talk.loadingVoices": "Loading voices...",
+      "talk.matchingVoices_one": "{{count}} matching voice",
+      "talk.matchingVoices_other": "{{count}} matching voices",
+      "talk.localLanguages_one": "{{count}} local language",
+      "talk.localLanguages_other": "{{count}} local languages",
+      "talk.asrModelNote": "This node currently has local ASR models for the listed languages only.",
+      "talk.transcriptReplyClosed": "Transcript is available, but reply + speech are not enabled on this node yet.",
+      "talk.labelYou": "You:",
+      "talk.labelNerd": "Nerd:",
+      "trans.placeholder": "Enter text to translate...",
+      "trans.willAppear": "Translation will appear here...",
+      "trans.notAvailable": "Translation is not available on this node yet.",
+      "trans.translating": "Translating...",
+      "trans.copyTitle": "Copy translation",
+      "trans.notInstalledHint": "Translation is not active on this node yet. Install or enable a local translation backend before using this tab.",
+      "trans.routeLabel": "Translate: {{route}}",
+      "sys.loading": "Loading system status...",
+      "sys.healthy": "Healthy",
+      "sys.degraded": "Degraded",
+      "sys.activeModels": "Active Models",
+      "sys.activeSessions": "Active Sessions",
+      "sys.freeStorage": "Free Storage",
+      "sys.uptime": "Uptime:",
+      "sys.nodeLoad": "Node Load",
+      "sys.nodeLoadDesc": "Live runtime cost on this node, including the most recent local chat, ASR, and TTS runs.",
+      "sys.lastChatRun": "Last Chat Run",
+      "sys.lastAsrRun": "Last ASR Run",
+      "sys.lastTtsRun": "Last TTS Run",
+      "sys.homeNodes": "Home Nodes",
+      "sys.controlPlane": "Gateway Control Plane",
+      "sys.controlPlaneDesc": "The gateway stays light and responsive. It routes work, checks updates, promotes SSH-reachable nodes, and starts or stops managed runtimes.",
+      "sys.promoteNode": "Promote a Node by SSH",
+      "sys.promoteNodeDesc": "Use this for a Linux box or Mac you can already reach over SSH. Linux uses the Docker path; macOS installs a user-level launchd service and reuses Ollama if the app is already present.",
+      "sys.sshNote": "The gateway uses its own SSH identity. If this Home node cannot already SSH into the target, preflight and promotion will fail even if your laptop can reach it.",
+      "sys.preflightSummary": "Preflight Summary",
+      "sys.preflightHint": "Preflight tells you whether a node is a good gateway, GPU worker, or light specialist, and whether the gateway can install it automatically.",
+      "sys.managedNodes": "Managed Nodes",
+      "sys.noManagedNodes": "No managed nodes yet. Start with an SSH-reachable Linux box, or preflight a mac-mini / iMac to see what runtime support is already there.",
+      "sys.runPreflight": "Run Preflight",
+      "sys.saveCandidate": "Save Candidate",
+      "sys.installOnNode": "Install on Node",
+      "sys.checking": "Checking...",
+      "sys.saving": "Saving...",
+      "sys.installing": "Installing...",
+      "sys.capabilityRegistry": "Capability Registry",
+      "sys.connectedApps": "Connected Apps & Plugins",
+      "sys.noPlugins": "No plugins registered yet",
+      "sys.gatewayDesc": "The gateway is the control plane for node routing, trust, and managed actions.",
+      "sys.nodesCount_one": "{{count}} node",
+      "sys.nodesCount_other": "{{count}} nodes"
     }
   },
   zh: {
@@ -1164,5 +1239,7 @@ i18n
       escapeValue: false
     }
   });
+
+initLanguagePersistence(i18n);
 
 export default i18n;

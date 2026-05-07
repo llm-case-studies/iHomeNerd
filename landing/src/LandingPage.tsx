@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { SUPPORTED_UI_LANGUAGES } from './lib/languages';
 import HardwareChecker from './HardwareChecker';
 import ScoutFlow from './ScoutFlow';
 
@@ -74,16 +75,9 @@ export default function LandingPage() {
                 onChange={handleLanguageChange}
                 className="appearance-none bg-bg-input border border-border-color rounded-lg py-1.5 pl-9 pr-8 text-sm text-text-primary focus:outline-none focus:border-accent transition-colors"
               >
-                <option value="en">English</option>
-                <option value="zh">中文 (Mandarin)</option>
-                <option value="ko">한국어 (Korean)</option>
-                <option value="ja">日本語 (Japanese)</option>
-                <option value="ru">Русский (Russian)</option>
-                <option value="de">Deutsch (German)</option>
-                <option value="fr">Français (French)</option>
-                <option value="it">Italiano (Italian)</option>
-                <option value="es">Español (Spanish)</option>
-                <option value="pt">Português (Brasil)</option>
+                {SUPPORTED_UI_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>{lang.label}</option>
+                ))}
               </select>
               <div className="absolute right-3 pointer-events-none text-text-secondary text-xs">▼</div>
             </div>
@@ -569,6 +563,7 @@ export default function LandingPage() {
       <ScoutFlow
         isOpen={isScoutFlowOpen}
         onClose={() => setIsScoutFlowOpen(false)}
+        currentLanguage={i18n.language}
       />
     </div>
   );

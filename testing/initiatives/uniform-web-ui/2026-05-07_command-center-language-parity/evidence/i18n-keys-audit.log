@@ -1,0 +1,23 @@
+=== i18n Key Distribution (en) ===
+Frontend (frontend/src/lib/i18n.ts): 192 translation keys
+Landing (landing/src/i18n.ts): 192 translation keys (mirrored)
+
+=== Per-Language Key Count (frontend) ===
+zh: 111 keys
+ko: 111 keys
+ja: 111 keys
+ru: 111 keys
+de: 111 keys
+fr: 111 keys
+it: 111 keys
+es: 111 keys
+pt: 111 keys
+
+Note: English has 192 translation keys, while each non-English language block
+currently has 111 keys. The panel-specific keys added in this sprint
+(chat.*, talk.*, trans.*, sys.* and related Command Center strings) are present
+in English and fall back to English for non-English UI languages.
+
+This matches the recorded result.md gap. The language plumbing is validated,
+but a follow-up localization sprint is needed to add reviewed non-English
+translations for the new panel-specific keys.
