@@ -39,7 +39,8 @@ export function TranslatePanel({ capabilities = null }: TranslatePanelProps) {
       setTargetText(response.translatedText);
     } catch (error) {
       console.error("Translation error:", error);
-      setTargetText("Error: Could not reach the local AI brain for translation.");
+      const message = error instanceof Error ? error.message : t('chat.errorMessage');
+      setTargetText(`Error: ${message}`);
     } finally {
       setIsTranslating(false);
     }
@@ -91,7 +92,7 @@ export function TranslatePanel({ capabilities = null }: TranslatePanelProps) {
 
       {capabilities && !translateAvailable && (
         <div className="mb-6 rounded-xl border border-border-color bg-bg-surface px-4 py-3 text-sm text-text-secondary">
-          Translation is not active on this node yet. Install or enable a local translation backend before using this tab.
+          {t('trans.notInstalledHint')}
         </div>
       )}
 
@@ -101,7 +102,7 @@ export function TranslatePanel({ capabilities = null }: TranslatePanelProps) {
           <textarea
             value={sourceText}
             onChange={(e) => setSourceText(e.target.value)}
-            placeholder="Enter text to translate..."
+            placeholder={t('trans.placeholder')}
             className="flex-1 bg-transparent p-6 text-text-primary placeholder:text-text-secondary resize-none outline-none text-lg leading-relaxed"
           />
           <div className="p-4 border-t border-border-color flex justify-between items-center bg-bg-input/50">
@@ -114,7 +115,7 @@ export function TranslatePanel({ capabilities = null }: TranslatePanelProps) {
               {isTranslating ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  Translating...
+                  {t('trans.translating')}
                 </>
               ) : (
                 t('trans_btn')
@@ -128,17 +129,17 @@ export function TranslatePanel({ capabilities = null }: TranslatePanelProps) {
           <div className="flex-1 p-6 text-text-primary text-lg leading-relaxed whitespace-pre-wrap">
             {targetText || (
               <span className="text-text-secondary/50">
-                {translateAvailable ? 'Translation will appear here...' : 'Translation is not available on this node yet.'}
+                {translateAvailable ? t('trans.willAppear') : t('trans.notAvailable')}
               </span>
             )}
           </div>
           <div className="p-4 border-t border-border-color flex justify-between items-center bg-bg-input/50">
-            <span className="text-xs text-text-secondary font-mono">Translate: {translateRoute}</span>
+            <span className="text-xs text-text-secondary font-mono">{t('trans.routeLabel', { route: translateRoute })}</span>
             <button 
               onClick={copyToClipboard}
               disabled={!targetText}
               className="p-2 text-text-secondary hover:text-accent disabled:opacity-50 transition-colors"
-              title="Copy translation"
+              title={t('trans.copyTitle')}
             >
               {copied ? <Check size={20} className="text-success" /> : <Copy size={20} />}
             </button>

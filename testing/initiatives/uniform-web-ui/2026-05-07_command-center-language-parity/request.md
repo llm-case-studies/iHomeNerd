@@ -64,13 +64,38 @@ Minimum probes:
 12. Open Translate and confirm source/target translation controls are not
     confused with the UI locale.
 
+## Implementation-Surface Additional Probes
+
+The implementer notes these extra validation risks:
+
+13. Non-English fallback: change UI language to `ko` or `ru`, open Chat, Talk,
+    and Translate panels. Confirm the new primary-control strings (greeting,
+    placeholder, status labels, button labels) fall back to English rather than
+    showing missing-key markers or blank text.
+14. Chat greeting: switch language in Command Center header dropdown while Chat
+    panel is open. Confirm the initial greeting message changes to match the
+    new language.
+15. TalkPanel status strings: trigger recording (even without a live ASR
+    backend) and confirm "Listening...", "Transcribing locally...", and other
+    status labels render via i18n keys rather than raw hardcoded strings.
+16. `?lng=` round-trip: set `?lng=pt` on landing, confirm `es` does NOT appear
+    in the URL or localStorage afterward (no residual from previous test).
+
 ## Hard-Coded English Audit
 
 Record any high-visibility English strings still present in Command Center.
 
 Do not fail for low-level diagnostic labels such as model IDs, backend names,
 capability IDs, hostnames, or metric names if the implementation result marks
-them out of scope. Do fail if the main shell, tabs, Translate primary controls,
+them out of scope. The following are explicitly out of scope:
+- SystemPanel metric labels ("App CPU", "Battery Temp", "Thermal Status", etc.)
+- Capability Registry table column headers ("Status", "Model Backend", "Tier")
+- Node-card diagnostic fields ("Installed models", "Best fit", "Strengths")
+- Control plane form labels ("Host or IP", "SSH user", "SSH port", "Install path")
+- TranslatePanel source/target language option names (separate from UI locale)
+- TalkPanel ASR "Recognition: ..." footer line (generated from capability data)
+
+Do fail if the main shell, tabs, Translate primary controls,
 Talk primary controls, or top-level empty/error states remain obviously
 English-only.
 
