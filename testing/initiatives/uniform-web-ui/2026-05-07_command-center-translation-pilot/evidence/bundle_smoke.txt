@@ -1,0 +1,49 @@
+Bundle Smoke Audit
+====================
+
+Date: 2026-05-07
+Built bundle: backend/app/static/assets/index-tOU22zVV.js (641 KB)
+
+Host is headless (no browser runtime available). Verification performed
+via string search in minified production JS bundle.
+
+Pilot language string presence in bundle:
+
+  Spanish (es):
+    OK: chat.greeting - "¡Hola! Soy iHomeNerd"
+    OK: talk.listening - "Escuchando"
+    OK: trans.translating - "Traduciendo"
+    OK: sys.loading - "Cargando estado del sistema"
+
+  French (fr):
+    OK: chat.greeting - "Bonjour" / "Je suis iHomeNerd" / "votre cerveau IA local"
+    OK: talk.listening - "Écoute en cours"
+    OK: trans.translating - "Traduction en cours"
+    OK: sys.loading - "Chargement de l'état du système"
+
+  Russian (ru):
+    OK: chat.greeting - "Здравствуйте! Я iHomeNerd"
+    OK: talk.listening - "Слушаю"
+    OK: trans.translating - "Перевод"
+    OK: sys.loading - "Загрузка состояния системы"
+
+i18n key references in bundle:
+  "chat.greeting" appears 5 times (en + 4 translation maps present in bundle)
+  "talk.listening" appears 5 times
+  "trans.placeholder" appears 5 times
+  "sys.loading" appears 5 times
+
+STORAGE_KEY / language persistence:
+  OK: "ihomenerd.ui.language" found in bundle
+  OK: "documentElement" found in bundle
+
+Dev server smoke:
+  Started Vite dev server on port 5179.
+  HTML tag shows lang="en" (hardcoded in index.html).
+  Language switching happens client-side via resolveInitialLanguage()
+  which reads ?lng= from URL params.
+
+  Full browser smoke (Chat, Talk, Translate, System panels in es/fr/ru)
+  deferred to runtime environment with actual browser.
+
+Result: PASS (bundle verification confirmed all translations embedded)

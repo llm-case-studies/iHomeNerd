@@ -1,0 +1,56 @@
+Key Coverage Audit - Command Center Translation Pilot
+====================================================
+
+Date: 2026-05-07
+Validator: iMac-Debian
+Source files: frontend/src/lib/i18n.ts, landing/src/i18n.ts
+
+Method: Python line-based parser counting top-level translation keys
+per language block. Scoped prefixes are chat., talk., trans., sys.,
+help., tab_, docs_, inv_, agent_, build_, app_title, status_online.
+
+Key Counts (both files identical):
+
+  Language  Total Keys  Scoped CC Keys  Missing from en
+  --------  ----------  --------------  ---------------
+  en        185         112             0
+  es        185         112             0
+  fr        185         112             0
+  ru        185         112             0
+  zh        111         ~68             ~44
+  ko        111         ~68             ~44
+  ja        111         ~68             ~44
+  de        111         ~68             ~44
+  it        111         ~68             ~44
+  pt        111         ~68             ~44
+
+Scoped CC key distribution by namespace:
+
+  Namespace       Count  Keys
+  ----------      -----  ----
+  app_title        1     app_title
+  status_online    1     status_online
+  chat.            6     greeting, placeholder, capabilityInfo, notInstalled, notAvailablePlaceholder, errorMessage
+  talk.           27     listening, transcribing, recognizedWith, recognitionLanguage, voiceLabel,
+                         micPrompt, micPromptDetail, noAsr, missing, replyAndSpeak, thinkingAndSpeaking,
+                         replyUnavailable, speakSample, speakingSample, ttsOnlyMode, enterTextToSpeak,
+                         microphoneRequired, autoVoice, loadingVoices, matchingVoices_one, matchingVoices_other,
+                         localLanguages_one, localLanguages_other, asrModelNote, transcriptReplyClosed,
+                         labelYou, labelNerd
+  trans.           7     placeholder, willAppear, notAvailable, translating, copyTitle, notInstalledHint, routeLabel
+  sys.            34     loading, healthy, degraded, activeModels, activeSessions, freeStorage, uptime, nodeLoad,
+                         nodeLoadDesc, lastChatRun, lastAsrRun, lastTtsRun, homeNodes, controlPlane,
+                         controlPlaneDesc, promoteNode, promoteNodeDesc, sshNote, preflightSummary,
+                         preflightHint, managedNodes, noManagedNodes, runPreflight, saveCandidate,
+                         installOnNode, checking, saving, installing, capabilityRegistry, connectedApps,
+                         noPlugins, gatewayDesc, nodesCount_one, nodesCount_other
+  tab_             8     chat, talk, docs, translate, investigate, agents, builder, system
+  docs_            5     title, copilot, desc, empty, placeholder
+  help.           13     title, close, videoTitle, videoPlaceholder, tabsTitle, tabs.chat, tabs.talk,
+                         tabs.docs, tabs.translate, tabs.investigate, tabs.agents, tabs.builder, tabs.system
+  inv_             3     title, desc, run
+  agent_           4     title, desc, workspace, assign
+  build_           3     title, desc, btn
+
+Result: PASS - es, fr, ru all have 100% scoped Command Center key coverage (112/112 keys).
+Each has 185 total keys matching English exactly.

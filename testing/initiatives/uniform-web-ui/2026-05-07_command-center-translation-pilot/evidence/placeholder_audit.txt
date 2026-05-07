@@ -1,0 +1,41 @@
+Placeholder Preservation Audit
+===============================
+
+Date: 2026-05-07
+Source: frontend/src/lib/i18n.ts
+
+Checked keys containing {{route}}, {{tier}}, {{language}}, {{count}}, {{year}}:
+
+  Key                       Placeholders checked
+  ---                       --------------------
+  chat.capabilityInfo       {{route}}, {{tier}}
+  talk.recognizedWith       {{language}}
+  talk.matchingVoices_one   {{count}}
+  talk.matchingVoices_other {{count}}
+  talk.localLanguages_one   {{count}}
+  talk.localLanguages_other {{count}}
+  sys.nodesCount_one        {{count}}
+  sys.nodesCount_other      {{count}}
+  trans.routeLabel          {{route}}
+  footer_rights             {{year}}
+
+Results per language:
+
+  Language  Status  Notes
+  --------  ------  -----
+  en        PASS    All 10 checked keys have correct placeholders
+  es        PASS    All 10 checked keys have correct placeholders
+  fr        PASS    All 10 checked keys have correct placeholders
+  ru        PASS    All 10 checked keys have correct placeholders
+
+No placeholder was lost, altered, or reordered in any pilot language.
+All interpolation markers found with exact same syntax and position.
+
+Same-value-as-English check (scoped keys only):
+  es: 5 keys (app_title, tab_chat, tab_docs, talk.autoVoice, talk.labelNerd) - all stable tokens/international abbreviations
+  fr: 5 keys (app_title, tab_agents, tab_chat, tab_docs, talk.autoVoice) - all stable tokens/international abbreviations
+  ru: 2 keys (app_title, talk.labelNerd) - both stable tokens
+
+Product tokens preserved untranslated: iHomeNerd, Nerd, ASR, TTS, SSH, Docker, Ollama, launchd, mac-mini, iMac.
+
+Result: PASS
