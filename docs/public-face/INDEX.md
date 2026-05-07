@@ -9,6 +9,13 @@
   staging domain, metadata, and GitHub surface
 - `backlog/2026-05-07_public-face-workstreams.md` — prioritized workstreams
   and done-conditions
+- `reviews/README.md` — protocol and templates for measuring public standing
+  before and after public-face improvement sprints
+- `reviews/protocol.md` — repeatable public panel review process
+- `reviews/templates/` — reusable prompts, scorecard, wrong-inference log, and
+  synthesis templates
+- `reviews/2026-05-07_baseline/README.md` — baseline review folder seeded from
+  the 2026-05-07 public-face thread
 
 ## Existing Source Docs To Keep In View
 

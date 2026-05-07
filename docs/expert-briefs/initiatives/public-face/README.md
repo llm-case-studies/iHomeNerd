@@ -26,6 +26,8 @@ For iHomeNerd that means all of these count:
 
 ## Current Active Sprints
 
+- `active/2026-05-07_public-standing-review-protocol/` — define the repeatable
+  public panel review process and measurement templates
 - `active/2026-05-07_public-face-foundation/` — create the public-face
   knowledge base, capture the 2026-05-07 research thread, and define the first
   execution backlog

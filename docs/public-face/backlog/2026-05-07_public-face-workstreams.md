@@ -24,6 +24,24 @@ same product in the same category.
 - an outsider can explain iHomeNerd correctly after 15 seconds on the root page
 - root and staging no longer read like different products
 
+## P0 - Public Standing Review Protocol
+
+**Outcome:** public-face improvements can be measured with repeatable evidence
+instead of vibes.
+
+### Tasks
+
+- define stable public panel prompts
+- create a 1-5 scorecard for public understanding and trust
+- track wrong outsider inferences as public-face bugs
+- create dated before/after review folders
+- run the baseline before or alongside root/staging story alignment
+
+### Done means
+
+- every public-face sprint can say what improved, what stayed confusing, and
+  which wrong inferences were resolved
+
 ## P0 - Trust, Openness, and Repo Hygiene
 
 **Outcome:** the public repo stops creating avoidable trust friction.
