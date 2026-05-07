@@ -28,6 +28,7 @@
 
 - `docs/expert-briefs/initiatives/public-face/README.md`
 - `docs/expert-briefs/initiatives/public-face/INDEX.md`
+- `docs/expert-briefs/initiatives/public-face/active/2026-05-07_root-staging-story-alignment/`
 
 ## Working Rule
 
