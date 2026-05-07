@@ -1,7 +1,7 @@
 # Result - Command Center Translation Pilot
 
 - Verdict: **PASS** (with recorded out-of-scope gaps)
-- Product commit: TBD (fill after push)
+- Product commit: 87f7fb16c3ad65a2da3cbccb6a200474eb4544d9
 - Implementation host: Acer-HL
 - Smoke host: Acer-HL (build-only, no browser)
 
