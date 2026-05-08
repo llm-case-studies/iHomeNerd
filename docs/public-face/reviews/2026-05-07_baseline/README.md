@@ -9,14 +9,14 @@ The source materials already captured are:
 - `docs/public-face/audits/2026-05-07_public-surface-audit.md`
 - `docs/public-face/backlog/2026-05-07_public-face-workstreams.md`
 
-To complete the baseline, add:
+Baseline artifacts added on 2026-05-08:
 
-- raw panel responses or summarized responses
-- scorecard
-- wrong-inference log
-- synthesis
-- screenshots or page metadata captures if available
+- `input-snapshot.md`
+- `panel-responses.md`
+- `scorecard.md`
+- `wrong-inference-log.md`
+- `synthesis.md`
 
-The baseline should be completed before or alongside the first public-face
-implementation sprint so later reviews have something stable to compare
-against.
+The review intentionally distinguishes promoted repo source from live public
+deployment. On 2026-05-08, the promoted repo story was improved, while live root
+and staging pages were still serving older copy.
