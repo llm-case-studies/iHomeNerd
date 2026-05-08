@@ -2,7 +2,7 @@
 
 **Verdict:** PASS
 **Product commit tested:** `82b0dbb93ac4c5ee639bdfa2a090a31fc9ab01ee` (baseline docs)
-**Validation commit:** `7b6ea8fe667e4147a7e8f7b70ae9182cbcf7e36a`
+**Validation commit:** `51aff8d70bbd58b08c03e3be060d186044cca840`
 **Validation host:** iMac-Debian
 **Date:** 2026-05-08
 

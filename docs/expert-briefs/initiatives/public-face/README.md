@@ -26,8 +26,13 @@ For iHomeNerd that means all of these count:
 
 ## Current Active Sprints
 
-- `active/2026-05-08_public-standing-baseline/` — complete the repeatable
-  baseline review after root/staging story-alignment promotion
+- None.
+
+## Promoted Review Sprints
+
+- `active/2026-05-08_public-standing-baseline/` — promoted to `main` on
+  2026-05-08; completes the repeatable baseline review after root/staging
+  story-alignment promotion
 
 ## Promoted Implementation Sprints
 
