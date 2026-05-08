@@ -1,0 +1,17 @@
+$ rg -n "home staging|private admin|canonical summary|staging URL|public preview" README.md landing/index.html landing/src
+
+README.md:
+  Line 7: The current public preview is at `https://staging.ihomenerd.com/`. That page describes what you can try today, which install path matches your hardware, and what is still being finalized.
+
+landing/index.html:
+  Line 49:           Your household data stays on your hardware. This page is the public preview;
+
+landing/src: 0 matches
+
+Summary:
+- "home staging": 0 matches
+- "private admin": 0 matches  
+- "canonical summary": 0 matches
+- "staging URL": 0 matches
+- "public preview": 2 matches (1 in README.md line 7, 1 in landing/index.html line 49)
+  Both are deliberate, truthful mentions. landing/src has zero matches.

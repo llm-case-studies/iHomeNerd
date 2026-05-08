@@ -145,10 +145,10 @@ export default function LandingPage() {
               Public Repo, Private Data
             </p>
             <p className="text-base text-text-secondary leading-relaxed mb-5">
-              iHomeNerd itself is meant to be public and free as a local brain. Privacy here means
-              your household data stays on your hardware, not that the repo is closed. Apps that use
-              iHomeNerd can stay free or add paid layers on top. This staging URL is the current
-              public preview page, not a private admin console, signup wall, or billing flow.
+              iHomeNerd is public and free as a local brain. Privacy means your household
+              data stays on your hardware. The repo is public; apps that use iHomeNerd can
+              stay free or add paid layers. This page is the public preview — no signup or
+              payment is needed.
             </p>
             <a
               href={githubUrl}
@@ -174,13 +174,12 @@ export default function LandingPage() {
               Choose the clearest next step.
             </h2>
             <p className="text-lg text-text-secondary leading-relaxed">
-              This staging page is the canonical summary of the current trial paths. iHomeNerd is
-              intended to stay public and free as a local brain; monetization, if any, belongs in
-              the apps that connect to it. Docker is the practical early-adopter path today if you
-              can run it on a spare or sandbox machine, especially a headless Linux box you already
-              reach over SSH, and use a trusted AI as your guide. A guided VM path should become
-              the smoother default soon, and the live image is the longer-term spare-PC path. You
-              do not need an account, email signup, or payment to read this page and decide whether
+              iHomeNerd is intended to stay public and free as a local brain; monetization, if any,
+              belongs in the apps that connect to it. Docker is the practical early-adopter path today
+              if you can run it on a spare or sandbox machine, especially a headless Linux box you
+              already reach over SSH, and use a trusted AI as your guide. A guided VM path should
+              become the smoother default soon, and the live image is the longer-term spare-PC path.
+              You do not need an account, email signup, or payment to read this page and decide whether
               the current path fits you.
             </p>
           </div>
@@ -499,9 +498,9 @@ export default function LandingPage() {
           <p className="text-xl text-text-secondary mb-10 leading-relaxed">
             Share this page with GPT, Claude, Gemini, Grok, or DeepSeek and ask it to compare the
             paths described here. Include the GitHub repo if you want it to see that iHomeNerd is
-            meant to be public and free while your data stays local. This page is the canonical
-            summary; guided trial artifacts and polished installers are still being finalized. If
-            the answers differ, compare two of them before you commit.
+            meant to be public and free while your data stays local. Guided trial artifacts and
+            polished installers are still being finalized. If the answers differ, compare two of
+            them before you commit.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button

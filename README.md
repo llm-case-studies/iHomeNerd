@@ -1,12 +1,10 @@
 # iHomeNerd
 
-**Your local AI brain for documents, translation, cameras, and connected apps.**
+**A local AI home brain for private document chat, voice, translation, network awareness, and agent workflows — on machines you control.**
 
-Runs on your hardware. Localhost by default. Open core.
+Runs on your hardware. Localhost by default.
 
-The current public preview page is `https://staging.ihomenerd.com/`. Despite
-the hostname, that page is meant to be a public preview, not a private admin
-console, signup wall, or billing flow.
+The current public preview is at `https://staging.ihomenerd.com/`. That page describes what you can try today, which install path matches your hardware, and what is still being finalized.
 
 ## Quick start
 
