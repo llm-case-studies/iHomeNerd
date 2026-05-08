@@ -26,8 +26,14 @@ For iHomeNerd that means all of these count:
 
 ## Current Active Sprints
 
-- `active/2026-05-07_root-staging-story-alignment/` — align README, landing
-  first viewport, and metadata around one coherent public product story
+- `active/2026-05-08_public-standing-baseline/` — complete the repeatable
+  baseline review after root/staging story-alignment promotion
+
+## Promoted Implementation Sprints
+
+- `active/2026-05-07_root-staging-story-alignment/` — promoted to `main` on
+  2026-05-08; aligns README, landing first viewport, and metadata around one
+  coherent public product story
 
 ## Promoted Foundation Sprints
 
