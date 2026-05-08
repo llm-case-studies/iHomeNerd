@@ -11,10 +11,8 @@
 ## Product Commit Under Test
 
 ```
-8839bac924c14af94d909ac690978543a49c1056
+b7637969221f5c190fa711ae3888c0e77fdb6445
 ```
-
-(base: `origin/main`, before sprint changes applied)
 
 ## Files Changed
 
@@ -33,7 +31,7 @@ ScoutFlow.tsx was reviewed and did not need CTA/handoff changes.
 npm --prefix landing run build
 ```
 
-PASS. Vite build completed successfully (3.87s). No errors.
+PASS. Vite build completed successfully (2.98s). No errors.
 
 ## Story Changes Summary
 

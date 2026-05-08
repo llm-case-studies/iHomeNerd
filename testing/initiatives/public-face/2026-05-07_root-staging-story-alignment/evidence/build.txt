@@ -1,0 +1,14 @@
+$ npm --prefix landing run build
+
+> ihomenerd-landing@0.1.0 build
+> vite build
+
+vite v6.4.2 building for production...
+transforming...
+✓ 1710 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   4.50 kB │ gzip:   1.52 kB
+dist/assets/index-ijNJNe0K.css   30.64 kB │ gzip:   6.17 kB
+dist/assets/index-BbTRyF6w.js   418.85 kB │ gzip: 125.88 kB
+✓ built in 2.98s

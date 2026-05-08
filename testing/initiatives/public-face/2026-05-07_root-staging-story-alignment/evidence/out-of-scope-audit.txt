@@ -1,0 +1,7 @@
+Out-of-scope check results:
+- License: No license file changes. README removed "Open core" claim but no LICENSE file added or modified.
+- GitHub settings: No .github/ changes.
+- robots/sitemap: No robots.txt or sitemap.xml changes.
+- Screenshots: No image/screenshot changes.
+- Command Center: No Command Center code changes (ScoutFlow.tsx reviewed, no changes needed).
+- Broad redesign: Changes are scoped to story/alignment only; no structural UI redesigns.
