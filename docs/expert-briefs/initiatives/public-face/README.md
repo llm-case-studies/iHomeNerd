@@ -51,6 +51,7 @@ For iHomeNerd that means all of these count:
 
 ## Likely Follow-Ups
 
+- llms.txt public discovery
 - root/staging narrative alignment
 - GitHub trust-surface cleanup
 - SEO/discoverability baseline

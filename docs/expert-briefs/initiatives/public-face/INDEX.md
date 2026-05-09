@@ -9,6 +9,9 @@
 
 ## Queued Follow-Ups
 
+- `llms-txt-public-discovery` — publish a conservative domain-root
+  `llms.txt` so AI assistants can discover the canonical public story without
+  inventing SaaS, billing, or staging claims
 - `github-trust-surface-cleanup` — license, repo metadata, onboarding, and
   screenshot pass
 - `seo-baseline` — robots, sitemap, canonical, OG, and public metadata cleanup
